@@ -1034,10 +1034,20 @@ void CServer::PumpNetwork()
 				}*/
 
 				if(Packet.m_DataSize >= sizeof(BANMASTER_IPBAN) &&
-				  mem_comp(Packet.m_pData, BANMASTER_IPBAN, sizeof(BANMASTER_IPBAN)) == 0 &&
-				  g_Config.m_SvGlobalBantime &&
-				  m_NetServer.BanmasterCheck(&Packet.m_Address) != -1)
+				  mem_comp(Packet.m_pData, BANMASTER_IPBAN, sizeof(BANMASTER_IPBAN)) == 0)
 				{
+					dbg_msg("dbg", "a");
+
+					if(!g_Config.m_SvGlobalBantime)
+						return;
+					
+					dbg_msg("dbg", "b");
+					
+					if(m_NetServer.BanmasterCheck(&Packet.m_Address) == -1)
+						return;
+					
+					dbg_msg("dbg", "c");
+
 					CUnpacker Up;
 					char aIp[NETADDR_MAXSTRSIZE];
 					char aReason[256];
@@ -1157,7 +1167,7 @@ int CServer::Run()
 	}
 
 
-	if(!m_NetServer.Open(BindAddr, g_Config.m_SvMaxClients, g_Config.m_SvMaxClientsPerIP, 0));
+	if(!m_NetServer.Open(BindAddr, g_Config.m_SvMaxClients, g_Config.m_SvMaxClientsPerIP, 0))
 	{
 		dbg_msg("server", "couldn't open socket. port might already be in use");
 		return -1;

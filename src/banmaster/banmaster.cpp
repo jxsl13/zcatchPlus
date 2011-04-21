@@ -11,7 +11,7 @@ enum
 {
 	MAX_BANS=1024,
 	BAN_REREAD_TIME=300,
-	CFGFLAG_BANMASTER=16
+	CFGFLAG_BANMASTER=32
 };
 
 static const char BANMASTER_BANFILE[] = "bans.cfg";
@@ -216,16 +216,15 @@ int main(int argc, const char **argv) // ignore_convention
 		m_Net.Update();
 		
 		// process m_aPackets
-		CNetChunk p;
-		while(m_Net.Recv(&p))
+		CNetChunk Packet;
+		while(m_Net.Recv(&Packet))
 		{
 			char aAddressStr[NETADDR_MAXSTRSIZE];
-			net_addr_str(&p.m_Address, aAddressStr, sizeof(aAddressStr));
+			net_addr_str(&Packet.m_Address, aAddressStr, sizeof(aAddressStr));
 
-			if(p.m_DataSize >= sizeof(BANMASTER_IPCHECK) &&
-				mem_comp(p.m_pData, BANMASTER_IPCHECK, sizeof(BANMASTER_IPCHECK)) == 0)
+			if(Packet.m_DataSize >= sizeof(BANMASTER_IPCHECK) && mem_comp(Packet.m_pData, BANMASTER_IPCHECK, sizeof(BANMASTER_IPCHECK)) == 0)
 			{
-				char *pAddr = (char*)p.m_pData + sizeof(BANMASTER_IPCHECK);
+				char *pAddr = (char *)Packet.m_pData + sizeof(BANMASTER_IPCHECK);
 				NETADDR CheckAddr;
 				if(net_addr_from_str(&CheckAddr, pAddr))
 				{
@@ -235,13 +234,15 @@ int main(int argc, const char **argv) // ignore_convention
 				{
 					CheckAddr.port = 0;
 
-					int Banned = SendResponse(&p.m_Address, &CheckAddr);
+					int Banned = SendResponse(&Packet.m_Address, &CheckAddr);
 
 					char aBuf[NETADDR_MAXSTRSIZE];
 					net_addr_str(&CheckAddr, aBuf, sizeof(aBuf));
 					dbg_msg("banmaster", "responded to checkmsg, ip=%s checkaddr=%s result=%s", aAddressStr, aBuf, (Banned) ? "ban" : "ok");
 				}
 			}
+			else
+				dbg_msg("banmaster", "dropped weird packet, ip=%s content='%s'", aAddressStr, (char *)Packet.m_pData);
 		}
 		
 		if(time_get() - LastUpdate > time_freq() * BAN_REREAD_TIME)
