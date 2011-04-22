@@ -349,12 +349,10 @@ int CNetServer::Recv(CNetChunk *pChunk)
 							break;
 						}
 					}
-					dbg_msg("wtf", ".");
 
 					// client that wants to connect
 					if(!Found)
 					{
-						dbg_msg("wtf", ",");
 						CNetChunk Packet;
 						char aBuffer[sizeof(BANMASTER_IPCHECK) + NETADDR_MAXSTRSIZE];
 						mem_copy(aBuffer, BANMASTER_IPCHECK, sizeof(BANMASTER_IPCHECK));
@@ -364,13 +362,9 @@ int CNetServer::Recv(CNetChunk *pChunk)
 						Packet.m_Flags = NETSENDFLAG_CONNLESS;
 						Packet.m_DataSize = str_length(aBuffer) + 1;
 						Packet.m_pData = aBuffer;
-						dbg_msg("dbg", ",");
 
 						for(int i = 0; i < m_NumBanmasters; i++)
 						{
-							char aBufdbg[NETADDR_MAXSTRSIZE];
-							net_addr_str(&m_aBanmasters[i], aBufdbg, sizeof(aBufdbg));
-							dbg_msg("dbg", "%s", aBufdbg);
 							Packet.m_Address = m_aBanmasters[i];
 							Send(&Packet);
 						}

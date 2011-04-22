@@ -242,7 +242,7 @@ int main(int argc, const char **argv) // ignore_convention
 				}
 			}
 			else
-				dbg_msg("banmaster", "dropped weird packet, ip=%s content='%s'", aAddressStr, (char *)Packet.m_pData);
+				dbg_msg("banmaster", "dropped weird packet, ip=%s", aAddressStr, (char *)Packet.m_pData);
 		}
 		
 		if(time_get() - LastUpdate > time_freq() * BAN_REREAD_TIME)

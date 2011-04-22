@@ -1036,17 +1036,11 @@ void CServer::PumpNetwork()
 				if(Packet.m_DataSize >= sizeof(BANMASTER_IPBAN) &&
 				  mem_comp(Packet.m_pData, BANMASTER_IPBAN, sizeof(BANMASTER_IPBAN)) == 0)
 				{
-					dbg_msg("dbg", "a");
-
 					if(!g_Config.m_SvGlobalBantime)
 						return;
-					
-					dbg_msg("dbg", "b");
-					
+
 					if(m_NetServer.BanmasterCheck(&Packet.m_Address) == -1)
 						return;
-					
-					dbg_msg("dbg", "c");
 
 					CUnpacker Up;
 					char aIp[NETADDR_MAXSTRSIZE];
