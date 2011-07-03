@@ -21,6 +21,7 @@ public:
 	void TryRespawn();
 	void Respawn();
 	void SetTeam(int Team);
+	void SetTeamDirect(int Team); //zCatch
 	int GetTeam() const { return m_Team; };
 	int GetCID() const { return m_ClientID; };
 
@@ -95,7 +96,18 @@ public:
 		int m_Min;
 		int m_Max;
 	} m_Latency;
-
+	
+		//zCatch:
+	int m_CatchedBy;
+	int m_SpecExplicit;
+	int m_Deaths;
+	int m_Kills;
+	int m_LastKillTry;
+	bool m_PlayerWantToFollowCatcher;
+	
+	int m_TicksSpec;
+	int m_TicksIngame;
+	
 private:
 	CCharacter *m_pCharacter;
 	CGameContext *m_pGameServer;

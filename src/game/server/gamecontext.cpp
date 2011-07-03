@@ -13,6 +13,7 @@
 #include "gamemodes/tdm.h"
 #include "gamemodes/ctf.h"
 #include "gamemodes/mod.h"
+#include "gamemodes/zcatch.hpp"
 
 enum
 {
@@ -422,7 +423,10 @@ void CGameContext::OnTick()
 				bool aVoteChecked[MAX_CLIENTS] = {0};
 				for(int i = 0; i < MAX_CLIENTS; i++)
 				{
-					if(!m_apPlayers[i] || m_apPlayers[i]->GetTeam() == TEAM_SPECTATORS || aVoteChecked[i])	// don't count in votes by spectators
+					/* zCatch - Allow voting from players in spectators (needed or the last 2 players ingame can kick the whole server),
+					 * but deny votes from players who are explicit in spec
+					*/
+					if(!m_apPlayers[i] || m_apPlayers[i]->m_SpecExplicit == 1 || aVoteChecked[i])	// don't count in votes by spectators
 						continue;
 
 					int ActVote = m_apPlayers[i]->m_Vote;
@@ -508,6 +512,80 @@ void CGameContext::OnClientEnter(int ClientID)
 {
 	//world.insert_entity(&players[client_id]);
 	m_apPlayers[ClientID]->Respawn();
+	
+	/* begin zCatch */
+	int leader_id = -1;
+	int StartTeam = m_pController->ClampTeam(1);
+	
+	if(m_pController->IsZCatch())
+	{
+		int num = 0;
+		
+		for(int i=0; i<MAX_CLIENTS; i++)
+		{
+			if(IsClientReady(i))
+				num++;
+		}
+		if(num < 3)
+			m_pController->EndRound();
+		
+		if(g_Config.m_SvAllowJoin == 0)
+		{
+			m_apPlayers[ClientID]->m_CatchedBy = ZCATCH_JOINED_NEW;
+			m_apPlayers[ClientID]->m_SpecExplicit = 0;
+			StartTeam = (num < 3) ? m_pController->ClampTeam(1) : TEAM_SPECTATORS;
+		}
+		else if(g_Config.m_SvAllowJoin == 1)
+		{
+			m_apPlayers[ClientID]->m_CatchedBy = ZCATCH_NOT_CATCHED;
+			m_apPlayers[ClientID]->m_SpecExplicit = (num < 3) ? 0 : 1;
+			StartTeam = (num < 3) ? m_pController->ClampTeam(1) : TEAM_SPECTATORS;
+			SendBroadcast("You can join the game", ClientID);
+			
+		}
+		else if(g_Config.m_SvAllowJoin == 2)
+		{
+			int num2 = 0, num_prev = 0;
+			
+			for(int i = 0; i < MAX_CLIENTS; i++)
+			{
+				if(m_apPlayers[i])
+				{
+					num2 = 0;
+					for(int j = 0; j < MAX_CLIENTS; j++)
+		   			{
+			    			if(m_apPlayers[j] && m_apPlayers[j]->m_CatchedBy == i)
+				   			num2++;
+		    			}
+		    			if(num2 > num_prev)
+		   	 		{
+			    			leader_id = i;
+			    			num_prev = num2;
+		    			}
+		    		}
+		    	}
+		    	
+		    	if(leader_id > -1)
+			{
+				m_apPlayers[ClientID]->m_CatchedBy = leader_id;
+				m_apPlayers[ClientID]->m_SpecExplicit = 0;
+				m_apPlayers[ClientID]->m_SpectatorID = leader_id;
+				StartTeam = TEAM_SPECTATORS;
+			}
+			else
+			{
+				m_apPlayers[ClientID]->m_CatchedBy = ZCATCH_NOT_CATCHED;
+				m_apPlayers[ClientID]->m_SpecExplicit = 0;
+			}
+		}
+		else
+			StartTeam = m_pController->GetAutoTeam(ClientID);
+	}
+	
+	m_apPlayers[ClientID]->SetTeamDirect(StartTeam);
+	
+	/* end zCatch */
+	
 	char aBuf[512];
 	str_format(aBuf, sizeof(aBuf), "'%s' entered and joined the %s", Server()->ClientName(ClientID), m_pController->GetTeamName(m_apPlayers[ClientID]->GetTeam()));
 	SendChat(-1, CGameContext::CHAT_ALL, aBuf);
@@ -516,6 +594,21 @@ void CGameContext::OnClientEnter(int ClientID)
 	Console()->Print(IConsole::OUTPUT_LEVEL_DEBUG, "game", aBuf);
 
 	m_VoteUpdate = true;
+	
+	/* zCatch begin */
+   	if(m_pController->IsZCatch())
+	{
+	    SendChatTarget(ClientID, "Welcome to zCatch!");
+	    SendChatTarget(ClientID, "type /cmdlist to get all commands");
+	    SendChatTarget(ClientID, "type /help for instructions");
+	    if(g_Config.m_SvAllowJoin == 2 && leader_id > -1)
+	    {
+	    	char buf[128];
+	    	str_format(buf, sizeof(buf), "You will join the game when %s dies", Server()->ClientName(leader_id));
+	    	SendChatTarget(ClientID, buf);	
+	    }
+	}
+	/* zCatch end */
 }
 
 void CGameContext::OnClientConnected(int ClientID)
@@ -601,7 +694,45 @@ void CGameContext::OnMessage(int MsgID, CUnpacker *pUnpacker, int ClientID)
 			pMessage++;
 		}
 
-		SendChat(ClientID, Team, pMsg->m_pMessage);
+		/* begin zCatch*/
+		if(!str_comp("/info", pMsg->m_pMessage) || !str_comp("/about", pMsg->m_pMessage))
+		{
+			SendChatTarget(ClientID, " ");
+			SendChatTarget(ClientID, "zCatch v.0.4.1 by erd and Teetime. Type /cmdlist for all commands.");
+		}
+		else if(!str_comp("/cmdlist", pMsg->m_pMessage))
+		{
+			SendChatTarget(ClientID, " ");
+			SendChatTarget(ClientID, "/info or /about - see information about author.");
+			SendChatTarget(ClientID, "/help - learn how to play.");
+			SendChatTarget(ClientID, "/follow 1 or /follow 0 - Enables/Disables following of the catcher.");
+		}
+		else if(!str_comp("/help", pMsg->m_pMessage))
+		{
+			SendChatTarget(ClientID, " ");
+			SendChatTarget(ClientID, "The winner is the tee which is left over at the end.");
+			SendChatTarget(ClientID, "If you die, all players that you killed will respawn.");
+			SendChatTarget(ClientID, "So the only way to win is to kill every player without beeing killed.");
+			SendChatTarget(ClientID, "Have fun!");
+		}
+		else if(!str_comp("/follow 0", pMsg->m_pMessage))
+		{
+			pPlayer->m_PlayerWantToFollowCatcher = 0;
+			pPlayer->m_SpectatorID = SPEC_FREEVIEW;
+			SendChatTarget(ClientID, "Follow of catcher disabled.");
+		}
+		else if(!str_comp("/follow 1", pMsg->m_pMessage))
+		{
+			pPlayer->m_PlayerWantToFollowCatcher = 1;
+			if(pPlayer->m_CatchedBy != ZCATCH_JOINED_NEW)	// prevent freezing of client on the latest pos when sv_allow_join == 0
+				pPlayer->m_SpectatorID = pPlayer->m_CatchedBy;
+			SendChatTarget(ClientID, "Follow of catcher enabled.");
+		}	
+		else if(!str_comp_num("/", pMsg->m_pMessage, 1))
+			SendChatTarget(ClientID, "Unknown command.");
+		else
+            		SendChat(ClientID, Team, pMsg->m_pMessage);
+		/* end zCatch */
 	}
 	else if(MsgID == NETMSGTYPE_CL_CALLVOTE)
 	{
@@ -610,7 +741,8 @@ void CGameContext::OnMessage(int MsgID, CUnpacker *pUnpacker, int ClientID)
 
 		int64 Now = Server()->Tick();
 		pPlayer->m_LastVoteTry = Now;
-		if(pPlayer->GetTeam() == TEAM_SPECTATORS)
+		// zCatch - Only People who are explicit in Spectators can't vote!
+		if(pPlayer->m_SpecExplicit == 1) //zCatch
 		{
 			SendChatTarget(ClientID, "Spectators aren't allowed to start a vote.");
 			return;
@@ -673,7 +805,7 @@ void CGameContext::OnMessage(int MsgID, CUnpacker *pUnpacker, int ClientID)
 			{
 				int PlayerNum = 0;
 				for(int i = 0; i < MAX_CLIENTS; ++i)
-					if(m_apPlayers[i] && m_apPlayers[i]->GetTeam() != TEAM_SPECTATORS)
+					if(m_apPlayers[i] && m_apPlayers[i]->m_SpecExplicit != 1) // zCatch - Count all Players who are not explicit in spectator
 						++PlayerNum;
 
 				if(PlayerNum < g_Config.m_SvVoteKickMin)
@@ -787,7 +919,7 @@ void CGameContext::OnMessage(int MsgID, CUnpacker *pUnpacker, int ClientID)
 		// Switch team on given client and kill/respawn him
 		if(m_pController->CanJoinTeam(pMsg->m_Team, ClientID))
 		{
-			if(m_pController->CanChangeTeam(pPlayer, pMsg->m_Team))
+			if(m_pController->CanChangeTeam(pPlayer, pMsg->m_Team) && !m_pController->IsZCatch()) //zCatch)
 			{
 				pPlayer->m_LastSetTeam = Server()->Tick();
 				if(pPlayer->GetTeam() == TEAM_SPECTATORS || pMsg->m_Team == TEAM_SPECTATORS)
@@ -796,6 +928,27 @@ void CGameContext::OnMessage(int MsgID, CUnpacker *pUnpacker, int ClientID)
 				(void)m_pController->CheckTeamBalance();
 				pPlayer->m_TeamChangeTick = Server()->Tick();
 			}
+			/* begin zCatch*/			
+			else if(m_pController->IsZCatch())
+			{	
+				if(pPlayer->m_CatchedBy >= 0)
+				{
+					char buf[256];
+					str_format(buf, sizeof(buf), "You will join automatically when \"%s\" dies.", Server()->ClientName(pPlayer->m_CatchedBy));
+					SendChatTarget(ClientID, buf);
+					return;
+				}
+				else if(pPlayer->m_CatchedBy == ZCATCH_NOT_CATCHED)
+				{
+					pPlayer->m_LastSetTeam = Server()->Tick();
+					pPlayer->SetTeam(pMsg->m_Team);
+				}
+				else if(pPlayer->m_CatchedBy == ZCATCH_JOINED_NEW)
+				{
+					SendChatTarget(ClientID, "You will join automatically when the next round starts.");
+				}
+			}
+            /* end zCatch*/
 			else
 				SendBroadcast("Teams must be balanced, please join other team", ClientID);
 		}
@@ -957,11 +1110,21 @@ void CGameContext::OnMessage(int MsgID, CUnpacker *pUnpacker, int ClientID)
 	}
 	else if (MsgID == NETMSGTYPE_CL_KILL && !m_World.m_Paused)
 	{
-		if(pPlayer->m_LastKill && pPlayer->m_LastKill+Server()->TickSpeed()*3 > Server()->Tick())
-			return;
-
-		pPlayer->m_LastKill = Server()->Tick();
-		pPlayer->KillCharacter(WEAPON_SELF);
+		/* begin zCatch*/
+		if(pPlayer->m_LastKill && pPlayer->m_LastKill + Server()->TickSpeed()*15 > Server()->Tick())
+		{	
+			if((pPlayer->GetTeam() == TEAM_SPECTATORS) || (pPlayer->m_LastKillTry && pPlayer->m_LastKillTry+Server()->TickSpeed()*2 > Server()->Tick()))
+				return;			
+			SendChatTarget(ClientID, "Only one kill in 15sec is allowed.");
+			pPlayer->m_LastKillTry = Server()->Tick();
+		}
+		else
+		{
+			pPlayer->m_LastKill = Server()->Tick();
+			pPlayer->KillCharacter(WEAPON_SELF);
+			pPlayer->m_Deaths++;
+		}
+		/* end zCatch*/
 	}
 }
 
@@ -1360,6 +1523,8 @@ void CGameContext::OnInit(/*class IKernel *pKernel*/)
 		m_pController = new CGameControllerCTF(this);
 	else if(str_comp(g_Config.m_SvGametype, "tdm") == 0)
 		m_pController = new CGameControllerTDM(this);
+	else if(str_comp_nocase(g_Config.m_SvGametype, "zcatch") == 0)
+		m_pController = new CGameController_zCatch(this);
 	else
 		m_pController = new CGameControllerDM(this);
 

@@ -20,3 +20,6 @@ teeworlds*
 teeworlds_srv*
 tileset_borderfix*
 versionsrv*
+
+zcatch_srv*
+config.cfg

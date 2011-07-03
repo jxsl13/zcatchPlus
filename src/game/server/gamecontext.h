@@ -128,6 +128,12 @@ public:
 		CHAT_RED=0,
 		CHAT_BLUE=1
 	};
+	
+	enum
+	{
+		ZCATCH_JOINED_NEW = -2,
+		ZCATCH_NOT_CATCHED = -1,
+	}; 
 
 	// network
 	void SendChatTarget(int To, const char *pText);

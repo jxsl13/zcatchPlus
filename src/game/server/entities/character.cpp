@@ -56,8 +56,25 @@ bool CCharacter::Spawn(CPlayer *pPlayer, vec2 Pos)
 {
 	m_EmoteStop = -1;
 	m_LastAction = -1;
-	m_ActiveWeapon = WEAPON_GUN;
-	m_LastWeapon = WEAPON_HAMMER;
+	
+	/*zCatch */
+	if(GameServer()->m_pController->IsZCatch() && g_Config.m_SvMode == 1)
+	{
+		m_ActiveWeapon = WEAPON_RIFLE;
+		m_LastWeapon = WEAPON_RIFLE;
+	}
+	else if(GameServer()->m_pController->IsZCatch() && g_Config.m_SvMode == 3)
+	{
+		m_ActiveWeapon = WEAPON_HAMMER;
+		m_LastWeapon = WEAPON_HAMMER;
+	}
+	else
+	{
+		m_ActiveWeapon = WEAPON_GUN;
+		m_LastWeapon = WEAPON_HAMMER;
+	}
+    /* end zCatch */
+	
 	m_QueuedWeapon = -1;
 
 	m_pPlayer = pPlayer;
@@ -444,7 +461,7 @@ void CCharacter::HandleWeapons()
 
 	// ammo regen
 	int AmmoRegenTime = g_pData->m_Weapons.m_aId[m_ActiveWeapon].m_Ammoregentime;
-	if(AmmoRegenTime)
+	if(AmmoRegenTime && (m_ActiveWeapon == WEAPON_GUN || (GameServer()->m_pController->IsZCatch() && g_Config.m_SvMode == 2))) //zCatch
 	{
 		// If equipped and not active, regen ammo?
 		if (m_ReloadTimer <= 0)
@@ -725,8 +742,14 @@ bool CCharacter::TakeDamage(vec2 Force, int Dmg, int From, int Weapon)
 		m_DamageTaken = 0;
 		GameServer()->CreateDamageInd(m_Pos, 0, Dmg);
 	}
-
-	if(Dmg)
+	/* zCatch*/ 
+	if(GameServer()->m_pController->IsZCatch() && (g_Config.m_SvMode == 1 || g_Config.m_SvMode == 3))
+	{
+		m_Health = 0;
+		m_Armor = 0;
+	}
+	/* end zCatch*/
+	else if(Dmg)
 	{
 		if(m_Armor)
 		{

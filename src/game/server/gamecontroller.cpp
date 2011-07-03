@@ -136,30 +136,35 @@ bool IGameController::OnEntity(int Index, vec2 Pos)
 		m_aaSpawnPoints[1][m_aNumSpawnPoints[1]++] = Pos;
 	else if(Index == ENTITY_SPAWN_BLUE)
 		m_aaSpawnPoints[2][m_aNumSpawnPoints[2]++] = Pos;
-	else if(Index == ENTITY_ARMOR_1)
-		Type = POWERUP_ARMOR;
-	else if(Index == ENTITY_HEALTH_1)
-		Type = POWERUP_HEALTH;
-	else if(Index == ENTITY_WEAPON_SHOTGUN)
-	{
-		Type = POWERUP_WEAPON;
-		SubType = WEAPON_SHOTGUN;
-	}
-	else if(Index == ENTITY_WEAPON_GRENADE)
-	{
-		Type = POWERUP_WEAPON;
-		SubType = WEAPON_GRENADE;
-	}
-	else if(Index == ENTITY_WEAPON_RIFLE)
-	{
-		Type = POWERUP_WEAPON;
-		SubType = WEAPON_RIFLE;
-	}
-	else if(Index == ENTITY_POWERUP_NINJA && g_Config.m_SvPowerups)
-	{
-		Type = POWERUP_NINJA;
-		SubType = WEAPON_NINJA;
-	}
+	/* zCatch */
+   	else if(!GameServer()->m_pController->IsZCatch() || g_Config.m_SvMode == 0)
+    	{
+        if(Index == ENTITY_ARMOR_1)
+            Type = POWERUP_ARMOR;
+        else if(Index == ENTITY_HEALTH_1)
+            Type = POWERUP_HEALTH;
+        else if(Index == ENTITY_WEAPON_SHOTGUN)
+        {
+            Type = POWERUP_WEAPON;
+            SubType = WEAPON_SHOTGUN;
+        }
+        else if(Index == ENTITY_WEAPON_GRENADE)
+        {
+            Type = POWERUP_WEAPON;
+            SubType = WEAPON_GRENADE;
+        }
+        else if(Index == ENTITY_WEAPON_RIFLE)
+        {
+            Type = POWERUP_WEAPON;
+            SubType = WEAPON_RIFLE;
+        }
+        else if(Index == ENTITY_POWERUP_NINJA && g_Config.m_SvPowerups)
+        {
+            Type = POWERUP_NINJA;
+            SubType = WEAPON_NINJA;
+        }
+    }
+    /* end zCatch*/
 
 	if(Type != -1)
 	{
@@ -168,6 +173,11 @@ bool IGameController::OnEntity(int Index, vec2 Pos)
 		return true;
 	}
 
+	return false;
+}
+
+bool IGameController::IsZCatch()
+{
 	return false;
 }
 

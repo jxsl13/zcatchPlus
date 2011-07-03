@@ -88,3 +88,11 @@ MACRO_CONFIG_INT(SvVoteKickBantime, sv_vote_kick_bantime, 5, 0, 1440, CFGFLAG_SE
 MACRO_CONFIG_INT(DbgFocus, dbg_focus, 0, 0, 1, CFGFLAG_CLIENT, "")
 MACRO_CONFIG_INT(DbgTuning, dbg_tuning, 0, 0, 1, CFGFLAG_CLIENT, "")
 #endif
+
+//zCatch:
+MACRO_CONFIG_INT(SvMode, sv_mode, 1, 0, 3, CFGFLAG_SERVER, "0 - Normal; 1 - Instagib; 2 - Rocket area; 3 - Hammerparty")
+MACRO_CONFIG_INT(SvAllowJoin, sv_allow_join, 2, 0, 2, CFGFLAG_SERVER, "Allow new Players to join without waiting for the next round")
+//0 - Wait for next round; 1 = Allowed to join; 2 = Will join when person with the most kills die
+MACRO_CONFIG_INT(SvColorIndicator, sv_color_indicator, 1, 0, 1, CFGFLAG_SERVER, "Color tees apropriate to the number of currently catched players")
+MACRO_CONFIG_INT(SvBonus, sv_bonus, 0, 0, 10000, CFGFLAG_SERVER, "Give the last player extra points")
+MACRO_CONFIG_INT(SvFollowCatcher, sv_follow_catcher, 1, 0, 1, CFGFLAG_SERVER, "If a victim should follow his catcher")

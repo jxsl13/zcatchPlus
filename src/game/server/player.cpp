@@ -21,6 +21,16 @@ CPlayer::CPlayer(CGameContext *pGameServer, int ClientID, int Team)
 	m_SpectatorID = SPEC_FREEVIEW;
 	m_LastActionTick = Server()->Tick();
 	m_TeamChangeTick = Server()->Tick();
+	
+	//zCatch
+	m_CatchedBy = -1;
+	m_SpecExplicit = 0;
+	m_Kills = 0;
+	m_Deaths = 0;
+	m_PlayerWantToFollowCatcher = g_Config.m_SvFollowCatcher;
+	m_LastKillTry = Server()->Tick();
+	m_TicksSpec = 0;
+	m_TicksIngame = 0;
 }
 
 CPlayer::~CPlayer()
@@ -38,6 +48,48 @@ void CPlayer::Tick()
 		return;
 
 	Server()->SetClientScore(m_ClientID, m_Score);
+	
+	/* begin zCatch*/
+	int num = 0, num_spec = 0, num_SpecExplicit = 0;
+	
+	if(m_Team == TEAM_SPECTATORS)
+		m_TicksSpec++;
+	else
+		m_TicksIngame++;	
+	
+	for(int i = 0; i < MAX_CLIENTS; i++)
+	{
+		if(GameServer()->m_apPlayers[i])
+		{
+			num++;
+			if(GameServer()->m_apPlayers[i]->m_Team == TEAM_SPECTATORS)
+				num_spec++;
+			if(GameServer()->m_apPlayers[i]->m_SpecExplicit == 1)
+			num_SpecExplicit++;
+		}
+	}
+	
+	if(num == 1)
+	{
+	//Do nothing
+	}
+	//solution for sv_allow_join == 0 and mapchange:
+	else if((g_Config.m_SvAllowJoin == 0) && (num_spec == num) && (num_spec != num_SpecExplicit))
+	{
+		GameServer()->m_pController->EndRound();
+	}
+	else if((num - num_spec == 1) && (num != num_spec) && (num - num_SpecExplicit != 1)) 
+	{
+		for(int i = 0; i < MAX_CLIENTS; i++)
+		{
+			if(GameServer()->m_apPlayers[i] && GameServer()->m_apPlayers[i]->m_Team != TEAM_SPECTATORS)
+				GameServer()->m_apPlayers[i]->m_Score += g_Config.m_SvBonus;
+			GameServer()->m_pController->EndRound();
+			break;
+		}
+	}
+		
+	/* end zCatch*/
 
 	// do latency stuff
 	{
@@ -128,6 +180,20 @@ void CPlayer::Snap(int SnappingClient)
 
 	if(m_ClientID == SnappingClient)
 		pPlayerInfo->m_Local = 1;
+		
+	/* begin zCatch*/
+	if(GameServer()->m_apPlayers[m_ClientID] && GameServer()->m_pController->IsZCatch() && g_Config.m_SvColorIndicator)
+	{
+		int num = 161;
+		for(int i = 0; i < MAX_CLIENTS; i++)
+			if(GameServer()->m_apPlayers[i] && GameServer()->m_apPlayers[i]->m_CatchedBy == m_ClientID)
+				num -= 10;
+		pClientInfo->m_ColorBody = num * 0x010000 + 0xff00;
+		pClientInfo->m_ColorFeet = num * 0x010000 + 0xff00;
+		pClientInfo->m_UseCustomColor = 1;
+	}
+		
+	/* end zCatch*/
 
 	if(m_ClientID == SnappingClient && m_Team == TEAM_SPECTATORS)
 	{
@@ -261,6 +327,11 @@ void CPlayer::SetTeam(int Team)
 				GameServer()->m_apPlayers[i]->m_SpectatorID = SPEC_FREEVIEW;
 		}
 	}
+}
+
+void CPlayer::SetTeamDirect(int Team)
+{
+	m_Team = Team;
 }
 
 void CPlayer::TryRespawn()
