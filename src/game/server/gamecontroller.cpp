@@ -227,6 +227,7 @@ void IGameController::StartRound()
 	m_aTeamscore[TEAM_RED] = 0;
 	m_aTeamscore[TEAM_BLUE] = 0;
 	m_ForceBalanced = false;
+	Server()->DemoRecorder_HandleAutoStart();
 	char aBuf[256];
 	str_format(aBuf, sizeof(aBuf), "start round type='%s' teamplay='%d'", m_pGameType, m_GameFlags&GAMEFLAG_TEAMS);
 	GameServer()->Console()->Print(IConsole::OUTPUT_LEVEL_DEBUG, "game", aBuf);
@@ -672,7 +673,7 @@ bool IGameController::CanChangeTeam(CPlayer *pPlayer, int JoinTeam)
 
 void IGameController::DoWincheck()
 {
-	if(m_GameOverTick == -1 && !m_Warmup)
+	if(m_GameOverTick == -1 && !m_Warmup && !GameServer()->m_World.m_ResetRequested)
 	{
 		if(IsTeamplay())
 		{

@@ -215,7 +215,9 @@ void CMenus::RenderSettingsPlayer(CUIRect MainView)
 		CListboxItem Item = UiDoListboxNextItem(&pEntry->m_CountryCode, OldSelected == i);
 		if(Item.m_Visible)
 		{
-			Item.m_Rect.Margin(10.0f, &Item.m_Rect);
+			CUIRect Label;
+			Item.m_Rect.Margin(5.0f, &Item.m_Rect);
+			Item.m_Rect.HSplitBottom(10.0f, &Item.m_Rect, &Label);
 			float OldWidth = Item.m_Rect.w;
 			Item.m_Rect.w = Item.m_Rect.h*2;
 			Item.m_Rect.x += (OldWidth-Item.m_Rect.w)/ 2.0f;
@@ -225,6 +227,7 @@ void CMenus::RenderSettingsPlayer(CUIRect MainView)
 			IGraphics::CQuadItem QuadItem(Item.m_Rect.x, Item.m_Rect.y, Item.m_Rect.w, Item.m_Rect.h);
 			Graphics()->QuadsDrawTL(&QuadItem, 1);
 			Graphics()->QuadsEnd();
+			UI()->DoLabel(&Label, pEntry->m_aCountryCodeString, 10.0f, 0);
 		}
 	}
 
@@ -812,10 +815,11 @@ class CLanguage
 {
 public:
 	CLanguage() {}
-	CLanguage(const char *n, const char *f) : m_Name(n), m_FileName(f) {}
+	CLanguage(const char *n, const char *f, int Code) : m_Name(n), m_FileName(f), m_CountryCode(Code) {}
 
 	string m_Name;
 	string m_FileName;
+	int m_CountryCode;
 
 	bool operator<(const CLanguage &Other) { return m_Name < Other.m_Name; }
 };
@@ -830,6 +834,7 @@ void LoadLanguageIndexfile(IStorage *pStorage, IConsole *pConsole, sorted_array<
 	}
 
 	char aOrigin[128];
+	char aReplacement[128];
 	CLineReader LineReader;
 	LineReader.Init(File);
 	char *pLine;
@@ -839,14 +844,32 @@ void LoadLanguageIndexfile(IStorage *pStorage, IConsole *pConsole, sorted_array<
 			continue;
 
 		str_copy(aOrigin, pLine, sizeof(aOrigin));
-		char *pReplacement = LineReader.Get();
-		if(!pReplacement)
+
+		pLine = LineReader.Get();
+		if(!pLine)
 		{
 			pConsole->Print(IConsole::OUTPUT_LEVEL_ADDINFO, "localization", "unexpected end of index file");
 			break;
 		}
 
-		if(pReplacement[0] != '=' || pReplacement[1] != '=' || pReplacement[2] != ' ')
+		if(pLine[0] != '=' || pLine[1] != '=' || pLine[2] != ' ')
+		{
+			char aBuf[128];
+			str_format(aBuf, sizeof(aBuf), "malform replacement for index '%s'", aOrigin);
+			pConsole->Print(IConsole::OUTPUT_LEVEL_ADDINFO, "localization", aBuf);
+			(void)LineReader.Get();
+			continue;
+		}
+		str_copy(aReplacement, pLine+3, sizeof(aReplacement));
+
+		pLine = LineReader.Get();
+		if(!pLine)
+		{
+			pConsole->Print(IConsole::OUTPUT_LEVEL_ADDINFO, "localization", "unexpected end of index file");
+			break;
+		}
+
+		if(pLine[0] != '=' || pLine[1] != '=' || pLine[2] != ' ')
 		{
 			char aBuf[128];
 			str_format(aBuf, sizeof(aBuf), "malform replacement for index '%s'", aOrigin);
@@ -856,7 +879,7 @@ void LoadLanguageIndexfile(IStorage *pStorage, IConsole *pConsole, sorted_array<
 
 		char aFileName[128];
 		str_format(aFileName, sizeof(aFileName), "languages/%s.txt", aOrigin);
-		pLanguages->add(CLanguage(pReplacement+3, aFileName));
+		pLanguages->add(CLanguage(aReplacement, aFileName, str_toint(pLine+3)));
 	}
 	io_close(File);
 }
@@ -870,7 +893,7 @@ void CMenus::RenderLanguageSelection(CUIRect MainView)
 
 	if(s_Languages.size() == 0)
 	{
-		s_Languages.add(CLanguage("English", ""));
+		s_Languages.add(CLanguage("English", "", 826));
 		LoadLanguageIndexfile(Storage(), Console(), &s_Languages);
 		for(int i = 0; i < s_Languages.size(); i++)
 			if(str_comp(s_Languages[i].m_FileName, g_Config.m_ClLanguagefile) == 0)
@@ -889,7 +912,19 @@ void CMenus::RenderLanguageSelection(CUIRect MainView)
 		CListboxItem Item = UiDoListboxNextItem(&r.front());
 
 		if(Item.m_Visible)
-			UI()->DoLabelScaled(&Item.m_Rect, r.front().m_Name, 16.0f, -1);
+		{
+			CUIRect Rect;
+			Item.m_Rect.VSplitLeft(Item.m_Rect.h*2.0f, &Rect, &Item.m_Rect);
+			Rect.VMargin(6.0f, &Rect);
+			Rect.HMargin(3.0f, &Rect);
+			Graphics()->TextureSet(m_pClient->m_pCountryFlags->GetByCountryCode(r.front().m_CountryCode)->m_Texture);
+			Graphics()->QuadsBegin();
+			IGraphics::CQuadItem QuadItem(Rect.x, Rect.y, Rect.w, Rect.h);
+			Graphics()->QuadsDrawTL(&QuadItem, 1);
+			Graphics()->QuadsEnd();
+			Item.m_Rect.HSplitTop(2.0f, 0, &Item.m_Rect);
+ 			UI()->DoLabelScaled(&Item.m_Rect, r.front().m_Name, 16.0f, -1);
+		}
 	}
 
 	s_SelectedLanguage = UiDoListboxEnd(&s_ScrollValue, 0);
