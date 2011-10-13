@@ -1,6 +1,9 @@
-/* copyright (c) 2007 magnus auvinen, see licence.txt for more info */
+/* (c) Magnus Auvinen. See licence.txt in the root of the distribution for more information. */
+/* If you are missing that file, acquire a complete release at teeworlds.com.                */
+/* zCatch by erd and Teetime */
+
 #ifndef GAME_SERVER_GAMEMODES_ZCATCH_H
-#define GAME_SERVER_GAMEMODES_DM_H
+#define GAME_SERVER_GAMEMODES_ZCATCH_H
 
 #include <game/server/gamecontroller.h>
 

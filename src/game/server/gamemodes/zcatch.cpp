@@ -1,5 +1,7 @@
-/* copyright (c) 2007 magnus auvinen, see licence.txt for more info */
-/* zCatch by erd_baer */
+/* (c) Magnus Auvinen. See licence.txt in the root of the distribution for more information. */
+/* If you are missing that file, acquire a complete release at teeworlds.com.                */
+/* zCatch by erd and Teetime */
+
 #include <engine/server.h>
 #include <engine/shared/config.h>
 #include <game/server/entities/character.h>
