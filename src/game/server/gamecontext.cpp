@@ -691,8 +691,10 @@ void CGameContext::OnMessage(int MsgID, CUnpacker *pUnpacker, int ClientID)
 		/* begin zCatch*/
 		if(!str_comp("/info", pMsg->m_pMessage) || !str_comp("/about", pMsg->m_pMessage))
 		{
+			char aBuf[128];
+			str_format(aBuf, sizeof(aBuf), "zCatch version %s by erd and Teetime. Type /cmdlist for all commands.", ZCATCH_VERSION);
 			SendChatTarget(ClientID, " ");
-			SendChatTarget(ClientID, "zCatch v.0.4.1 by erd and Teetime. Type /cmdlist for all commands.");
+			SendChatTarget(ClientID, aBuf);
 		}
 		else if(!str_comp("/cmdlist", pMsg->m_pMessage))
 		{

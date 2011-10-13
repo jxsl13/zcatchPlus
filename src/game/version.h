@@ -3,6 +3,7 @@
 #ifndef GAME_VERSION_H
 #define GAME_VERSION_H
 #include "generated/nethash.cpp"
+#define ZCATCH_VERSION "0.4.2 BETA"
 #define GAME_VERSION "0.6.1"
 #define GAME_NETVERSION "0.6 " GAME_NETVERSION_HASH
 #endif
