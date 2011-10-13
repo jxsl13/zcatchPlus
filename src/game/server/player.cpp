@@ -183,20 +183,6 @@ void CPlayer::Snap(int SnappingClient)
 
 	if(m_ClientID == SnappingClient)
 		pPlayerInfo->m_Local = 1;
-		
-	/* begin zCatch*/
-	if(GameServer()->m_apPlayers[m_ClientID] && GameServer()->m_pController->IsZCatch() && g_Config.m_SvColorIndicator)
-	{
-		int num = 161;
-		for(int i = 0; i < MAX_CLIENTS; i++)
-			if(GameServer()->m_apPlayers[i] && GameServer()->m_apPlayers[i]->m_CatchedBy == m_ClientID)
-				num -= 10;
-		pClientInfo->m_ColorBody = num * 0x010000 + 0xff00;
-		pClientInfo->m_ColorFeet = num * 0x010000 + 0xff00;
-		pClientInfo->m_UseCustomColor = 1;
-	}
-		
-	/* end zCatch*/
 
 	if(m_ClientID == SnappingClient && m_Team == TEAM_SPECTATORS)
 	{

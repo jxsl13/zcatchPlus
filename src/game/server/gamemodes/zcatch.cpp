@@ -58,13 +58,27 @@ int CGameController_zCatch::OnCharacterDeath(class CCharacter *pVictim, class CP
 				GameServer()->m_apPlayers[i]->m_CatchedBy = ZCATCH_NOT_CATCHED;
 				GameServer()->m_apPlayers[i]->SetTeamDirect(GameServer()->m_pController->ClampTeam(1));
 				
-				GameServer()->m_pController->OnPlayerInfoChange(GameServer()->m_apPlayers[i]);
+				OnPlayerInfoChange(GameServer()->m_apPlayers[i]);
 				if(pKiller != pVictim->GetPlayer())
 					pKiller->m_Score++;
 			}
 		}
 	}
 	return 0;
+}
+
+void CGameController_zCatch::OnPlayerInfoChange(class CPlayer *pP)
+{
+	if(g_Config.m_SvColorIndicator)
+	{
+		int num = 161;
+		for(int i = 0; i < MAX_CLIENTS; i++)
+			if(GameServer()->m_apPlayers[i] && GameServer()->m_apPlayers[i]->m_CatchedBy == pP->GetCID())
+				num -= 10;
+		pP->m_TeeInfos.m_ColorBody = num * 0x010000 + 0xff00;
+		pP->m_TeeInfos.m_ColorFeet = num * 0x010000 + 0xff00;
+		pP->m_TeeInfos.m_UseCustomColor = 1;
+	}
 }
 
 void CGameController_zCatch::StartRound()
@@ -88,7 +102,7 @@ void CGameController_zCatch::StartRound()
 			GameServer()->m_apPlayers[i]->m_Deaths = 0;
 			GameServer()->m_apPlayers[i]->m_TicksSpec = 0;
 			GameServer()->m_apPlayers[i]->m_TicksIngame = 0;
-			GameServer()->m_pController->OnPlayerInfoChange(GameServer()->m_apPlayers[i]);
+			OnPlayerInfoChange(GameServer()->m_apPlayers[i]);
 		}
 	}
 	char aBufMsg[256];
@@ -125,7 +139,8 @@ void CGameController_zCatch::OnCharacterSpawn(class CCharacter *pChr)
 			case 4:
 				pChr->GiveWeapon(WEAPON_GRENADE, -1);
 				break;
-			}
+		}
+	OnPlayerInfoChange(pChr->GetPlayer());
 }
 void CGameController_zCatch::EndRound()
 {
@@ -137,7 +152,7 @@ void CGameController_zCatch::EndRound()
 			if(GameServer()->m_apPlayers[i]->m_SpecExplicit == 0)
 			{
 				GameServer()->m_apPlayers[i]->SetTeamDirect(GameServer()->m_pController->ClampTeam(1));
-				GameServer()->m_pController->OnPlayerInfoChange(GameServer()->m_apPlayers[i]);
+				OnPlayerInfoChange(GameServer()->m_apPlayers[i]);
 				
 				char abuf[128];
 				str_format(abuf, sizeof(abuf), "Kills: %d | Deaths: %d", GameServer()->m_apPlayers[i]->m_Kills, GameServer()->m_apPlayers[i]->m_Deaths);				

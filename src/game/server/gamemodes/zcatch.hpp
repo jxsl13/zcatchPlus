@@ -22,6 +22,7 @@ class CGameController_zCatch : public IGameController
 	virtual int OnCharacterDeath(class CCharacter *pVictim, class CPlayer *pKiller, int WeaponID);
 	virtual void StartRound();
 	virtual void OnCharacterSpawn(class CCharacter *pChr);
+	virtual void OnPlayerInfoChange(class CPlayer *pP);
 	virtual void EndRound();
 };
 
