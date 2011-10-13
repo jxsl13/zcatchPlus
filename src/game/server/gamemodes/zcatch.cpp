@@ -114,9 +114,9 @@ void CGameController_zCatch::OnCharacterSpawn(class CCharacter *pChr)
 				break;
 			case 2:
 				pChr->GiveWeapon(WEAPON_HAMMER, -1);
-				pChr->GiveWeapon(WEAPON_GUN, 10);
-				pChr->GiveWeapon(WEAPON_GRENADE, 10);
-				pChr->GiveWeapon(WEAPON_SHOTGUN, 10);
+				pChr->GiveWeapon(WEAPON_GUN, -1);
+				pChr->GiveWeapon(WEAPON_GRENADE, -1);
+				pChr->GiveWeapon(WEAPON_SHOTGUN, -1);
 				pChr->GiveWeapon(WEAPON_RIFLE, -1);
 				break;
 			case 3:

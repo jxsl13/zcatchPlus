@@ -466,7 +466,7 @@ void CCharacter::HandleWeapons()
 
 	// ammo regen
 	int AmmoRegenTime = g_pData->m_Weapons.m_aId[m_ActiveWeapon].m_Ammoregentime;
-	if(AmmoRegenTime && (m_ActiveWeapon == WEAPON_GUN || (GameServer()->m_pController->IsZCatch() && g_Config.m_SvMode == 2))) //zCatch
+	if(AmmoRegenTime)
 	{
 		// If equipped and not active, regen ammo?
 		if (m_ReloadTimer <= 0)
@@ -729,11 +729,18 @@ bool CCharacter::TakeDamage(vec2 Force, int Dmg, int From, int Weapon)
 
 	if(GameServer()->m_pController->IsFriendlyFire(m_pPlayer->GetCID(), From) && !g_Config.m_SvTeamdamage)
 		return false;
-
-	// m_pPlayer only inflicts half damage on self
+	
+	/* zCatch */
+	bool Is_zCatch = GameServer()->m_pController->IsZCatch();
+	
 	if(From == m_pPlayer->GetCID())
-		Dmg = max(1, Dmg/2);
-
+		if(Is_zCatch && g_Config.m_SvMode != 1)
+			Dmg = 0;	//No selfdamage, except in vanilla-mode
+		// m_pPlayer only inflicts half damage on self
+		else
+			Dmg = max(1, Dmg/2);
+	/* end zCatch */
+	
 	m_DamageTaken++;
 
 	// create healthmod indicator
@@ -747,8 +754,9 @@ bool CCharacter::TakeDamage(vec2 Force, int Dmg, int From, int Weapon)
 		m_DamageTaken = 0;
 		GameServer()->CreateDamageInd(m_Pos, 0, Dmg);
 	}
-	/* zCatch*/ 
-	if(GameServer()->m_pController->IsZCatch() && (g_Config.m_SvMode == 1 || g_Config.m_SvMode == 3))
+	/* zCatch*/
+	//One-Shot-One-Kill
+	if(Is_zCatch && (g_Config.m_SvMode != 0 && g_Config.m_SvMode != 2)) // all except vanilla-mode and all weapons
 	{
 		m_Health = 0;
 		m_Armor = 0;
