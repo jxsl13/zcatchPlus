@@ -131,7 +131,6 @@ public:
 	
 	enum
 	{
-		ZCATCH_JOINED_NEW = -2,
 		ZCATCH_NOT_CATCHED = -1,
 	}; 
 

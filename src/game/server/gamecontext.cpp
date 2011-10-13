@@ -529,13 +529,7 @@ void CGameContext::OnClientEnter(int ClientID)
 		if(num < 3)
 			m_pController->EndRound();
 		
-		if(g_Config.m_SvAllowJoin == 0)
-		{
-			m_apPlayers[ClientID]->m_CatchedBy = ZCATCH_JOINED_NEW;
-			m_apPlayers[ClientID]->m_SpecExplicit = 0;
-			StartTeam = (num < 3) ? m_pController->ClampTeam(1) : TEAM_SPECTATORS;
-		}
-		else if(g_Config.m_SvAllowJoin == 1)
+		if(g_Config.m_SvAllowJoin == 1)
 		{
 			m_apPlayers[ClientID]->m_CatchedBy = ZCATCH_NOT_CATCHED;
 			m_apPlayers[ClientID]->m_SpecExplicit = (num < 3) ? 0 : 1;
@@ -724,8 +718,6 @@ void CGameContext::OnMessage(int MsgID, CUnpacker *pUnpacker, int ClientID)
 		else if(!str_comp("/follow 1", pMsg->m_pMessage))
 		{
 			pPlayer->m_PlayerWantToFollowCatcher = 1;
-			if(pPlayer->m_CatchedBy != ZCATCH_JOINED_NEW)	// prevent freezing of client on the latest pos when sv_allow_join == 0
-				pPlayer->m_SpectatorID = pPlayer->m_CatchedBy;
 			SendChatTarget(ClientID, "Follow of catcher enabled.");
 		}	
 		else if(!str_comp_num("/", pMsg->m_pMessage, 1))
@@ -942,10 +934,6 @@ void CGameContext::OnMessage(int MsgID, CUnpacker *pUnpacker, int ClientID)
 				{
 					pPlayer->m_LastSetTeam = Server()->Tick();
 					pPlayer->SetTeam(pMsg->m_Team);
-				}
-				else if(pPlayer->m_CatchedBy == ZCATCH_JOINED_NEW)
-				{
-					SendChatTarget(ClientID, "You will join automatically when the next round starts.");
 				}
 			}
             /* end zCatch*/
