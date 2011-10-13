@@ -122,6 +122,9 @@ void CGameController_zCatch::OnCharacterSpawn(class CCharacter *pChr)
 			case 3:
 				pChr->GiveWeapon(WEAPON_HAMMER, -1);
 				break;
+			case 4:
+				pChr->GiveWeapon(WEAPON_GRENADE, -1);
+				break;
 			}
 }
 void CGameController_zCatch::EndRound()

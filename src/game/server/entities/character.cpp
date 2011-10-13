@@ -68,6 +68,11 @@ bool CCharacter::Spawn(CPlayer *pPlayer, vec2 Pos)
 		m_ActiveWeapon = WEAPON_HAMMER;
 		m_LastWeapon = WEAPON_HAMMER;
 	}
+	else if(GameServer()->m_pController->IsZCatch() && g_Config.m_SvMode == 4)
+	{
+		m_ActiveWeapon = WEAPON_GRENADE;
+		m_LastWeapon = WEAPON_GRENADE;
+	}
 	else
 	{
 		m_ActiveWeapon = WEAPON_GUN;
