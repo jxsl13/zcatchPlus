@@ -27,7 +27,7 @@ bool CGameController_zCatch::IsZCatch()
 
 int CGameController_zCatch::OnCharacterDeath(class CCharacter *pVictim, class CPlayer *pKiller, int WeaponID)
 {
-	int client_id =  pVictim->GetPlayer()->GetCID();
+	int VictimID =  pVictim->GetPlayer()->GetCID();
 	char buf[256];
 	if(pKiller !=  pVictim->GetPlayer())
 	{
@@ -45,7 +45,7 @@ int CGameController_zCatch::OnCharacterDeath(class CCharacter *pVictim, class CP
 				pVictim->GetPlayer()->m_SpectatorID = pKiller->GetCID(); // Let the victim follow his catcher
 		
 			str_format(buf, sizeof(buf), "Caught by \"%s\". You will join the game automatically when \"%s\" dies.", Server()->ClientName(pKiller->GetCID()), Server()->ClientName(pKiller->GetCID()));	
-			GameServer()->SendChatTarget(client_id, buf);
+			GameServer()->SendChatTarget(VictimID, buf);
 		}
 	}
 	
@@ -53,7 +53,7 @@ int CGameController_zCatch::OnCharacterDeath(class CCharacter *pVictim, class CP
 	{
 		if(GameServer()->m_apPlayers[i])
 		{
-			if(GameServer()->m_apPlayers[i]->m_CatchedBy == client_id)
+			if(GameServer()->m_apPlayers[i]->m_CatchedBy == VictimID)
 			{
 				GameServer()->m_apPlayers[i]->m_CatchedBy = ZCATCH_NOT_CATCHED;
 				GameServer()->m_apPlayers[i]->SetTeamDirect(GameServer()->m_pController->ClampTeam(1));
