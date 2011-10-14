@@ -50,44 +50,11 @@ void CPlayer::Tick()
 	Server()->SetClientScore(m_ClientID, m_Score);
 	
 	/* begin zCatch*/
-	int num = 0, num_spec = 0, num_SpecExplicit = 0;
 	
 	if(m_Team == TEAM_SPECTATORS)
 		m_TicksSpec++;
 	else
-		m_TicksIngame++;	
-	
-	for(int i = 0; i < MAX_CLIENTS; i++)
-	{
-		if(GameServer()->m_apPlayers[i])
-		{
-			num++;
-			if(GameServer()->m_apPlayers[i]->m_Team == TEAM_SPECTATORS)
-				num_spec++;
-			if(GameServer()->m_apPlayers[i]->m_SpecExplicit == 1)
-			num_SpecExplicit++;
-		}
-	}
-	
-	if(num == 1)
-	{
-	//Do nothing
-	}
-	//solution for sv_allow_join == 0 and mapchange:
-	else if((g_Config.m_SvAllowJoin == 0) && (num_spec == num) && (num_spec != num_SpecExplicit))
-	{
-		GameServer()->m_pController->EndRound();
-	}
-	else if((num - num_spec == 1) && (num != num_spec) && (num - num_SpecExplicit != 1)) 
-	{
-		for(int i = 0; i < MAX_CLIENTS; i++)
-		{
-			if(GameServer()->m_apPlayers[i] && GameServer()->m_apPlayers[i]->m_Team != TEAM_SPECTATORS)
-				GameServer()->m_apPlayers[i]->m_Score += g_Config.m_SvBonus;
-			GameServer()->m_pController->EndRound();
-			break;
-		}
-	}
+		m_TicksIngame++;
 		
 	/* end zCatch*/
 

@@ -20,9 +20,43 @@ void CGameController_zCatch::Tick()
 	DoWincheck();
 	IGameController::Tick();
 }
+
 bool CGameController_zCatch::IsZCatch()
 {
 	return true;
+}
+
+void CGameController_zCatch::DoWincheck()
+{
+	int Players = 0, Players_Spec = 0, Players_SpecExplicit = 0;	
+	
+	for(int i = 0; i < MAX_CLIENTS; i++)
+	{
+		if(GameServer()->m_apPlayers[i])
+		{
+			Players++;
+			if(GameServer()->m_apPlayers[i]->GetTeam() == TEAM_SPECTATORS)
+				Players_Spec++;
+			if(GameServer()->m_apPlayers[i]->m_SpecExplicit == 1)
+				Players_SpecExplicit++;
+		}
+	}
+	
+	if(Players == 1)
+	{
+		//Do nothing
+	}
+	else if((Players - Players_Spec == 1) && (Players != Players_Spec) && (Players - Players_SpecExplicit != 1)) 
+	{
+		for(int i = 0; i < MAX_CLIENTS; i++)
+		{
+			if(GameServer()->m_apPlayers[i] && GameServer()->m_apPlayers[i]->GetTeam() != TEAM_SPECTATORS)
+				GameServer()->m_apPlayers[i]->m_Score += g_Config.m_SvBonus;
+		}
+		EndRound();
+	}
+	
+	IGameController::DoWincheck(); //do also usual wincheck
 }
 
 int CGameController_zCatch::OnCharacterDeath(class CCharacter *pVictim, class CPlayer *pKiller, int WeaponID)
@@ -71,12 +105,12 @@ void CGameController_zCatch::OnPlayerInfoChange(class CPlayer *pP)
 {
 	if(g_Config.m_SvColorIndicator)
 	{
-		int num = 161;
+		int Players = 161;
 		for(int i = 0; i < MAX_CLIENTS; i++)
 			if(GameServer()->m_apPlayers[i] && GameServer()->m_apPlayers[i]->m_CatchedBy == pP->GetCID())
-				num -= 10;
-		pP->m_TeeInfos.m_ColorBody = num * 0x010000 + 0xff00;
-		pP->m_TeeInfos.m_ColorFeet = num * 0x010000 + 0xff00;
+				Players -= 10;
+		pP->m_TeeInfos.m_ColorBody = Players * 0x010000 + 0xff00;
+		pP->m_TeeInfos.m_ColorFeet = Players * 0x010000 + 0xff00;
 		pP->m_TeeInfos.m_UseCustomColor = 1;
 	}
 }
@@ -142,6 +176,7 @@ void CGameController_zCatch::OnCharacterSpawn(class CCharacter *pChr)
 		}
 	OnPlayerInfoChange(pChr->GetPlayer());
 }
+
 void CGameController_zCatch::EndRound()
 {
 	for(int i = 0; i < MAX_CLIENTS; i++)

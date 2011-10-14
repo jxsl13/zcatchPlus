@@ -12,13 +12,14 @@ class CGameController_zCatch : public IGameController
 	public:
 	CGameController_zCatch(class CGameContext *pGameServer);
 	virtual void Tick();
+	virtual void DoWincheck();
 	virtual bool IsZCatch();
 	
 	enum
 	{
 		ZCATCH_NOT_CATCHED = -1,
 	}; 
-
+	
 	virtual int OnCharacterDeath(class CCharacter *pVictim, class CPlayer *pKiller, int WeaponID);
 	virtual void StartRound();
 	virtual void OnCharacterSpawn(class CCharacter *pChr);
