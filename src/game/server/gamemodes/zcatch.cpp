@@ -109,12 +109,12 @@ void CGameController_zCatch::OnPlayerInfoChange(class CPlayer *pP)
 {
 	if(g_Config.m_SvColorIndicator)
 	{
-		int Players = 161;
+		int Num = 161;
 		for(int i = 0; i < MAX_CLIENTS; i++)
 			if(GameServer()->m_apPlayers[i] && GameServer()->m_apPlayers[i]->m_CatchedBy == pP->GetCID())
-				Players -= 10;
-		pP->m_TeeInfos.m_ColorBody = Players * 0x010000 + 0xff00;
-		pP->m_TeeInfos.m_ColorFeet = Players * 0x010000 + 0xff00;
+				Num -= 10;
+		pP->m_TeeInfos.m_ColorBody = Num * 0x010000 + 0xff00;
+		pP->m_TeeInfos.m_ColorFeet = Num * 0x010000 + 0xff00;
 		pP->m_TeeInfos.m_UseCustomColor = 1;
 	}
 }
