@@ -69,6 +69,7 @@ int CGameController_zCatch::OnCharacterDeath(class CCharacter *pVictim, class CP
 		pVictim->GetPlayer()->m_Deaths++; 
 		
 		pKiller->m_Score++;
+		
 		/* Check if the killer is already killed and in spectator (victim may died through wallshot) */
 		if(pKiller->GetTeam() != TEAM_SPECTATORS)
 		{
@@ -92,12 +93,15 @@ int CGameController_zCatch::OnCharacterDeath(class CCharacter *pVictim, class CP
 				GameServer()->m_apPlayers[i]->m_CatchedBy = ZCATCH_NOT_CATCHED;
 				GameServer()->m_apPlayers[i]->SetTeamDirect(GameServer()->m_pController->ClampTeam(1));
 				
-				OnPlayerInfoChange(GameServer()->m_apPlayers[i]);
 				if(pKiller != pVictim->GetPlayer())
 					pKiller->m_Score++;
 			}
 		}
 	}
+		
+	// Update color of the killer
+	OnPlayerInfoChange(pKiller);
+	
 	return 0;
 }
 
@@ -136,7 +140,6 @@ void CGameController_zCatch::StartRound()
 			GameServer()->m_apPlayers[i]->m_Deaths = 0;
 			GameServer()->m_apPlayers[i]->m_TicksSpec = 0;
 			GameServer()->m_apPlayers[i]->m_TicksIngame = 0;
-			OnPlayerInfoChange(GameServer()->m_apPlayers[i]);
 		}
 	}
 	char aBufMsg[256];
@@ -174,6 +177,7 @@ void CGameController_zCatch::OnCharacterSpawn(class CCharacter *pChr)
 				pChr->GiveWeapon(WEAPON_GRENADE, -1);
 				break;
 		}
+	//Update color of spawning tees
 	OnPlayerInfoChange(pChr->GetPlayer());
 }
 
@@ -187,7 +191,6 @@ void CGameController_zCatch::EndRound()
 			if(GameServer()->m_apPlayers[i]->m_SpecExplicit == 0)
 			{
 				GameServer()->m_apPlayers[i]->SetTeamDirect(GameServer()->m_pController->ClampTeam(1));
-				OnPlayerInfoChange(GameServer()->m_apPlayers[i]);
 				
 				char abuf[128];
 				str_format(abuf, sizeof(abuf), "Kills: %d | Deaths: %d", GameServer()->m_apPlayers[i]->m_Kills, GameServer()->m_apPlayers[i]->m_Deaths);				
