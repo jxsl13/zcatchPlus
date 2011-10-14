@@ -2,10 +2,7 @@
 /* If you are missing that file, acquire a complete release at teeworlds.com.                */
 /* zCatch by erd and Teetime */
 
-#include <engine/server.h>
 #include <engine/shared/config.h>
-#include <game/server/entities/character.h>
-#include <game/server/player.h>
 #include <game/server/gamecontext.h>
 #include "zcatch.hpp"
 
@@ -69,6 +66,7 @@ int CGameController_zCatch::OnCharacterDeath(class CCharacter *pVictim, class CP
 		pVictim->GetPlayer()->m_Deaths++; 
 		
 		pKiller->m_Score++;
+		pVictim->GetPlayer()->m_Score--;
 		
 		/* Check if the killer is already killed and in spectator (victim may died through wallshot) */
 		if(pKiller->GetTeam() != TEAM_SPECTATORS)
@@ -82,6 +80,12 @@ int CGameController_zCatch::OnCharacterDeath(class CCharacter *pVictim, class CP
 			str_format(buf, sizeof(buf), "Caught by \"%s\". You will join the game automatically when \"%s\" dies.", Server()->ClientName(pKiller->GetCID()), Server()->ClientName(pKiller->GetCID()));	
 			GameServer()->SendChatTarget(VictimID, buf);
 		}
+	}
+	else
+	{
+		//Punish selfkill/death
+		if(WeaponID == WEAPON_SELF || WeaponID == WEAPON_WORLD)
+			pVictim->GetPlayer()->m_Score -= 15;
 	}
 	
 	for(int i=0; i < MAX_CLIENTS; i++)
