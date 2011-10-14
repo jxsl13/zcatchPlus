@@ -137,16 +137,21 @@ void CCharacter::HandleNinja()
 	if(m_ActiveWeapon != WEAPON_NINJA)
 		return;
 
-	if ((Server()->Tick() - m_Ninja.m_ActivationTick) > (g_pData->m_Weapons.m_Ninja.m_Duration * Server()->TickSpeed() / 1000))
+	/* zCatch */
+	if(GameServer()->m_pController->IsZCatch() == false || (GameServer()->m_pController->IsZCatch() && g_Config.m_SvMode == 0))
 	{
-		// time's up, return
-		m_aWeapons[WEAPON_NINJA].m_Got = false;
-		m_ActiveWeapon = m_LastWeapon;
+		if ((Server()->Tick() - m_Ninja.m_ActivationTick) > (g_pData->m_Weapons.m_Ninja.m_Duration * Server()->TickSpeed() / 1000))
+		{
+			// time's up, return
+			m_aWeapons[WEAPON_NINJA].m_Got = false;
+			m_ActiveWeapon = m_LastWeapon;
 
-		SetWeapon(m_ActiveWeapon);
-		return;
+			SetWeapon(m_ActiveWeapon);
+			return;
+		}
 	}
-
+	/* zCatch end*/
+	
 	// force ninja Weapon
 	SetWeapon(WEAPON_NINJA);
 
