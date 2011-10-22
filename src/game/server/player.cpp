@@ -31,6 +31,7 @@ CPlayer::CPlayer(CGameContext *pGameServer, int ClientID, int Team)
 	m_LastKillTry = Server()->Tick();
 	m_TicksSpec = 0;
 	m_TicksIngame = 0;
+	m_ChatTicks = 0;
 }
 
 CPlayer::~CPlayer()
@@ -55,7 +56,10 @@ void CPlayer::Tick()
 		m_TicksSpec++;
 	else
 		m_TicksIngame++;
-		
+	
+	if(m_ChatTicks > 0)
+		m_ChatTicks--;
+	
 	/* end zCatch*/
 
 	// do latency stuff

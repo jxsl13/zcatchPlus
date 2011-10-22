@@ -96,4 +96,8 @@ MACRO_CONFIG_INT(SvAllowJoin, sv_allow_join, 2, 1, 2, CFGFLAG_SERVER, "Allow new
 MACRO_CONFIG_INT(SvColorIndicator, sv_color_indicator, 1, 0, 1, CFGFLAG_SERVER, "Color tees apropriate to the number of currently catched players")
 MACRO_CONFIG_INT(SvBonus, sv_bonus, 0, 0, 10000, CFGFLAG_SERVER, "Give the last player extra points")
 MACRO_CONFIG_INT(SvFollowCatcher, sv_follow_catcher, 1, 0, 1, CFGFLAG_SERVER, "If a victim should follow his catcher")
+
+MACRO_CONFIG_INT(SvChatValue, sv_chat_value, 250, 100, 1000, CFGFLAG_SERVER, "A value wich is added on each message and decreased on each tick")
+MACRO_CONFIG_INT(SvChatThreshold, sv_chat_threshold, 1000, 250, 10000, CFGFLAG_SERVER, "If this threshold will exceed by too many messages the player will be muted")
+MACRO_CONFIG_INT(SvMuteDuration, sv_mute_duration, 60, 0, 3600, CFGFLAG_SERVER, "How long the player will be muted (in seconds)")
 #endif

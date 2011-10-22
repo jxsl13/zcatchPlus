@@ -107,6 +107,7 @@ public:
 	
 	int m_TicksSpec;
 	int m_TicksIngame;
+	int m_ChatTicks;
 	
 private:
 	CCharacter *m_pCharacter;

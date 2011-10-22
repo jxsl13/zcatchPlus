@@ -690,6 +690,25 @@ void CGameContext::OnMessage(int MsgID, CUnpacker *pUnpacker, int ClientID)
 				*pMessage = ' ';
 			pMessage++;
 		}
+		
+		//Check if the player is muted
+		char aAddrStr[NETADDR_MAXSTRSIZE] = {0};
+		Server()->GetClientAddr(ClientID, aAddrStr, sizeof(aAddrStr));
+		int Pos;
+        if((Pos = Muted(aAddrStr)) > -1)
+		{
+			char aBuf[128];
+			int Expires = (m_aMutes[Pos].m_Expires - Server()->Tick())/Server()->TickSpeed(); 
+			str_format(aBuf, sizeof(aBuf), "You are muted for %d minutes and %d seconds.", Expires/60, Expires%60);
+			SendChatTarget(ClientID, aBuf);
+			return;
+		}
+		else if((pPlayer->m_ChatTicks += g_Config.m_SvChatValue) > g_Config.m_SvChatThreshold) //is he spamming?
+		{
+			AddMute(ClientID, 60);
+			pPlayer->m_ChatTicks = 0;
+			return;
+		}
 
 		/* begin zCatch*/
 		if(!str_comp("/info", pMsg->m_pMessage) || !str_comp("/about", pMsg->m_pMessage))
@@ -728,20 +747,8 @@ void CGameContext::OnMessage(int MsgID, CUnpacker *pUnpacker, int ClientID)
 		else if(!str_comp_num("/", pMsg->m_pMessage, 1))
 			SendChatTarget(ClientID, "Unknown command.");
 		else
-		{
-			char aAddrStr[NETADDR_MAXSTRSIZE] = {0};
-			Server()->GetClientAddr(ClientID, aAddrStr, sizeof(aAddrStr));
-			int Pos = Muted(aAddrStr);
-            if(Pos > -1)
-			{
-				char aBuf[128];
-				int Expires = (m_aMutes[Pos].m_Expires - Server()->Tick())/Server()->TickSpeed(); 
-				str_format(aBuf, sizeof(aBuf), "You are muted for %d minutes and %d seconds.", Expires/60, Expires%60);
-				SendChatTarget(ClientID, aBuf);
-				return;
-			}
 			SendChat(ClientID, Team, pMsg->m_pMessage);
-		}
+
 		/* end zCatch */
 	}
 	else if(MsgID == NETMSGTYPE_CL_CALLVOTE)
