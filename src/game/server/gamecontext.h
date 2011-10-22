@@ -15,6 +15,8 @@
 #include "gameworld.h"
 #include "player.h"
 
+#define MAX_MUTES 25
+
 /*
 	Tick
 		Game Context (CGameContext::tick)
@@ -60,6 +62,10 @@ class CGameContext : public IGameServer
 	static void ConClearVotes(IConsole::IResult *pResult, void *pUserData);
 	static void ConVote(IConsole::IResult *pResult, void *pUserData);
 	static void ConchainSpecialMotdupdate(IConsole::IResult *pResult, void *pUserData, IConsole::FCommandCallback pfnCallback, void *pCallbackUserData);
+	
+	static void ConMute(IConsole::IResult *pResult, void *pUserData);
+	static void ConUnmute(IConsole::IResult *pResult, void *pUserData);
+	static void ConMutes(IConsole::IResult *pResult, void *pUserData);
 
 	CGameContext(int Resetting);
 	void Construct(int Resetting);
@@ -133,6 +139,18 @@ public:
 	{
 		ZCATCH_NOT_CATCHED = -1,
 	}; 
+	
+	struct CMutes
+	{
+		char m_IP[NETADDR_MAXSTRSIZE];
+		int m_Expires;
+	}; 
+	CMutes m_aMutes[MAX_MUTES];
+	// helper functions
+	void AddMute(const char* IP, int Secs);
+	void AddMute(int ClientID, int Secs);
+	int Muted(const char* IP);
+	void CleanMutes();
 
 	// network
 	void SendChatTarget(int To, const char *pText);
