@@ -218,6 +218,9 @@ public:
 	virtual void SnapFreeID(int ID);
 	virtual void *SnapNewItem(int Type, int ID, int Size);
 	void SnapSetStaticsize(int ItemType, int Size);
+	
+	//zCatch
+	virtual void MapReload();
 };
 
 #endif

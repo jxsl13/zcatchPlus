@@ -1541,6 +1541,11 @@ void CServer::DemoRecorder_HandleAutoStart()
 	}
 }
 
+void CServer::MapReload()
+{
+	m_MapReload = 1;
+}
+
 void CServer::ConRecord(IConsole::IResult *pResult, void *pUser)
 {
 	CServer* pServer = (CServer *)pUser;

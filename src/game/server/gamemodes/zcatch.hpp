@@ -9,6 +9,9 @@
 
 class CGameController_zCatch : public IGameController
 {
+	private:
+	int m_OldMode;
+	
 	public:
 	CGameController_zCatch(class CGameContext *pGameServer);
 	virtual void Tick();

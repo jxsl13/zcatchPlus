@@ -10,12 +10,19 @@ CGameController_zCatch::CGameController_zCatch(class CGameContext *pGameServer)
 : IGameController(pGameServer)
 {
 	m_pGameType = "zCatch";
+	m_OldMode = g_Config.m_SvMode;
 }
 
 void CGameController_zCatch::Tick()
 {
 	DoWincheck();
 	IGameController::Tick();
+	
+	if(m_OldMode != g_Config.m_SvMode)
+	{
+		Server()->MapReload();
+		m_OldMode = g_Config.m_SvMode;
+	}
 }
 
 bool CGameController_zCatch::IsZCatch()
