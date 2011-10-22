@@ -703,9 +703,9 @@ void CGameContext::OnMessage(int MsgID, CUnpacker *pUnpacker, int ClientID)
 			SendChatTarget(ClientID, aBuf);
 			return;
 		}
-		else if((pPlayer->m_ChatTicks += g_Config.m_SvChatValue) > g_Config.m_SvChatThreshold) //is he spamming?
+		else if(g_Config.m_SvMuteDuration && ((pPlayer->m_ChatTicks += g_Config.m_SvChatValue) > g_Config.m_SvChatThreshold)) //is he spamming?
 		{
-			AddMute(ClientID, 60);
+			AddMute(ClientID, g_Config.m_SvMuteDuration);
 			pPlayer->m_ChatTicks = 0;
 			return;
 		}
