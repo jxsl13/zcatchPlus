@@ -23,3 +23,6 @@ versionsrv*
 
 zcatch_srv*
 config.cfg
+.project
+.cproject
+
