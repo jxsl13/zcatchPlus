@@ -108,6 +108,11 @@ public:
 	int m_TicksSpec;
 	int m_TicksIngame;
 	int m_ChatTicks;
+	//Anticamper
+	int Anticamper();
+	bool m_SentCampMsg;
+	int m_CampTick;
+	vec2 m_CampPos;
 	
 private:
 	CCharacter *m_pCharacter;
