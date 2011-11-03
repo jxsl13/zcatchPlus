@@ -177,7 +177,7 @@ int main(int argc, const char **argv) // ignore_convention
 	IStorage *pStorage = CreateStorage("Teeworlds", argc, argv); // ignore_convention
 
 	m_pConsole = CreateConsole(CFGFLAG_BANMASTER);
-	m_pConsole->RegisterPrintCallback(2, StandardOutput, 0);
+	m_pConsole->RegisterPrintCallback(StandardOutput, 0);
 	m_pConsole->Register("ban", "s?r", CFGFLAG_BANMASTER, ConBan, 0, "Bans the specified ip");
 	m_pConsole->Register("unban_all", "", CFGFLAG_BANMASTER, ConUnbanAll, 0, "Unbans all ips");
 	m_pConsole->Register("bind", "s", CFGFLAG_BANMASTER, ConSetBindAddr, 0, "Binds to the specified address");
