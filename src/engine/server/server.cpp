@@ -1229,13 +1229,10 @@ int CServer::Run()
 
 	m_NetServer.SetCallbacks(NewClientCallback, DelClientCallback, this);
 
-<<<<<<< HEAD
 	m_Econ.Init(Console());
 
-=======
 	Console()->ExecuteFile(SERVER_BANMASTERFILE);
-		
->>>>>>> heinrich5991/banmaster
+
 	char aBuf[256];
 	str_format(aBuf, sizeof(aBuf), "server name is '%s'", g_Config.m_SvName);
 	Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "server", aBuf);
@@ -1719,16 +1716,12 @@ void CServer::RegisterCommands()
 	Console()->Register("record", "?s", CFGFLAG_SERVER|CFGFLAG_STORE, ConRecord, this, "Record to a file");
 	Console()->Register("stoprecord", "", CFGFLAG_SERVER, ConStopRecord, this, "Stop recording");
 
-<<<<<<< HEAD
-	Console()->Register("reload", "", CFGFLAG_SERVER, ConMapReload, this, "Reload the map");
-=======
 	Console()->Register("add_banmaster", "s", CFGFLAG_SERVER, ConAddBanmaster, this, "");
 	Console()->Register("banmasters", "", CFGFLAG_SERVER, ConBanmasters, this, "");
 	Console()->Register("clear_banmasters",	"", CFGFLAG_SERVER, ConClearBanmasters, this, "");
-
-	Console()->Register("reload", "", CFGFLAG_SERVER, ConMapReload, this, "");
->>>>>>> heinrich5991/banmaster
-
+	
+	Console()->Register("reload", "", CFGFLAG_SERVER, ConMapReload, this, "Reload the map");
+	
 	Console()->Chain("sv_name", ConchainSpecialInfoupdate, this);
 	Console()->Chain("password", ConchainSpecialInfoupdate, this);
 
