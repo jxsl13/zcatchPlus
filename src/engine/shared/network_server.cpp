@@ -1,6 +1,7 @@
 /* (c) Magnus Auvinen. See licence.txt in the root of the distribution for more information. */
 /* If you are missing that file, acquire a complete release at teeworlds.com.                */
 #include <base/system.h>
+#include <banmaster/banmaster.h>
 #include "network.h"
 
 #define MACRO_LIST_LINK_FIRST(Object, First, Prev, Next) \
@@ -352,6 +353,22 @@ int CNetServer::Recv(CNetChunk *pChunk)
 					// client that wants to connect
 					if(!Found)
 					{
+						CNetChunk Packet;
+						char aBuffer[sizeof(BANMASTER_IPCHECK) + NETADDR_MAXSTRSIZE];
+						mem_copy(aBuffer, BANMASTER_IPCHECK, sizeof(BANMASTER_IPCHECK));
+						net_addr_str(&Addr, aBuffer + sizeof(BANMASTER_IPCHECK), sizeof(aBuffer) - sizeof(BANMASTER_IPCHECK));
+
+						Packet.m_ClientID = -1;
+						Packet.m_Flags = NETSENDFLAG_CONNLESS;
+						Packet.m_DataSize = str_length(aBuffer) + 1;
+						Packet.m_pData = aBuffer;
+
+						for(int i = 0; i < m_NumBanmasters; i++)
+						{
+							Packet.m_Address = m_aBanmasters[i];
+							Send(&Packet);
+						}
+
 						// only allow a specific number of players with the same ip
 						NETADDR ThisAddr = Addr, OtherAddr;
 						int FoundAddr = 1;
@@ -383,6 +400,7 @@ int CNetServer::Recv(CNetChunk *pChunk)
 								m_aSlots[i].m_Connection.Feed(&m_RecvUnpacker.m_Data, &Addr);
 								if(m_pfnNewClient)
 									m_pfnNewClient(i, m_UserPtr);
+								
 								break;
 							}
 						}
@@ -461,3 +479,46 @@ void CNetServer::SetMaxClientsPerIP(int Max)
 
 	m_MaxClientsPerIP = Max;
 }
+
+int CNetServer::BanmasterAdd(const char *pAddrStr)
+{
+	if(m_NumBanmasters >= MAX_BANMASTERS)
+		return 2;
+	
+	if(net_host_lookup(pAddrStr, &m_aBanmasters[m_NumBanmasters], NETTYPE_IPV4))
+		return 1;
+	
+	if(m_aBanmasters[m_NumBanmasters].port == 0)
+		m_aBanmasters[m_NumBanmasters].port = BANMASTER_PORT;
+	
+	m_NumBanmasters++;
+	return 0;
+}
+
+int CNetServer::BanmasterNum() const
+{
+	return m_NumBanmasters;
+}
+
+NETADDR* CNetServer::BanmasterGet(int Index)
+{
+	if(Index < 0 || Index >= m_NumBanmasters)
+		return 0;
+	
+	return &m_aBanmasters[Index];
+}
+
+int CNetServer::BanmasterCheck(NETADDR *pAddr)
+{
+	for(int i = 0; i < m_NumBanmasters; i++)
+		if(net_addr_comp(&m_aBanmasters[i], pAddr) == 0)
+			return i;
+
+	return -1;
+}
+
+void CNetServer::BanmastersClear()
+{
+	m_NumBanmasters = 0;
+}
+
