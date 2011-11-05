@@ -11,7 +11,6 @@
 
 enum
 {
-	WEAPON_ANTICAMPER = -4,
 	WEAPON_GAME = -3, // team switching etc
 	WEAPON_SELF = -2, // console kill command
 	WEAPON_WORLD = -1, // death tiles etc

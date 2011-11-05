@@ -361,7 +361,7 @@ int CPlayer::Anticamper()
 			GameServer()->SendBroadcast("You have been freezed due camping", m_ClientID);
 		}
 		else
-			m_pCharacter->Die(m_ClientID, WEAPON_ANTICAMPER);
+			m_pCharacter->Die(m_ClientID, WEAPON_GAME);
 		m_CampTick = -1;
 		m_SentCampMsg = false;
 		return 1;
