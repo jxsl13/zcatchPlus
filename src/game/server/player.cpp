@@ -32,6 +32,7 @@ CPlayer::CPlayer(CGameContext *pGameServer, int ClientID, int Team)
 	m_TicksSpec = 0;
 	m_TicksIngame = 0;
 	m_ChatTicks = 0;
+	m_FreezeTicks = 0;
 }
 
 CPlayer::~CPlayer()
@@ -60,7 +61,14 @@ void CPlayer::Tick()
 	if(m_ChatTicks > 0)
 		m_ChatTicks--;
 	
-	if(g_Config.m_SvAnticamper && m_pCharacter && !GameServer()->m_World.m_Paused)
+	if(m_FreezeTicks)
+	{
+		if(Server()->Tick() % Server()->TickSpeed() == 0)
+			GameServer()->CreateDamageInd(m_ViewPos, 0, m_FreezeTicks/Server()->TickSpeed()+1);
+		m_FreezeTicks--;
+	}
+
+	if(g_Config.m_SvAnticamper)
 		Anticamper();
 	/* end zCatch*/
 
@@ -193,6 +201,9 @@ void CPlayer::OnPredictedInput(CNetObj_PlayerInput *NewInput)
 	if((m_PlayerFlags&PLAYERFLAG_CHATTING) && (NewInput->m_PlayerFlags&PLAYERFLAG_CHATTING))
 		return;
 
+	if(m_FreezeTicks)
+		return;
+
 	if(m_pCharacter)
 		m_pCharacter->OnPredictedInput(NewInput);
 }
@@ -217,6 +228,9 @@ void CPlayer::OnDirectInput(CNetObj_PlayerInput *NewInput)
 
 	if(m_pCharacter)
 		m_pCharacter->OnDirectInput(NewInput);
+
+	if(m_FreezeTicks)
+		return;
 
 	if(!m_pCharacter && m_Team != TEAM_SPECTATORS && (NewInput->m_Fire&1))
 		m_Spawning = true;
@@ -308,6 +322,13 @@ void CPlayer::TryRespawn()
 
 int CPlayer::Anticamper()
 {
+	if(GameServer()->m_World.m_Paused || m_FreezeTicks || m_Team == TEAM_SPECTATORS || !m_pCharacter)
+	{
+		m_CampTick = -1;
+		m_SentCampMsg = false;
+		return 0;
+	}
+
 	int AnticamperTime = g_Config.m_SvAnticamperTime;
 	int AnticamperRange = g_Config.m_SvAnticamperRange;
 
@@ -334,7 +355,13 @@ int CPlayer::Anticamper()
 	// Kill him
 	if((m_CampTick <= Server()->Tick()) && (m_CampTick > 0))
 	{
-		m_pCharacter->Die(m_ClientID, WEAPON_ANTICAMPER);
+		if(g_Config.m_SvAnticamperFreeze)
+		{
+			m_pCharacter->Freeze(Server()->TickSpeed()*g_Config.m_SvAnticamperFreeze);
+			GameServer()->SendBroadcast("You have been freezed due camping", m_ClientID);
+		}
+		else
+			m_pCharacter->Die(m_ClientID, WEAPON_ANTICAMPER);
 		m_CampTick = -1;
 		m_SentCampMsg = false;
 		return 1;

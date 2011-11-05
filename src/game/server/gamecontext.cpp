@@ -1124,12 +1124,17 @@ void CGameContext::OnMessage(int MsgID, CUnpacker *pUnpacker, int ClientID)
 	else if (MsgID == NETMSGTYPE_CL_KILL && !m_World.m_Paused)
 	{
 		/* begin zCatch*/
-		if(pPlayer->m_LastKill && pPlayer->m_LastKill + Server()->TickSpeed()*15 > Server()->Tick())
-		{	
-			if((pPlayer->GetTeam() == TEAM_SPECTATORS) || (pPlayer->m_LastKillTry && pPlayer->m_LastKillTry+Server()->TickSpeed()*2 > Server()->Tick()))
-				return;			
-			SendChatTarget(ClientID, "Only one kill in 15sec is allowed.");
+		if((pPlayer->GetTeam() == TEAM_SPECTATORS) || (pPlayer->m_LastKillTry && pPlayer->m_LastKillTry+Server()->TickSpeed()*2 > Server()->Tick()))
+			return;
+
+		if(pPlayer->m_FreezeTicks)
+		{
+			SendChatTarget(ClientID, "You can't kill yourself while you're frozen");
 			pPlayer->m_LastKillTry = Server()->Tick();
+		}
+		else if(pPlayer->m_LastKill && pPlayer->m_LastKill + Server()->TickSpeed()*15 > Server()->Tick())
+		{	
+			SendBroadcast("Only one kill in 15sec is allowed.", ClientID);
 		}
 		else
 		{

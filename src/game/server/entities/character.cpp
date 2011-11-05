@@ -541,6 +541,12 @@ void CCharacter::OnPredictedInput(CNetObj_PlayerInput *pNewInput)
 
 void CCharacter::OnDirectInput(CNetObj_PlayerInput *pNewInput)
 {
+	if(m_pPlayer->m_FreezeTicks)
+	{
+		ResetInput();
+		return;
+	}
+
 	mem_copy(&m_LatestPrevInput, &m_LatestInput, sizeof(m_LatestInput));
 	mem_copy(&m_LatestInput, pNewInput, sizeof(m_LatestInput));
 
@@ -578,6 +584,11 @@ void CCharacter::Tick()
 
 	m_Core.m_Input = m_Input;
 	m_Core.Tick(true);
+
+	//Set weapon back to the last one
+	if(m_pPlayer->m_FreezeTicks == 1)
+		SetWeapon(m_LastWeapon);
+
 
 	// handle death-tiles and leaving gamelayer
 	if(GameServer()->Collision()->GetCollisionAt(m_Pos.x+m_ProximityRadius/3.f, m_Pos.y-m_ProximityRadius/3.f)&CCollision::COLFLAG_DEATH ||
@@ -893,4 +904,12 @@ void CCharacter::Snap(int SnappingClient)
 	}
 
 	pCharacter->m_PlayerFlags = GetPlayer()->m_PlayerFlags;
+}
+
+void CCharacter::Freeze(int Ticks)
+{
+	m_pPlayer->m_FreezeTicks = Ticks;
+	m_LastWeapon = m_ActiveWeapon;
+	m_ActiveWeapon = WEAPON_NINJA;
+	GameServer()->CreateSound(m_Pos, SOUND_PLAYER_PAIN_LONG);
 }
