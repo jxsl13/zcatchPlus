@@ -732,6 +732,8 @@ void CCharacter::Die(int Killer, int Weapon)
 
 	// this is for auto respawn after 3 secs
 	m_pPlayer->m_DieTick = Server()->Tick();
+	// unfreeze the player
+	m_pPlayer->m_FreezeTicks = 0;
 
 	m_Alive = false;
 	GameServer()->m_World.RemoveEntity(this);

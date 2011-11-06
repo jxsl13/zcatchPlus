@@ -95,9 +95,6 @@ int CGameController_zCatch::OnCharacterDeath(class CCharacter *pVictim, class CP
 			pVictim->GetPlayer()->m_Score -= 15;
 	}
 
-	// Unfreeze the victim if he dies
-	pVictim->GetPlayer()->m_FreezeTicks = 0;
-
 	for(int i=0; i < MAX_CLIENTS; i++)
 	{
 		if(GameServer()->m_apPlayers[i])
@@ -154,7 +151,6 @@ void CGameController_zCatch::StartRound()
 			GameServer()->m_apPlayers[i]->m_Deaths = 0;
 			GameServer()->m_apPlayers[i]->m_TicksSpec = 0;
 			GameServer()->m_apPlayers[i]->m_TicksIngame = 0;
-			GameServer()->m_apPlayers[i]->m_FreezeTicks = 0;
 		}
 	}
 	char aBufMsg[256];
