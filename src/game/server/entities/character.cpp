@@ -751,12 +751,15 @@ bool CCharacter::TakeDamage(vec2 Force, int Dmg, int From, int Weapon)
 	/* zCatch */
 	bool Is_zCatch = GameServer()->m_pController->IsZCatch();
 	
-	if(From == m_pPlayer->GetCID())
+	bool FromSelf = From == m_pPlayer->GetCID();
+	if(FromSelf)
+	{
 		if(Is_zCatch && g_Config.m_SvMode != 1)
 			Dmg = 0;	//No selfdamage, except in vanilla-mode
 		// m_pPlayer only inflicts half damage on self
 		else
 			Dmg = max(1, Dmg/2);
+	}
 	/* end zCatch */
 	
 	m_DamageTaken++;
@@ -774,7 +777,7 @@ bool CCharacter::TakeDamage(vec2 Force, int Dmg, int From, int Weapon)
 	}
 	/* zCatch*/
 	//One-Shot-One-Kill
-	if(Is_zCatch && (g_Config.m_SvMode != 0 && g_Config.m_SvMode != 2)) // all except vanilla-mode and all weapons
+	if(Is_zCatch && (g_Config.m_SvMode != 0 && g_Config.m_SvMode != 2 && !FromSelf)) // all except vanilla-mode and all weapons
 	{
 		m_Health = 0;
 		m_Armor = 0;
