@@ -754,8 +754,8 @@ bool CCharacter::TakeDamage(vec2 Force, int Dmg, int From, int Weapon)
 	bool FromSelf = From == m_pPlayer->GetCID();
 	if(FromSelf)
 	{
-		if(Is_zCatch && g_Config.m_SvMode != 1)
-			Dmg = 0;	//No selfdamage, except in vanilla-mode
+		if(Is_zCatch && g_Config.m_SvMode != 0 && g_Config.m_SvMode != 2)
+			Dmg = 0;	//No selfdamage, except in vanilla and all-weapons-mode
 		// m_pPlayer only inflicts half damage on self
 		else
 			Dmg = max(1, Dmg/2);
