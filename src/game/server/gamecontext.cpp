@@ -833,6 +833,12 @@ void CGameContext::OnMessage(int MsgID, CUnpacker *pUnpacker, int ClientID)
 				}
 			}
 
+			if(g_Config.m_SvKickForceReason && !pMsg->m_Reason[0])
+			{
+				SendChatTarget(ClientID, "You must give a reason for your vote");
+				return;
+			}
+
 			int KickID = str_toint(pMsg->m_Value);
 			if(KickID < 0 || KickID >= MAX_CLIENTS || !m_apPlayers[KickID])
 			{
