@@ -138,7 +138,7 @@ void CCharacter::HandleNinja()
 		return;
 
 	/* zCatch */
-	if(GameServer()->m_pController->IsZCatch() == false || (GameServer()->m_pController->IsZCatch() && g_Config.m_SvMode == 0))
+	if(GameServer()->m_pController->IsZCatch() == false)
 	{
 		if ((Server()->Tick() - m_Ninja.m_ActivationTick) > (g_pData->m_Weapons.m_Ninja.m_Duration * Server()->TickSpeed() / 1000))
 		{
@@ -751,11 +751,11 @@ bool CCharacter::TakeDamage(vec2 Force, int Dmg, int From, int Weapon)
 	/* zCatch */
 	bool Is_zCatch = GameServer()->m_pController->IsZCatch();
 	
-	bool FromSelf = From == m_pPlayer->GetCID();
-	if(FromSelf)
+	if(From == m_pPlayer->GetCID())
 	{
-		if(Is_zCatch && g_Config.m_SvMode != 0 && g_Config.m_SvMode != 2)
-			Dmg = 0;	//No selfdamage, except in vanilla and all-weapons-mode
+		//No selfdamage
+		if(Is_zCatch)
+			Dmg = 0;
 		// m_pPlayer only inflicts half damage on self
 		else
 			Dmg = max(1, Dmg/2);
@@ -775,17 +775,19 @@ bool CCharacter::TakeDamage(vec2 Force, int Dmg, int From, int Weapon)
 		m_DamageTaken = 0;
 		GameServer()->CreateDamageInd(m_Pos, 0, Dmg);
 	}
-	/* zCatch*/
-	//One-Shot-One-Kill
-	if(Is_zCatch && (g_Config.m_SvMode != 0 && g_Config.m_SvMode != 2 && !FromSelf)) // all except vanilla-mode and all weapons
+
+	if(Dmg)
 	{
-		m_Health = 0;
-		m_Armor = 0;
-	}
-	/* end zCatch*/
-	else if(Dmg)
-	{
-		if(m_Armor)
+		/* zCatch*/
+		//One-Shot-One-Kill
+		if(Is_zCatch)
+		{
+			m_Health = 0;
+			m_Armor = 0;
+		}
+		/* end zCatch*/
+
+		else if(m_Armor)
 		{
 			if(Dmg > 1)
 			{

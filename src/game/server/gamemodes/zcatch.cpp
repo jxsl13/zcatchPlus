@@ -167,10 +167,6 @@ void CGameController_zCatch::OnCharacterSpawn(class CCharacter *pChr)
 	// give default weapons
 	switch(g_Config.m_SvMode)
 		{
-			case 0:
-				pChr->GiveWeapon(WEAPON_HAMMER, -1);
-				pChr->GiveWeapon(WEAPON_GUN, 10);
-				break;
 			case 1:
 				pChr->GiveWeapon(WEAPON_RIFLE, -1);
 				break;

@@ -137,7 +137,7 @@ bool IGameController::OnEntity(int Index, vec2 Pos)
 	else if(Index == ENTITY_SPAWN_BLUE)
 		m_aaSpawnPoints[2][m_aNumSpawnPoints[2]++] = Pos;
 	/* zCatch */
-   	else if(!GameServer()->m_pController->IsZCatch() || g_Config.m_SvMode == 0)
+   	else if(!GameServer()->m_pController->IsZCatch())
     	{
         if(Index == ENTITY_ARMOR_1)
             Type = POWERUP_ARMOR;
