@@ -68,7 +68,7 @@ void CPlayer::Tick()
 		m_FreezeTicks--;
 	}
 
-	if(g_Config.m_SvAnticamper)
+	if((g_Config.m_SvAnticamper == 2 && g_Config.m_SvMode == 1) || (g_Config.m_SvAnticamper == 1))
 		Anticamper();
 	/* end zCatch*/
 
