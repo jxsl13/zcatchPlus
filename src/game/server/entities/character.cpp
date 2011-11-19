@@ -596,7 +596,10 @@ void CCharacter::Tick()
 		}
 		//Set weapon back to the last one
 		if(m_FreezeTicks == 1)
-			SetWeapon(m_LastWeapon);
+			{
+				m_ActiveWeapon = m_LastWeapon;
+				GameServer()->SendBroadcast("", m_pPlayer->GetCID());
+			}
 		m_FreezeTicks--;
 	}
 
