@@ -15,7 +15,7 @@
 #include "gameworld.h"
 #include "player.h"
 
-#define MAX_MUTES 25
+#define MAX_MUTES 35
 #define ZCATCH_VERSION "0.4.2 BETA"
 
 /*
@@ -65,7 +65,8 @@ class CGameContext : public IGameServer
 	static void ConchainSpecialMotdupdate(IConsole::IResult *pResult, void *pUserData, IConsole::FCommandCallback pfnCallback, void *pCallbackUserData);
 	
 	static void ConMute(IConsole::IResult *pResult, void *pUserData);
-	static void ConUnmute(IConsole::IResult *pResult, void *pUserData);
+	static void ConUnmuteID(IConsole::IResult *pResult, void *pUserData);
+	static void ConUnmuteIP(IConsole::IResult *pResult, void *pUserData);
 	static void ConMutes(IConsole::IResult *pResult, void *pUserData);
 
 	CGameContext(int Resetting);

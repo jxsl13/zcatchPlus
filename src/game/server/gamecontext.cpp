@@ -681,15 +681,6 @@ void CGameContext::OnMessage(int MsgID, CUnpacker *pUnpacker, int ClientID)
 			return;
 
 		pPlayer->m_LastChat = Server()->Tick();
-
-		// check for invalid chars
-		unsigned char *pMessage = (unsigned char *)pMsg->m_pMessage;
-		while (*pMessage)
-		{
-			if(*pMessage < 32)
-				*pMessage = ' ';
-			pMessage++;
-		}
 		
 		//Check if the player is muted
 		char aAddrStr[NETADDR_MAXSTRSIZE] = {0};
@@ -703,11 +694,21 @@ void CGameContext::OnMessage(int MsgID, CUnpacker *pUnpacker, int ClientID)
 			SendChatTarget(ClientID, aBuf);
 			return;
 		}
-		else if(g_Config.m_SvMuteDuration && ((pPlayer->m_ChatTicks += g_Config.m_SvChatValue) > g_Config.m_SvChatThreshold)) //is he spamming?
+        //mute the player if he's spamming
+		else if(g_Config.m_SvMuteDuration && ((pPlayer->m_ChatTicks += g_Config.m_SvChatValue) > g_Config.m_SvChatThreshold))
 		{
 			AddMute(ClientID, g_Config.m_SvMuteDuration);
 			pPlayer->m_ChatTicks = 0;
 			return;
+		}
+
+		// check for invalid chars
+		unsigned char *pMessage = (unsigned char *)pMsg->m_pMessage;
+		while (*pMessage)
+		{
+			if(*pMessage < 32)
+				*pMessage = ' ';
+			pMessage++;
 		}
 
 		/* begin zCatch*/
@@ -1175,9 +1176,9 @@ void CGameContext::AddMute(int ClientID, int Secs)
 	
 	char aBuf[128];
 	if(Secs > 0)
-		str_format(aBuf, sizeof(aBuf), "\"%s\" has been muted for %d seconds.", Server()->ClientName(ClientID), Secs); 
+		str_format(aBuf, sizeof(aBuf), "%s has been muted for %d seconds.", Server()->ClientName(ClientID), Secs);
 	else
-		str_format(aBuf, sizeof(aBuf), "\"%s\" has been unmuted.", Server()->ClientName(ClientID));
+		str_format(aBuf, sizeof(aBuf), "%s has been unmuted.", Server()->ClientName(ClientID));
 	SendChatTarget(-1, aBuf);
 }
 
@@ -1580,7 +1581,16 @@ void CGameContext::ConMutes(IConsole::IResult *pResult, void *pUserData)
 	pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Server", aBuf);	
 }
 
-void CGameContext::ConUnmute(IConsole::IResult *pResult, void *pUserData)
+void CGameContext::ConUnmuteID(IConsole::IResult *pResult, void *pUserData)
+{
+	CGameContext *pSelf = (CGameContext *)pUserData;
+	int CID = pResult->GetInteger(0);
+	if(CID < 0 || CID >= MAX_CLIENTS || !pSelf->m_apPlayers[CID])
+		return;
+	pSelf->AddMute(CID, 0);
+}
+
+void CGameContext::ConUnmuteIP(IConsole::IResult *pResult, void *pUserData)
 {
 	CGameContext *pSelf = (CGameContext *)pUserData;
 	int MuteID = pResult->GetInteger(0);
@@ -1622,7 +1632,8 @@ void CGameContext::OnConsoleInit()
 	Console()->Register("vote", "r", CFGFLAG_SERVER, ConVote, this, "Force a vote to yes/no");
 
 	Console()->Register("mute", "ii", CFGFLAG_SERVER, ConMute, this, "Mutes a player for x sec");
-	Console()->Register("unmute", "i", CFGFLAG_SERVER, ConUnmute, this, "Removes a mute by its index");
+	Console()->Register("unmuteid", "i", CFGFLAG_SERVER, ConUnmuteID, this, "Unmutes a player by its client id");
+	Console()->Register("unmuteip", "i", CFGFLAG_SERVER, ConUnmuteIP, this, "Removes a mute by its index");
 	Console()->Register("mutes", "", CFGFLAG_SERVER, ConMutes, this, "Show all mutes");
 		
 	Console()->Chain("sv_motd", ConchainSpecialMotdupdate, this);
