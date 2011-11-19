@@ -1134,7 +1134,7 @@ void CGameContext::OnMessage(int MsgID, CUnpacker *pUnpacker, int ClientID)
 		if((pPlayer->GetTeam() == TEAM_SPECTATORS) || (pPlayer->m_LastKillTry && pPlayer->m_LastKillTry+Server()->TickSpeed()*2 > Server()->Tick()))
 			return;
 
-		if(pPlayer->m_FreezeTicks)
+		if(pPlayer->GetCharacter() && pPlayer->GetCharacter()->m_FreezeTicks)
 		{
 			SendChatTarget(ClientID, "You can't kill yourself while you're frozen");
 			pPlayer->m_LastKillTry = Server()->Tick();

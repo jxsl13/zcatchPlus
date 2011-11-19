@@ -32,7 +32,6 @@ CPlayer::CPlayer(CGameContext *pGameServer, int ClientID, int Team)
 	m_TicksSpec = 0;
 	m_TicksIngame = 0;
 	m_ChatTicks = 0;
-	m_FreezeTicks = 0;
 }
 
 CPlayer::~CPlayer()
@@ -60,13 +59,6 @@ void CPlayer::Tick()
 	
 	if(m_ChatTicks > 0)
 		m_ChatTicks--;
-	
-	if(m_FreezeTicks)
-	{
-		if(Server()->Tick() % Server()->TickSpeed() == 0)
-			GameServer()->CreateDamageInd(m_ViewPos, 0, m_FreezeTicks/Server()->TickSpeed()+1);
-		m_FreezeTicks--;
-	}
 
 	if((g_Config.m_SvAnticamper == 2 && g_Config.m_SvMode == 1) || (g_Config.m_SvAnticamper == 1))
 		Anticamper();
@@ -201,7 +193,7 @@ void CPlayer::OnPredictedInput(CNetObj_PlayerInput *NewInput)
 	if((m_PlayerFlags&PLAYERFLAG_CHATTING) && (NewInput->m_PlayerFlags&PLAYERFLAG_CHATTING))
 		return;
 
-	if(m_FreezeTicks)
+	if(m_pCharacter && m_pCharacter->m_FreezeTicks)
 		return;
 
 	if(m_pCharacter)
@@ -229,7 +221,7 @@ void CPlayer::OnDirectInput(CNetObj_PlayerInput *NewInput)
 	if(m_pCharacter)
 		m_pCharacter->OnDirectInput(NewInput);
 
-	if(m_FreezeTicks)
+	if(m_pCharacter && m_pCharacter->m_FreezeTicks)
 		return;
 
 	if(!m_pCharacter && m_Team != TEAM_SPECTATORS && (NewInput->m_Fire&1))
@@ -322,7 +314,7 @@ void CPlayer::TryRespawn()
 
 int CPlayer::Anticamper()
 {
-	if(GameServer()->m_World.m_Paused || m_FreezeTicks || m_Team == TEAM_SPECTATORS || !m_pCharacter)
+	if(GameServer()->m_World.m_Paused || !m_pCharacter || m_Team == TEAM_SPECTATORS || m_pCharacter->m_FreezeTicks)
 	{
 		m_CampTick = -1;
 		m_SentCampMsg = false;

@@ -64,6 +64,7 @@ public:
 	class CPlayer *GetPlayer() { return m_pPlayer; }
 
 	void Freeze(int Tick);
+	int m_FreezeTicks;
 
 private:
 	// player controlling this character

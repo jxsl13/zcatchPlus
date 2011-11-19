@@ -45,6 +45,7 @@ CCharacter::CCharacter(CGameWorld *pWorld)
 	m_ProximityRadius = ms_PhysSize;
 	m_Health = 0;
 	m_Armor = 0;
+	m_FreezeTicks = 0;
 }
 
 void CCharacter::Reset()
@@ -526,6 +527,9 @@ void CCharacter::SetEmote(int Emote, int Tick)
 
 void CCharacter::OnPredictedInput(CNetObj_PlayerInput *pNewInput)
 {
+	if(m_FreezeTicks)
+		return;
+
 	// check for changes
 	if(mem_comp(&m_Input, pNewInput, sizeof(CNetObj_PlayerInput)) != 0)
 		m_LastAction = Server()->Tick();
@@ -541,11 +545,8 @@ void CCharacter::OnPredictedInput(CNetObj_PlayerInput *pNewInput)
 
 void CCharacter::OnDirectInput(CNetObj_PlayerInput *pNewInput)
 {
-	if(m_pPlayer->m_FreezeTicks)
-	{
-		ResetInput();
+	if(m_FreezeTicks)
 		return;
-	}
 
 	mem_copy(&m_LatestPrevInput, &m_LatestInput, sizeof(m_LatestInput));
 	mem_copy(&m_LatestInput, pNewInput, sizeof(m_LatestInput));
@@ -585,9 +586,19 @@ void CCharacter::Tick()
 	m_Core.m_Input = m_Input;
 	m_Core.Tick(true);
 
-	//Set weapon back to the last one
-	if(m_pPlayer->m_FreezeTicks == 1)
-		SetWeapon(m_LastWeapon);
+	if(m_FreezeTicks)
+	{
+		if(Server()->Tick() % Server()->TickSpeed() == 0)
+		{
+			GameServer()->CreateDamageInd(m_Pos, 0, m_FreezeTicks/Server()->TickSpeed()+1);
+			m_Armor = m_FreezeTicks/Server()->TickSpeed();
+			GameServer()->CreateSound(m_Pos, SOUND_WEAPON_NOAMMO);
+		}
+		//Set weapon back to the last one
+		if(m_FreezeTicks == 1)
+			SetWeapon(m_LastWeapon);
+		m_FreezeTicks--;
+	}
 
 
 	// handle death-tiles and leaving gamelayer
@@ -733,7 +744,7 @@ void CCharacter::Die(int Killer, int Weapon)
 	// this is for auto respawn after 3 secs
 	m_pPlayer->m_DieTick = Server()->Tick();
 	// unfreeze the player
-	m_pPlayer->m_FreezeTicks = 0;
+	m_FreezeTicks = 0;
 
 	m_Alive = false;
 	GameServer()->m_World.RemoveEntity(this);
@@ -784,6 +795,9 @@ bool CCharacter::TakeDamage(vec2 Force, int Dmg, int From, int Weapon)
 		{
 			m_Health = 0;
 			m_Armor = 0;
+			char aBuf[8];
+			str_format(aBuf, sizeof(aBuf), "%d", Dmg);
+			GameServer()->SendChatTarget(-1, aBuf);
 		}
 		/* end zCatch*/
 
@@ -915,8 +929,9 @@ void CCharacter::Snap(int SnappingClient)
 
 void CCharacter::Freeze(int Ticks)
 {
-	m_pPlayer->m_FreezeTicks = Ticks;
+	m_FreezeTicks = Ticks;
 	m_LastWeapon = m_ActiveWeapon;
 	m_ActiveWeapon = WEAPON_NINJA;
+	ResetInput();
 	GameServer()->CreateSound(m_Pos, SOUND_PLAYER_PAIN_LONG);
 }
