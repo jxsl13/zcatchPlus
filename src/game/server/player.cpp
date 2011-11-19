@@ -291,7 +291,10 @@ void CPlayer::SetTeam(int Team)
 			if(GameServer()->m_apPlayers[i] && GameServer()->m_apPlayers[i]->m_SpectatorID == m_ClientID)
 				GameServer()->m_apPlayers[i]->m_SpectatorID = SPEC_FREEVIEW;
 		}
+		m_SpecExplicit = 1;
 	}
+	else
+		m_SpecExplicit = 0;
 }
 
 void CPlayer::SetTeamDirect(int Team)
