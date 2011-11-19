@@ -151,6 +151,7 @@ void CGameController_zCatch::StartRound()
 			GameServer()->m_apPlayers[i]->m_Deaths = 0;
 			GameServer()->m_apPlayers[i]->m_TicksSpec = 0;
 			GameServer()->m_apPlayers[i]->m_TicksIngame = 0;
+			GameServer()->m_apPlayers[i]->m_FreezeTicks = 0;
 		}
 	}
 	char aBufMsg[256];
