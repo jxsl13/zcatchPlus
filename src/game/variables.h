@@ -106,4 +106,5 @@ MACRO_CONFIG_INT(SvAnticamperTime, sv_anticamper_time, 10, 5, 120, CFGFLAG_SERVE
 MACRO_CONFIG_INT(SvAnticamperRange, sv_anticamper_range, 200, 0, 1000, CFGFLAG_SERVER, "Distance how far away the player must move to escape anticamper")
 
 MACRO_CONFIG_INT(SvKickForceReason, sv_kick_force_reason, 1, 0, 1, CFGFLAG_SERVER, "Allow only kickvotes with a reason")
+MACRO_CONFIG_INT(SvGrenadeMinDamage, sv_grenade_min_damage, 4, 1, 6, CFGFLAG_SERVER, "How much damage the grenade must do to kill the player (depends how far away it explodes)")
 #endif

@@ -771,6 +771,9 @@ bool CCharacter::TakeDamage(vec2 Force, int Dmg, int From, int Weapon)
 		else
 			Dmg = max(1, Dmg/2);
 	}
+
+	if(g_Config.m_SvMode == 4 && Weapon == WEAPON_GRENADE && Dmg < g_Config.m_SvGrenadeMinDamage)
+		Dmg = 0;
 	/* end zCatch */
 	
 	m_DamageTaken++;
@@ -795,9 +798,6 @@ bool CCharacter::TakeDamage(vec2 Force, int Dmg, int From, int Weapon)
 		{
 			m_Health = 0;
 			m_Armor = 0;
-			char aBuf[8];
-			str_format(aBuf, sizeof(aBuf), "%d", Dmg);
-			GameServer()->SendChatTarget(-1, aBuf);
 		}
 		/* end zCatch*/
 
