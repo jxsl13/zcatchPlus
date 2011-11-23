@@ -92,7 +92,7 @@ int CGameController_zCatch::OnCharacterDeath(class CCharacter *pVictim, class CP
 	{
 		//Punish selfkill/death
 		if(WeaponID == WEAPON_SELF || WeaponID == WEAPON_WORLD)
-			pVictim->GetPlayer()->m_Score -= 15;
+			pVictim->GetPlayer()->m_Score -= g_Config.m_SvKillPenalty;
 	}
 
 	for(int i=0; i < MAX_CLIENTS; i++)
