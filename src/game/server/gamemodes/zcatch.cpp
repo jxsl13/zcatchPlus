@@ -73,7 +73,6 @@ int CGameController_zCatch::OnCharacterDeath(class CCharacter *pVictim, class CP
 		pVictim->GetPlayer()->m_Deaths++; 
 		
 		pKiller->m_Score++;
-		pVictim->GetPlayer()->m_Score--;
 		
 		/* Check if the killer is already killed and in spectator (victim may died through wallshot) */
 		if(pKiller->GetTeam() != TEAM_SPECTATORS)
