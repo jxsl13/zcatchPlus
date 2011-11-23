@@ -811,6 +811,11 @@ void CGameContext::OnMessage(int MsgID, CUnpacker *pUnpacker, int ClientID)
 				return;
 			}
 		}
+		else if(g_Config.m_SvVoteForceReason && !pMsg->m_Reason[0])
+		{
+			SendChatTarget(ClientID, "You must give a reason for your vote");
+			return;
+		}
 		else if(str_comp_nocase(pMsg->m_Type, "kick") == 0)
 		{
 			if(!g_Config.m_SvVoteKick)
@@ -832,12 +837,6 @@ void CGameContext::OnMessage(int MsgID, CUnpacker *pUnpacker, int ClientID)
 					SendChatTarget(ClientID, aChatmsg);
 					return;
 				}
-			}
-
-			if(g_Config.m_SvKickForceReason && !pMsg->m_Reason[0])
-			{
-				SendChatTarget(ClientID, "You must give a reason for your vote");
-				return;
 			}
 
 			int KickID = str_toint(pMsg->m_Value);
