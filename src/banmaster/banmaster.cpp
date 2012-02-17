@@ -1,226 +1,270 @@
 /* (c) Magnus Auvinen. See licence.txt in the root of the distribution for more information. */
 /* If you are missing that file, acquire a complete release at teeworlds.com.                */
 #include <base/system.h>
-#include <engine/shared/network.h>
+#include <cstdlib> /* atexit() */
+
 #include <engine/console.h>
 #include <engine/storage.h>
+#include <engine/config.h>
+
+#include <engine/shared/config.h>
+#include <engine/shared/netban.h>
+#include <engine/shared/network.h>
+#include <engine/shared/econ.h>
+#include <engine/shared/packer.h>
 
 #include "banmaster.h"
 
 enum 
 {
-	MAX_BANS=1024,
 	BAN_REREAD_TIME=300,
-	CFGFLAG_BANMASTER=32
+	MAX_BAN_ENTRIES = 6,
+	MAX_REASON_LENGTH = 128,
 };
 
 static const char BANMASTER_BANFILE[] = "bans.cfg";
+static const char BANMASTER_BANSSAVEFILE[] = "saved_bans.cfg";
 
-struct CBan
+class CBanmasterBan : public CNetBan
 {
-	NETADDR m_Address;
-	char m_aReason[256];
-	int64 m_Expire;
+public:
+	//returns true if address is banned
+
+	bool GetBanInfo(const NETADDR *pAddr, char *pReason, int BufferSize, int *pExpires)
+	{
+		CNetHash aHash[17];
+		int Length = CNetHash::MakeHashArray(pAddr, aHash);
+
+		// check ban adresses
+		CBanAddr *pBan = m_BanAddrPool.Find(pAddr, &aHash[Length]);
+		if(pBan)
+		{
+			str_format(pReason, BufferSize, "%s", pBan->m_Info.m_aReason);
+			*pExpires = pBan->m_Info.m_Expires;
+			return true;
+		}
+		// check ban ranges
+		for(int i = Length-1; i >= 0; --i)
+		{
+			for(CBanRange *pBan = m_BanRangePool.First(&aHash[i]); pBan; pBan = pBan->m_pHashNext)
+			{
+				if(NetMatch(&pBan->m_Data, pAddr, i, Length))
+				{
+					str_format(pReason, BufferSize, "%s", pBan->m_Info.m_aReason);
+					*pExpires = pBan->m_Info.m_Expires;
+					return true;
+				}
+			}
+		}
+
+		return false;
+	}
 };
 
-static CBan m_aBans[MAX_BANS];
-static int m_NumBans = 0;
-static CNetClient m_Net;
-static IConsole *m_pConsole;
-static char m_aBindAddr[64] = "";
+struct CBanInfo {
+	char m_aName[16];
+	char m_aReason[MAX_REASON_LENGTH];
+	NETADDR m_Addr;
+	int m_RecvTime;
+};
 
-CBan* CheckBan(NETADDR *pCheck)
+CEcon m_Econ;
+CNetClient m_Net;
+CBanmasterBan m_NetBan;
+CBanInfo m_RecvBans[MAX_BAN_ENTRIES];
+
+IConsole *m_pConsole;
+IStorage *m_pStorage;
+IKernel *m_pKernel;
+IConfig *m_pConfig;
+
+void CleanUp()
 {
-	for(int i = 0; i < m_NumBans; i++)
-		if(net_addr_comp(&m_aBans[i].m_Address, pCheck) == 0)
-			return &m_aBans[i];
+	// Better: RAII?
+	m_Econ.Shutdown();
 
-	return 0;
+	delete m_pConsole;
+	delete m_pConfig;
+	delete m_pKernel;
+	delete m_pStorage;
 }
 
 int SendResponse(NETADDR *pAddr, NETADDR *pCheck)
 {
 	static char aIpBan[sizeof(BANMASTER_IPBAN) + NETADDR_MAXSTRSIZE] = { 0 };
 	static char *pIpBanContent = aIpBan + sizeof(BANMASTER_IPBAN);
+
 	if (!aIpBan[0])
 		mem_copy(aIpBan, BANMASTER_IPBAN, sizeof(BANMASTER_IPBAN));
-	
+
 	static CNetChunk p;
-	
+
 	p.m_ClientID = -1;
 	p.m_Address = *pAddr;
 	p.m_Flags = NETSENDFLAG_CONNLESS;
 
-	CBan* pBan = CheckBan(pCheck);
-	if(pBan)
+	int Expires;
+	char aReason[128];
+
+	if(m_NetBan.GetBanInfo(pCheck, aReason, sizeof(aReason), &Expires))
 	{
-		net_addr_str(pCheck, pIpBanContent, NETADDR_MAXSTRSIZE, 0);
+		net_addr_str(pCheck, pIpBanContent, NETADDR_MAXSTRSIZE, false);
 		char *pIpBanReason = pIpBanContent + (str_length(pIpBanContent) + 1);
-		str_copy(pIpBanReason, pBan->m_aReason, 256);
+		str_copy(pIpBanReason, aReason, 256);
 		
 		p.m_pData = aIpBan;
 		p.m_DataSize = sizeof(BANMASTER_IPBAN) + str_length(pIpBanContent) + 1 + str_length(pIpBanReason) + 1;
 		m_Net.Send(&p);
 		return 1;
 	}
-	
+
 	return 0;
-	/*else
-	{
-		p.m_DataSize = sizeof(BANMASTER_IPOK);
-		p.m_pData = BANMASTER_IPOK;
-		m_Net.Send(&p);
-		return 0;
-	}*/
 }
 
-void AddBan(NETADDR *pAddr, const char *pReason)
+void AddRecvBan(NETADDR *pFromAddr, unsigned char *pData, int Size)
 {
-	pAddr->port = 0;
+	CUnpacker Up;
+	char aIP[NETADDR_MAXSTRSIZE];
+	char aName[16];
+	char aReason[MAX_REASON_LENGTH];
 
-	CBan *pBan = CheckBan(pAddr);
-	char aAddressStr[NETADDR_MAXSTRSIZE];
-	net_addr_str(pAddr, aAddressStr, sizeof(aAddressStr), 0);
+	Up.Reset(pData + sizeof(BANMASTER_IPREPORT), Size - sizeof(BANMASTER_IPREPORT));
 
-	if(pBan)
+	str_copy(aName, Up.GetString(CUnpacker::SANITIZE_CC|CUnpacker::SKIP_START_WHITESPACES), sizeof(aName));
+	str_copy(aIP, Up.GetString(CUnpacker::SANITIZE_CC|CUnpacker::SKIP_START_WHITESPACES), sizeof(aIP));
+	str_copy(aReason, Up.GetString(CUnpacker::SANITIZE_CC|CUnpacker::SKIP_START_WHITESPACES), sizeof(aReason));
+
+	NETADDR ReportAddr;
+	if(net_addr_from_str(&ReportAddr, aIP) == 0 && aName[0] && aReason[0])
 	{
-		char aAddressStr[NETADDR_MAXSTRSIZE];
-		net_addr_str(pAddr, aAddressStr, sizeof(aAddressStr), 0);
-		dbg_msg("banmaster", "updated ban, ip=%s oldreason='%s' reason='%s'", aAddressStr, pBan->m_aReason, pReason);
-	
-		str_copy(pBan->m_aReason, pReason, sizeof(m_aBans[m_NumBans].m_aReason));
-		pBan->m_Expire = -1;
+		for(int i = 0; i < MAX_BAN_ENTRIES-1; i++)
+			mem_copy(&m_RecvBans[i+1], &m_RecvBans[i], sizeof(m_RecvBans[i]));
+
+		m_RecvBans[0].m_Addr = ReportAddr;
+		str_copy(m_RecvBans[0].m_aName, aName, sizeof(m_RecvBans[0].m_aName));
+		str_copy(m_RecvBans[0].m_aReason, aReason, sizeof(m_RecvBans[0].m_aReason));
+		m_RecvBans[0].m_RecvTime = time_timestamp();
+
+		char aAddr[NETADDR_MAXSTRSIZE];
+		char aBuf[256];
+		net_addr_str(pFromAddr, aAddr, sizeof(aAddr), false);
+		str_format(aBuf, sizeof(aBuf), "Received ban from '%s', Name: %s, Reason: %s", aAddr, aName, aReason);
+		m_pConsole->Print(IConsole::OUTPUT_LEVEL_STANDARD, "banmaster", aBuf);
 	}
 	else
-	{	
-		if(m_NumBans == MAX_BANS)
-		{
-			dbg_msg("banmaster", "error: banmaster is full");
-			return;
-		}
-
-		m_aBans[m_NumBans].m_Address = *pAddr;
-		str_copy(m_aBans[m_NumBans].m_aReason, pReason, sizeof(m_aBans[m_NumBans].m_aReason));
-		m_aBans[m_NumBans].m_Expire = -1;
-
-		dbg_msg("banmaster", "added ban, ip=%s reason='%s'", aAddressStr, m_aBans[m_NumBans].m_aReason);
-	
-		m_NumBans++;
-	}
+		m_pConsole->Print(IConsole::OUTPUT_LEVEL_ADDINFO, "banmaster", "dropped weird ban message");
 }
 
-void ClearBans()
+void ReloadBans()
 {
-	m_NumBans = 0;
+	char aBuf[64];
+	str_format(aBuf, sizeof(aBuf), "bans_save %s", BANMASTER_BANSSAVEFILE);
+	m_pConsole->ExecuteLine(aBuf);
+	m_pConsole->ExecuteFile(BANMASTER_BANSSAVEFILE);
 }
 
-void PurgeBans()
+void ConRecvBans(IConsole::IResult *pResult, void *pUser)
 {
-	int64 Now = time_get();
-	int i = 0;
-	while(i < m_NumBans)
+	int Count = 0;
+	char aBuf[256];
+	for(int i = 0; i < MAX_BAN_ENTRIES; i++)
 	{
-		if(m_aBans[i].m_Expire != -1 && m_aBans[i].m_Expire < Now)
-		{
-			// remove ban
-			char aBuf[NETADDR_MAXSTRSIZE];
-			net_addr_str(&m_aBans[i].m_Address, aBuf, sizeof(aBuf), 0);
-			dbg_msg("banmaster", "ban expired, ip=%s reason='%s'", aBuf, m_aBans[i].m_aReason);
-			m_aBans[i] = m_aBans[m_NumBans - 1];
-			m_NumBans--;
-		}
-		else
-			i++;
+		if(!m_RecvBans[i].m_aName[0])
+			continue;
+
+		char aIP[NETADDR_MAXSTRSIZE];
+		net_addr_str(&m_RecvBans[i].m_Addr, aIP, sizeof(aIP), false);
+		str_format(aBuf, sizeof(aBuf), "#%d - Name: %s | Reason: %s | IP: %s | Received %d sec. ago", i, m_RecvBans[i].m_aName, m_RecvBans[i].m_aReason, aIP, time_timestamp() - m_RecvBans[i].m_RecvTime);
+		m_pConsole->Print(IConsole::OUTPUT_LEVEL_STANDARD, "banmaster", aBuf);
+		Count++;
 	}
+	str_format(aBuf, sizeof(aBuf), "%d Ban(s)", Count);
+	m_pConsole->Print(IConsole::OUTPUT_LEVEL_STANDARD, "banmaster", aBuf);
 }
 
-void ConBan(IConsole::IResult *pResult, void *pUser)
+void ConAddBan(IConsole::IResult *pResult, void *pUser)
 {
-	NETADDR Addr;
-	const char *pStr = pResult->GetString(0);
-	const char *pReason = "";
-	
-	if(pResult->NumArguments() > 1)
-		pReason = pResult->GetString(1);
-	
-	if(!net_addr_from_str(&Addr, pStr))
-		AddBan(&Addr, pReason);
+	int Index = pResult->GetInteger(0);
+	if(Index >= 0 && Index < MAX_BAN_ENTRIES && m_RecvBans[Index].m_aName[0])
+	{
+		m_NetBan.BanAddr(&m_RecvBans[Index].m_Addr, pResult->GetInteger(1), pResult->GetString(2));
+	}
 	else
-		dbg_msg("banmaster", "invalid network address to ban, str='%s'", pStr);
-}
-
-void ConUnbanAll(IConsole::IResult *pResult, void *pUser)
-{
-	ClearBans();
-}
-
-void ConSetBindAddr(IConsole::IResult *pResult, void *pUser)
-{
-	if(m_aBindAddr[0])
-		return;
-	str_copy(m_aBindAddr, pResult->GetString(0), sizeof(m_aBindAddr));
-	dbg_msg("banmaster/network", "bound to %s", m_aBindAddr);
-}
-
-void StandardOutput(const char *pLine, void *pUser)
-{
+		m_pConsole->Print(IConsole::OUTPUT_LEVEL_STANDARD, "banmaster", "Invalid index");
 }
 
 int main(int argc, const char **argv) // ignore_convention
 {
+	atexit(CleanUp);
 	int64 LastUpdate = time_get();
 
 	dbg_logger_stdout();
 	net_init();
 
-	IKernel *pKernel = IKernel::Create();
-	IStorage *pStorage = CreateStorage("Teeworlds", IStorage::STORAGETYPE_BASIC, argc, argv); // ignore_convention
+	m_pKernel = IKernel::Create();
+	m_pStorage = CreateStorage("Teeworlds", IStorage::STORAGETYPE_BASIC, argc, argv); // ignore_convention
+	m_pConfig = CreateConfig();
 
-	m_pConsole = CreateConsole(CFGFLAG_BANMASTER);
-	m_pConsole->RegisterPrintCallback(2, StandardOutput, 0);
-	m_pConsole->Register("ban", "s?r", CFGFLAG_BANMASTER, ConBan, 0, "Bans the specified ip");
-	m_pConsole->Register("unban_all", "", CFGFLAG_BANMASTER, ConUnbanAll, 0, "Unbans all ips");
-	m_pConsole->Register("bind", "s", CFGFLAG_BANMASTER, ConSetBindAddr, 0, "Binds to the specified address");
+	m_pConsole = CreateConsole(CFGFLAG_BANMASTER|CFGFLAG_ECON);
 
 	{
 		bool RegisterFail = false;
 
-		RegisterFail = RegisterFail || !pKernel->RegisterInterface(m_pConsole);
-		RegisterFail = RegisterFail || !pKernel->RegisterInterface(pStorage);
+		RegisterFail = RegisterFail || !m_pKernel->RegisterInterface(m_pConsole);
+		RegisterFail = RegisterFail || !m_pKernel->RegisterInterface(m_pStorage);
+		RegisterFail = RegisterFail || !m_pKernel->RegisterInterface(m_pConfig);
 		
 		if(RegisterFail)
 			return -1;
 	}
 
+	//Reset strings
+	m_pConfig->Init();
+
+	// Register Commands
+	m_pConsole->Register("recvbans", "", CFGFLAG_BANMASTER, ConRecvBans, 0, "Show the last received bans");
+	m_pConsole->Register("addban", "iis", CFGFLAG_BANMASTER, ConAddBan, 0, "Ban IP by index");
+
+
+	m_NetBan.Init(m_pConsole, m_pStorage);
 	m_pConsole->ExecuteFile(BANMASTER_BANFILE);
-	
+	m_Econ.Init(m_pConsole, &m_NetBan);
+
+	m_pConsole->ExecuteFile(BANMASTER_BANSSAVEFILE);
+
+	m_pConsole->StoreCommands(false);
+
+	for(int i = 0; i < MAX_BAN_ENTRIES; i++)
+		mem_zero(&m_RecvBans[i], sizeof(m_RecvBans[i]));
+
 	NETADDR BindAddr;
-	if(m_aBindAddr[0] && net_host_lookup(m_aBindAddr, &BindAddr, NETTYPE_IPV4) == 0)
-	{
-		if(BindAddr.port == 0)
-			BindAddr.port = BANMASTER_PORT;
-	}
+	if(g_Config.m_Bindaddr[0] && net_host_lookup(g_Config.m_Bindaddr, &BindAddr, NETTYPE_ALL) == 0)
+		BindAddr.port = BANMASTER_PORT;
 	else
 	{
 		mem_zero(&BindAddr, sizeof(BindAddr));
+		BindAddr.type = NETTYPE_ALL;
 		BindAddr.port = BANMASTER_PORT;
 	}
-		
-	m_Net.Open(BindAddr, 0);
-	// TODO: check socket for errors
+
+	if(!m_Net.Open(BindAddr, 0))
+	{
+		dbg_msg("banmaster", "couldn't start network");
+		return -1;
+	}
 
 	dbg_msg("banmaster", "started");
 	
 	while(1)
 	{
 		m_Net.Update();
-		
-		// process m_aPackets
+
+		// process m_Packets
 		CNetChunk Packet;
 		while(m_Net.Recv(&Packet))
 		{
 			char aAddressStr[NETADDR_MAXSTRSIZE];
-			net_addr_str(&Packet.m_Address, aAddressStr, sizeof(aAddressStr), 0);
+			net_addr_str(&Packet.m_Address, aAddressStr, sizeof(aAddressStr), false);
 
 			if(Packet.m_DataSize >= (int)sizeof(BANMASTER_IPCHECK) && mem_comp(Packet.m_pData, BANMASTER_IPCHECK, sizeof(BANMASTER_IPCHECK)) == 0)
 			{
@@ -228,7 +272,9 @@ int main(int argc, const char **argv) // ignore_convention
 				NETADDR CheckAddr;
 				if(net_addr_from_str(&CheckAddr, pAddr))
 				{
-					dbg_msg("banmaster", "dropped weird message, ip=%s checkaddr='%s'", aAddressStr, pAddr);
+					char aBuf[128];
+					str_format(aBuf, sizeof(aBuf), "dropped weird message, ip='%s' checkaddr='%s'", aAddressStr, pAddr);
+					m_pConsole->Print(IConsole::OUTPUT_LEVEL_ADDINFO, "banmaster", aBuf);
 				}
 				else
 				{
@@ -236,26 +282,38 @@ int main(int argc, const char **argv) // ignore_convention
 
 					int Banned = SendResponse(&Packet.m_Address, &CheckAddr);
 
-					char aBuf[NETADDR_MAXSTRSIZE];
-					net_addr_str(&CheckAddr, aBuf, sizeof(aBuf), 0);
-					dbg_msg("banmaster", "responded to checkmsg, ip=%s checkaddr=%s result=%s", aAddressStr, aBuf, (Banned) ? "ban" : "ok");
+					char aIP[NETADDR_MAXSTRSIZE];
+					char aBuf[256];
+					net_addr_str(&CheckAddr, aIP, sizeof(aIP), false);
+					str_format(aBuf, sizeof(aBuf), "responded to checkmsg, ip='%s' checkaddr='%s' result=%s", aAddressStr, aIP, (Banned) ? "ban" : "ok");
+					m_pConsole->Print(IConsole::OUTPUT_LEVEL_ADDINFO, "banmaster", aBuf);
 				}
 			}
+			else if(Packet.m_DataSize >= (int)sizeof(BANMASTER_IPREPORT) && mem_comp(Packet.m_pData, BANMASTER_IPREPORT, sizeof(BANMASTER_IPREPORT)) == 0)
+			{
+				//info of a banned client
+				AddRecvBan(&Packet.m_Address, (unsigned char*)Packet.m_pData, Packet.m_DataSize);
+			}
 			else
-				dbg_msg("banmaster", "dropped weird packet, ip=%s", aAddressStr, (char *)Packet.m_pData);
+			{
+				char aBuf[128];
+				str_format(aBuf, sizeof(aBuf), "dropped weird packet, ip='%s'", aAddressStr, (char *)Packet.m_pData);
+				m_pConsole->Print(IConsole::OUTPUT_LEVEL_ADDINFO, "banmaster", aBuf);
+			}
 		}
-		
+
 		if(time_get() - LastUpdate > time_freq() * BAN_REREAD_TIME)
 		{
-			ClearBans();
+			ReloadBans();
 			LastUpdate = time_get();
-			m_pConsole->ExecuteFile(BANMASTER_BANFILE);
 		}
+
+		m_NetBan.Update();
+		m_Econ.Update();
 		
 		// be nice to the CPU
 		thread_sleep(1);
 	}
-	
+
 	return 0;
 }
-

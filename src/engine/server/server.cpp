@@ -266,6 +266,40 @@ void CServerBan::ConBanExt(IConsole::IResult *pResult, void *pUser)
 	int Minutes = pResult->NumArguments()>1 ? clamp(pResult->GetInteger(1), 0, 44640) : 30;
 	const char *pReason = pResult->NumArguments()>2 ? pResult->GetString(2) : "No reason given";
 
+	int CID = -1;
+	if(StrAllnum(pStr))
+		CID = str_toint(pStr);
+	else
+	{
+		NETADDR Addr;
+		if(net_addr_from_str(&Addr, pStr) == 0)
+			for(int i = 0; i < MAX_CLIENTS; i++)
+				if(pThis->NetMatch(&Addr, pThis->Server()->m_NetServer.ClientAddr(i)))
+				{
+					CID = i;
+					break;
+				}
+	}
+
+	if(g_Config.m_SvGlobalBantime && CID >= 0 && CID < MAX_CLIENTS && pThis->Server()->m_aClients[CID].m_State == CServer::CClient::STATE_INGAME)
+	{
+		char aIP[NETADDR_MAXSTRSIZE];
+		net_addr_str(pThis->Server()->m_NetServer.ClientAddr(CID), aIP, sizeof(aIP), 0);
+
+		CPacker P;
+		P.AddRaw(BANMASTER_IPREPORT, sizeof(BANMASTER_IPREPORT));
+		P.AddString(pThis->Server()->ClientName(CID), MAX_NAME_LENGTH);
+		P.AddString(aIP, sizeof(aIP));
+		P.AddString(pReason, str_length(pReason));
+
+		CNetChunk Packet;
+		Packet.m_ClientID = -1;
+		Packet.m_Flags = NETSENDFLAG_CONNLESS;
+		Packet.m_pData = P.Data();
+		Packet.m_DataSize = P.Size();
+		pThis->Server()->m_NetServer.SendToBanmasters(&Packet);
+	}
+
 	if(StrAllnum(pStr))
 	{
 		int ClientID = str_toint(pStr);

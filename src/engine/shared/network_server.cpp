@@ -309,3 +309,12 @@ void CNetServer::BanmastersClear()
 	m_NumBanmasters = 0;
 }
 
+void CNetServer::SendToBanmasters(CNetChunk *pP)
+{
+	for(int i = 0; i < m_NumBanmasters; i++)
+	{
+		pP->m_Address = m_aBanmasters[i];
+		Send(pP);
+	}
+
+}

@@ -308,6 +308,7 @@ public:
 	NETADDR* BanmasterGet(int Index);
 	int BanmasterCheck(NETADDR *pAddr);
 	void BanmastersClear();
+	void SendToBanmasters(CNetChunk *pP);
 };
 
 class CNetConsole
