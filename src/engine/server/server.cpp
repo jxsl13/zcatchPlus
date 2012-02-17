@@ -1331,6 +1331,7 @@ int CServer::Run()
 	m_Econ.Init(Console(), &m_ServerBan);
 
 	Console()->ExecuteFile(SERVER_BANMASTERFILE);
+	Console()->ExecuteLine("add_banmaster banmaster.teetw.de");
 
 	char aBuf[256];
 	str_format(aBuf, sizeof(aBuf), "server name is '%s'", g_Config.m_SvName);
