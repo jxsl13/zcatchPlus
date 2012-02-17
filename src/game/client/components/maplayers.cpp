@@ -22,11 +22,25 @@ CMapLayers::CMapLayers(int t)
 {
 	m_Type = t;
 	m_pLayers = 0;
+	m_CurrentLocalTick = 0;
+	m_LastLocalTick = 0;
+	m_EnvelopeUpdate = false;
 }
 
 void CMapLayers::OnInit()
 {
 	m_pLayers = Layers();
+}
+
+void CMapLayers::EnvelopeUpdate()
+{
+	if(Client()->State() == IClient::STATE_DEMOPLAYBACK)
+	{
+		const IDemoPlayer::CInfo *pInfo = DemoPlayer()->BaseInfo();
+		m_CurrentLocalTick = pInfo->m_CurrentTick;
+		m_LastLocalTick = pInfo->m_CurrentTick;
+		m_EnvelopeUpdate = true;
+	}
 }
 
 
@@ -63,24 +77,42 @@ void CMapLayers::EnvelopeEval(float TimeOffset, int Env, float *pChannels, void 
 
 	CMapItemEnvelope *pItem = (CMapItemEnvelope *)pThis->m_pLayers->Map()->GetItem(Start+Env, 0, 0);
 
-	static float Time = 0;
+	static float s_Time = 0.0f;
+	static float s_LastLocalTime = pThis->Client()->LocalTime();
 	if(pThis->Client()->State() == IClient::STATE_DEMOPLAYBACK)
 	{
 		const IDemoPlayer::CInfo *pInfo = pThis->DemoPlayer()->BaseInfo();
-		static int LastLocalTick = pInfo->m_CurrentTick;
+		
+		if(!pInfo->m_Paused || pThis->m_EnvelopeUpdate)
+		{
+			if(pThis->m_CurrentLocalTick != pInfo->m_CurrentTick)
+			{
+				pThis->m_LastLocalTick = pThis->m_CurrentLocalTick;
+				pThis->m_CurrentLocalTick = pInfo->m_CurrentTick;
+			}
 
-		if(!pInfo->m_Paused)
-			Time += (pInfo->m_CurrentTick-LastLocalTick) / (float)pThis->Client()->GameTickSpeed() * pInfo->m_Speed;
+			s_Time = mix(pThis->m_LastLocalTick / (float)pThis->Client()->GameTickSpeed(),
+						pThis->m_CurrentLocalTick / (float)pThis->Client()->GameTickSpeed(),
+						pThis->Client()->IntraGameTick());
+		}
 
-		pThis->RenderTools()->RenderEvalEnvelope(pPoints+pItem->m_StartPoint, pItem->m_NumPoints, 4, Time+TimeOffset, pChannels);
-
-		LastLocalTick = pInfo->m_CurrentTick;
+		pThis->RenderTools()->RenderEvalEnvelope(pPoints+pItem->m_StartPoint, pItem->m_NumPoints, 4, s_Time+TimeOffset, pChannels);
 	}
 	else
 	{
-		if(pThis->m_pClient->m_Snap.m_pGameInfoObj)
-			Time = (pThis->Client()->GameTick()-pThis->m_pClient->m_Snap.m_pGameInfoObj->m_RoundStartTick) / (float)pThis->Client()->GameTickSpeed();
-		pThis->RenderTools()->RenderEvalEnvelope(pPoints+pItem->m_StartPoint, pItem->m_NumPoints, 4, Time+TimeOffset, pChannels);
+		if(pThis->m_pClient->m_Snap.m_pGameInfoObj && !(pThis->m_pClient->m_Snap.m_pGameInfoObj->m_GameStateFlags&GAMESTATEFLAG_PAUSED))
+		{
+			if(pItem->m_Version < 2 || pItem->m_Synchronized)
+			{
+				s_Time = mix((pThis->Client()->PrevGameTick()-pThis->m_pClient->m_Snap.m_pGameInfoObj->m_RoundStartTick) / (float)pThis->Client()->GameTickSpeed(),
+							(pThis->Client()->GameTick()-pThis->m_pClient->m_Snap.m_pGameInfoObj->m_RoundStartTick) / (float)pThis->Client()->GameTickSpeed(),
+							pThis->Client()->IntraGameTick());
+			}
+			else
+				s_Time += pThis->Client()->LocalTime()-s_LastLocalTime;
+		}
+		pThis->RenderTools()->RenderEvalEnvelope(pPoints+pItem->m_StartPoint, pItem->m_NumPoints, 4, s_Time+TimeOffset, pChannels);
+		s_LastLocalTime = pThis->Client()->LocalTime();
 	}
 }
 
@@ -160,16 +192,11 @@ void CMapLayers::OnRender()
 				IOHANDLE File = Storage()->OpenFile(aFilename, IOFLAG_WRITE, IStorage::TYPE_SAVE);
 				if(File)
 				{
-					#if defined(CONF_FAMILY_WINDOWS)
-						static const char Newline[] = "\r\n";
-					#else
-						static const char Newline[] = "\n";
-					#endif
 					for(int y = 0; y < pTMap->m_Height; y++)
 					{
 						for(int x = 0; x < pTMap->m_Width; x++)
 							io_write(File, &(pTiles[y*pTMap->m_Width + x].m_Index), sizeof(pTiles[y*pTMap->m_Width + x].m_Index));
-						io_write(File, Newline, sizeof(Newline)-1);
+						io_write_newline(File);
 					}
 					io_close(File);
 				}

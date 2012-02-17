@@ -17,6 +17,7 @@
 
 #include <game/generated/client_data.h>
 
+#include "maplayers.h"
 #include "menus.h"
 
 int CMenus::DoButton_DemoPlayer(const void *pID, const char *pText, int Checked, const CUIRect *pRect)
@@ -85,15 +86,28 @@ void CMenus::RenderDemoPlayer(CUIRect MainView)
 		void *id = &s_SeekBarID;
 		char aBuffer[128];
 
+		// draw seek bar
 		RenderTools()->DrawUIRect(&SeekBar, vec4(0,0,0,0.5f), CUI::CORNER_ALL, 5.0f);
 
+		// draw filled bar
 		float Amount = CurrentTick/(float)TotalTicks;
-
 		CUIRect FilledBar = SeekBar;
 		FilledBar.w = 10.0f + (FilledBar.w-10.0f)*Amount;
-
 		RenderTools()->DrawUIRect(&FilledBar, vec4(1,1,1,0.5f), CUI::CORNER_ALL, 5.0f);
 
+		// draw markers
+		for(int i = 0; i < pInfo->m_NumTimelineMarkers; i++)
+		{
+			float Ratio = (pInfo->m_aTimelineMarkers[i]-pInfo->m_FirstTick) / (float)TotalTicks;
+			Graphics()->TextureSet(-1);
+			Graphics()->QuadsBegin();
+			Graphics()->SetColor(1.0f, 1.0f, 1.0f, 1.0f);
+			IGraphics::CQuadItem QuadItem(SeekBar.x + (SeekBar.w-10.0f)*Ratio, SeekBar.y, UI()->PixelSize(), SeekBar.h);
+			Graphics()->QuadsDrawTL(&QuadItem, 1);
+			Graphics()->QuadsEnd();
+		}
+
+		// draw time
 		str_format(aBuffer, sizeof(aBuffer), "%d:%02d / %d:%02d",
 			CurrentTick/SERVER_TICK_SPEED/60, (CurrentTick/SERVER_TICK_SPEED)%60,
 			TotalTicks/SERVER_TICK_SPEED/60, (TotalTicks/SERVER_TICK_SPEED)%60);
@@ -117,6 +131,8 @@ void CMenus::RenderDemoPlayer(CUIRect MainView)
 					m_pClient->m_SuppressEvents = true;
 					DemoPlayer()->SetPos(Amount);
 					m_pClient->m_SuppressEvents = false;
+					m_pClient->m_pMapLayersBackGround->EnvelopeUpdate();
+					m_pClient->m_pMapLayersForeGround->EnvelopeUpdate();
 				}
 			}
 		}

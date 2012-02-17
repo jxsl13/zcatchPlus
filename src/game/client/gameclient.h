@@ -125,6 +125,7 @@ public:
 
 		const CNetObj_PlayerInfo *m_paPlayerInfos[MAX_CLIENTS];
 		const CNetObj_PlayerInfo *m_paInfoByScore[MAX_CLIENTS];
+		const CNetObj_PlayerInfo *m_paInfoByTeam[MAX_CLIENTS];
 
 		int m_LocalClientID;
 		int m_NumPlayers;
@@ -241,6 +242,8 @@ public:
 	class CVoting *m_pVoting;
 	class CScoreboard *m_pScoreboard;
 	class CItems *m_pItems;
+	class CMapLayers *m_pMapLayersBackGround;
+	class CMapLayers *m_pMapLayersForeGround;
 };
 
 

@@ -3,21 +3,10 @@
 
 #include <base/detect.h>
 #include <base/math.h>
+#include <base/tl/threading.h>
 
 #include "SDL.h"
-
-#ifdef CONF_FAMILY_WINDOWS
-	#define WIN32_LEAN_AND_MEAN
-	#include <windows.h>
-#endif
-
-#ifdef CONF_PLATFORM_MACOSX
-	#include <OpenGL/gl.h>
-	#include <OpenGL/glu.h>
-#else
-	#include <GL/gl.h>
-	#include <GL/glu.h>
-#endif
+#include "SDL_opengl.h"
 
 #include <base/system.h>
 #include <engine/external/pnglite/pnglite.h>
@@ -31,13 +20,6 @@
 #include <math.h> // cosf, sinf
 
 #include "graphics.h"
-
-// compressed textures
-#define GL_COMPRESSED_RGB_ARB 0x84ED
-#define GL_COMPRESSED_RGBA_ARB 0x84EE
-#define GL_COMPRESSED_ALPHA_ARB 0x84E9
-
-#define TEXTURE_MAX_ANISOTROPY_EXT 0x84FE
 
 
 static CVideoMode g_aFakeModes[] = {
@@ -216,6 +198,18 @@ void CGraphics_OpenGL::BlendAdditive()
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE);
 }
 
+void CGraphics_OpenGL::WrapNormal()
+{
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+}
+
+void CGraphics_OpenGL::WrapClamp()
+{
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+}
+
 int CGraphics_OpenGL::MemoryUsage() const
 {
 	return m_TextureMemoryUsage;
@@ -289,6 +283,18 @@ int CGraphics_OpenGL::UnloadTexture(int Index)
 	return 0;
 }
 
+int CGraphics_OpenGL::LoadTextureRawSub(int TextureID, int x, int y, int Width, int Height, int Format, const void *pData)
+{
+	int Oglformat = GL_RGBA;
+	if(Format == CImageInfo::FORMAT_RGB)
+		Oglformat = GL_RGB;
+	else if(Format == CImageInfo::FORMAT_ALPHA)
+		Oglformat = GL_ALPHA;
+
+	glBindTexture(GL_TEXTURE_2D, m_aTextures[TextureID].m_Tex);
+	glTexSubImage2D(GL_TEXTURE_2D, 0, x, y, Width, Height, Oglformat, GL_UNSIGNED_BYTE, pData);
+	return 0;
+}
 
 int CGraphics_OpenGL::LoadTextureRaw(int Width, int Height, int Format, const void *pData, int StoreFormat, int Flags)
 {
@@ -355,9 +361,19 @@ int CGraphics_OpenGL::LoadTextureRaw(int Width, int Height, int Format, const vo
 
 	glGenTextures(1, &m_aTextures[Tex].m_Tex);
 	glBindTexture(GL_TEXTURE_2D, m_aTextures[Tex].m_Tex);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_NEAREST);
-	gluBuild2DMipmaps(GL_TEXTURE_2D, StoreOglformat, Width, Height, Oglformat, GL_UNSIGNED_BYTE, pTexData);
+
+	if(Flags&TEXLOAD_NOMIPMAPS)
+	{
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+		glTexImage2D(GL_TEXTURE_2D, 0, StoreOglformat, Width, Height, 0, Oglformat, GL_UNSIGNED_BYTE, pData);
+	}
+	else
+	{
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_NEAREST);
+		gluBuild2DMipmaps(GL_TEXTURE_2D, StoreOglformat, Width, Height, Oglformat, GL_UNSIGNED_BYTE, pTexData);
+	}
 
 	// calculate memory usage
 	{
@@ -400,6 +416,8 @@ int CGraphics_OpenGL::LoadTexture(const char *pFilename, int StorageType, int St
 
 		ID = LoadTextureRaw(Img.m_Width, Img.m_Height, Img.m_Format, Img.m_pData, StoreFormat, Flags);
 		mem_free(Img.m_pData);
+		if(ID != m_InvalidTexture && g_Config.m_Debug)
+			dbg_msg("graphics/texture", "loaded %s", pFilename);
 		return ID;
 	}
 
@@ -702,7 +720,7 @@ void CGraphics_OpenGL::QuadsText(float x, float y, float Size, float r, float g,
 	QuadsEnd();
 }
 
-bool CGraphics_OpenGL::Init()
+int CGraphics_OpenGL::Init()
 {
 	m_pStorage = Kernel()->RequestInterface<IStorage>();
 	m_pConsole = Kernel()->RequestInterface<IConsole>();
@@ -738,24 +756,19 @@ bool CGraphics_OpenGL::Init()
 
 	m_InvalidTexture = LoadTextureRaw(4,4,CImageInfo::FORMAT_RGBA,aNullTextureData,CImageInfo::FORMAT_RGBA,TEXLOAD_NORESAMPLE);
 
-	return true;
+	return 0;
 }
 
 int CGraphics_SDL::TryInit()
 {
-	const SDL_VideoInfo *pInfo;
-	int Flags = SDL_OPENGL;
-
 	m_ScreenWidth = g_Config.m_GfxScreenWidth;
 	m_ScreenHeight = g_Config.m_GfxScreenHeight;
 
-	pInfo = SDL_GetVideoInfo();
-	SDL_EventState(SDL_MOUSEMOTION, SDL_IGNORE);
+	const SDL_VideoInfo *pInfo = SDL_GetVideoInfo();
+	SDL_EventState(SDL_MOUSEMOTION, SDL_IGNORE); // prevent stuck mouse cursor sdl-bug when loosing fullscreen focus in windows
 
 	// set flags
-	Flags = SDL_OPENGL;
-	Flags |= SDL_GL_DOUBLEBUFFER;
-	Flags |= SDL_HWPALETTE;
+	int Flags = SDL_OPENGL;
 	if(g_Config.m_DbgResizable)
 		Flags |= SDL_RESIZABLE;
 
@@ -841,7 +854,7 @@ CGraphics_SDL::CGraphics_SDL()
 	m_pScreenSurface = 0;
 }
 
-bool CGraphics_SDL::Init()
+int CGraphics_SDL::Init()
 {
 	{
 		int Systems = SDL_INIT_VIDEO;
@@ -855,7 +868,7 @@ bool CGraphics_SDL::Init()
 		if(SDL_Init(Systems) < 0)
 		{
 			dbg_msg("gfx", "unable to init SDL: %s", SDL_GetError());
-			return true;
+			return -1;
 		}
 	}
 
@@ -867,14 +880,14 @@ bool CGraphics_SDL::Init()
 	#endif
 
 	if(InitWindow() != 0)
-		return true;
+		return -1;
 
 	SDL_ShowCursor(0);
 
 	CGraphics_OpenGL::Init();
 
 	MapScreen(0,0,g_Config.m_GfxScreenWidth, g_Config.m_GfxScreenHeight);
-	return false;
+	return 0;
 }
 
 void CGraphics_SDL::Shutdown()
@@ -970,6 +983,21 @@ int CGraphics_SDL::GetVideoModes(CVideoMode *pModes, int MaxModes)
 	}
 
 	return NumModes;
+}
+
+// syncronization
+void CGraphics_SDL::InsertSignal(semaphore *pSemaphore)
+{
+	pSemaphore->signal();
+}
+
+bool CGraphics_SDL::IsIdle()
+{
+	return true;
+}
+
+void CGraphics_SDL::WaitForIdle()
+{
 }
 
 extern IEngineGraphics *CreateEngineGraphics() { return new CGraphics_SDL(); }

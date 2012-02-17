@@ -51,6 +51,7 @@ public:
 	array<CEnvPoint> m_lPoints;
 	char m_aName[32];
 	float m_Bottom, m_Top;
+	bool m_Synchronized;
 
 	CEnvelope(int Chan)
 	{
@@ -58,6 +59,7 @@ public:
 		m_aName[0] = 0;
 		m_Bottom = 0;
 		m_Top = 0;
+		m_Synchronized = true;
 	}
 
 	void Resort()
@@ -274,6 +276,34 @@ public:
 	array<CEditorImage*> m_lImages;
 	array<CEnvelope*> m_lEnvelopes;
 
+	class CMapInfo
+	{
+	public:
+		char m_aAuthorTmp[32];
+		char m_aVersionTmp[16];
+		char m_aCreditsTmp[128];
+		char m_aLicenseTmp[32];
+
+		char m_aAuthor[32];
+		char m_aVersion[16];
+		char m_aCredits[128];
+		char m_aLicense[32];
+
+		void Reset()
+		{
+			m_aAuthorTmp[0] = 0;
+			m_aVersionTmp[0] = 0;
+			m_aCreditsTmp[0] = 0;
+			m_aLicenseTmp[0] = 0;
+
+			m_aAuthor[0] = 0;
+			m_aVersion[0] = 0;
+			m_aCredits[0] = 0;
+			m_aLicense[0] = 0;
+		}
+	};
+	CMapInfo m_MapInfo;
+
 	class CLayerGame *m_pGameLayer;
 	CLayerGroup *m_pGameGroup;
 
@@ -476,6 +506,7 @@ public:
 
 		m_Mode = MODE_LAYERS;
 		m_Dialog = 0;
+		m_EditBoxActive = 0;
 		m_pTooltip = 0;
 
 		m_GridActive = false;
@@ -486,6 +517,7 @@ public:
 		m_ValidSaveFilename = false;
 
 		m_PopupEventActivated = false;
+		m_PopupEventWasActivated = false;
 
 		m_FileDialogStorageType = 0;
 		m_pFileDialogTitle = 0;
@@ -528,6 +560,10 @@ public:
 
 		m_ShowEnvelopeEditor = 0;
 
+		m_ShowEnvelopePreview = 0;
+		m_SelectedQuadEnvelope = -1;
+		m_SelectedEnvelopePoint = -1;
+
 		ms_CheckerTexture = 0;
 		ms_BackgroundTexture = 0;
 		ms_CursorTexture = 0;
@@ -560,6 +596,7 @@ public:
 
 	int m_Mode;
 	int m_Dialog;
+	int m_EditBoxActive;
 	const char *m_pTooltip;
 
 	bool m_GridActive;
@@ -579,6 +616,7 @@ public:
 
 	int m_PopupEventType;
 	int m_PopupEventActivated;
+	int m_PopupEventWasActivated;
 
 	enum
 	{
@@ -644,6 +682,7 @@ public:
 	float m_AnimateSpeed;
 
 	int m_ShowEnvelopeEditor;
+	int m_ShowEnvelopePreview; //Values: 0-Off|1-Selected Envelope|2-All
 	bool m_ShowPicker;
 
 	int m_SelectedLayer;
@@ -651,6 +690,8 @@ public:
 	int m_SelectedQuad;
 	int m_SelectedPoints;
 	int m_SelectedEnvelope;
+	int m_SelectedEnvelopePoint;
+    int m_SelectedQuadEnvelope;
 	int m_SelectedImage;
 
 	static int ms_CheckerTexture;
@@ -697,6 +738,7 @@ public:
 	static int PopupQuad(CEditor *pEditor, CUIRect View);
 	static int PopupPoint(CEditor *pEditor, CUIRect View);
 	static int PopupNewFolder(CEditor *pEditor, CUIRect View);
+	static int PopupMapInfo(CEditor *pEditor, CUIRect View);
 	static int PopupEvent(CEditor *pEditor, CUIRect View);
 	static int PopupSelectImage(CEditor *pEditor, CUIRect View);
 	static int PopupSelectGametileOp(CEditor *pEditor, CUIRect View);
@@ -713,13 +755,16 @@ public:
 
 	void PopupSelectGametileOpInvoke(float x, float y);
 	int PopupSelectGameTileOpResult();
-	
+
 	void PopupSelectConfigAutoMapInvoke(float x, float y);
 	int PopupSelectConfigAutoMapResult();
 
 	vec4 ButtonColorMul(const void *pID);
 
+	void DoQuadEnvelopes(CQuad *pQuad, int Index, int TexID = -1);
+	void DoQuadEnvPoint(CQuad *pQuad, int QIndex, int pIndex);
 	void DoQuadPoint(CQuad *pQuad, int QuadIndex, int v);
+
 	void DoMapEditor(CUIRect View, CUIRect Toolbar);
 	void DoToolbar(CUIRect Toolbar);
 	void DoQuad(CQuad *pQuad, int Index);
