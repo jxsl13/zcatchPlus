@@ -16,7 +16,7 @@
 #include "player.h"
 
 #define MAX_MUTES 35
-#define ZCATCH_VERSION "0.4.5"
+#define ZCATCH_VERSION "0.4.6 BETA"
 
 /*
 	Tick
