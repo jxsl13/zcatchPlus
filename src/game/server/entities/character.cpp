@@ -595,7 +595,6 @@ void CCharacter::Tick()
 		if(Server()->Tick() % Server()->TickSpeed() == 0)
 		{
 			GameServer()->CreateDamageInd(m_Pos, 0, m_FreezeTicks/Server()->TickSpeed()+1);
-			m_Armor = m_FreezeTicks/Server()->TickSpeed();
 			GameServer()->CreateSound(m_Pos, SOUND_WEAPON_NOAMMO);
 		}
 		//Set weapon back to the last one
@@ -921,8 +920,8 @@ void CCharacter::Snap(int SnappingClient)
 	if(m_pPlayer->GetCID() == SnappingClient || SnappingClient == -1 ||
 		(!g_Config.m_SvStrictSpectateMode && m_pPlayer->GetCID() == GameServer()->m_apPlayers[SnappingClient]->m_SpectatorID))
 	{
-		pCharacter->m_Health = m_Health;
-		pCharacter->m_Armor = m_Armor;
+		pCharacter->m_Health = (m_FreezeTicks) ? (m_FreezeTicks/Server()->TickSpeed())/10 : m_Health;
+		pCharacter->m_Armor = (m_FreezeTicks) ? (m_FreezeTicks/Server()->TickSpeed()) % 10 +1 : m_Armor;
 		if(m_aWeapons[m_ActiveWeapon].m_Ammo > 0)
 			pCharacter->m_AmmoCount = m_aWeapons[m_ActiveWeapon].m_Ammo;
 	}
