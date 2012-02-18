@@ -2,6 +2,7 @@
 /* If you are missing that file, acquire a complete release at teeworlds.com.                */
 #include <game/generated/protocol.h>
 #include <game/server/gamecontext.h>
+#include <engine/shared/config.h>
 #include "laser.h"
 
 CLaser::CLaser(CGameWorld *pGameWorld, vec2 Pos, vec2 Direction, float StartEnergy, int Owner)
@@ -67,6 +68,9 @@ void CLaser::DoBounce()
 				m_Energy = -1;
 
 			GameServer()->CreateSound(m_Pos, SOUND_RIFLE_BOUNCE);
+
+			if(m_Bounces == 1 && g_Config.m_SvLaserjumps && GameServer()->m_pController->IsZCatch())
+				GameServer()->CreateExplosion(m_Pos, m_Owner, WEAPON_GAME, false);
 		}
 	}
 	else

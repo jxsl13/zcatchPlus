@@ -780,36 +780,29 @@ bool CCharacter::TakeDamage(vec2 Force, int Dmg, int From, int Weapon)
 		return false;
 	
 	/* zCatch */
-	bool Is_zCatch = GameServer()->m_pController->IsZCatch();
-	
-	if(From == m_pPlayer->GetCID())
+	if(GameServer()->m_pController->IsZCatch())
 	{
-		//No selfdamage
-		if(Is_zCatch)
-			Dmg = 0;
-		// m_pPlayer only inflicts half damage on self
-		else
+		if(From == m_pPlayer->GetCID() || Weapon == WEAPON_GAME)
+			return false;
+
+		if(g_Config.m_SvMode == 4 && Weapon == WEAPON_GRENADE && Dmg < g_Config.m_SvGrenadeMinDamage)
+			return false;
+
+		m_Health = 0;
+		m_Armor = 0;
+	}
+	else
+	{
+		if(From == m_pPlayer->GetCID())
 			Dmg = max(1, Dmg/2);
 	}
-
-	if(g_Config.m_SvMode == 4 && Weapon == WEAPON_GRENADE && Dmg < g_Config.m_SvGrenadeMinDamage)
-		Dmg = 0;
 	/* end zCatch */
 	
 	m_DamageTaken++;
 
 	if(Dmg)
 	{
-		/* zCatch*/
-		//One-Shot-One-Kill
-		if(Is_zCatch)
-		{
-			m_Health = 0;
-			m_Armor = 0;
-		}
-		/* end zCatch*/
-
-		else if(m_Armor)
+		if(m_Armor)
 		{
 			if(Dmg > 1)
 			{
