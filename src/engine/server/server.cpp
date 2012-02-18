@@ -1619,8 +1619,10 @@ void CServer::ConAddBanmaster(IConsole::IResult *pResult, void *pUser)
 		pServer->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "server/banmaster", "succesfully added banmaster");
 	else if (Result == 1)
 		pServer->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "server/banmaster", "invalid address for banmaster / net lookup failed");
-	else
+	else if(Result == 2)
 		pServer->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "server/banmaster", "too many banmasters");
+	else
+		pServer->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "server/banmaster", "banmaster already exists");
 }
 
 void CServer::ConBanmasters(IConsole::IResult *pResult, void *pUser)

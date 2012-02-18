@@ -272,11 +272,18 @@ int CNetServer::BanmasterAdd(const char *pAddrStr)
 	if(m_NumBanmasters >= MAX_BANMASTERS)
 		return 2;
 	
-	if(net_host_lookup(pAddrStr, &m_aBanmasters[m_NumBanmasters], NETTYPE_IPV4))
+	NETADDR Addr;
+	if(net_host_lookup(pAddrStr, &Addr, NETTYPE_ALL))
 		return 1;
 	
-	if(m_aBanmasters[m_NumBanmasters].port == 0)
-		m_aBanmasters[m_NumBanmasters].port = BANMASTER_PORT;
+	if(Addr.port == 0)
+		Addr.port = BANMASTER_PORT;
+
+	for(int i = 0; i < m_NumBanmasters; i++)
+		if(mem_comp(&Addr, &m_aBanmasters[i], sizeof(NETADDR)) == 0)
+			return 3;
+
+	m_aBanmasters[m_NumBanmasters] = Addr;
 	
 	m_NumBanmasters++;
 	return 0;
