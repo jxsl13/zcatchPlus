@@ -109,8 +109,9 @@ int CGameController_zCatch::OnCharacterDeath(class CCharacter *pVictim, class CP
 		}
 	}
 		
-	// Update color of the killer
+	// Update colors
 	OnPlayerInfoChange(pKiller);
+	OnPlayerInfoChange(pVictim->GetPlayer());
 	
 	return 0;
 }
