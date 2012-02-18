@@ -472,6 +472,17 @@ void CCharacter::HandleWeapons()
 
 	// ammo regen
 	int AmmoRegenTime = g_pData->m_Weapons.m_aId[m_ActiveWeapon].m_Ammoregentime;
+	if(GameServer()->m_pController->IsZCatch() && m_aWeapons[m_ActiveWeapon].m_Ammo > -1)
+	{
+		switch(m_ActiveWeapon)
+		{
+			case WEAPON_GUN: AmmoRegenTime = 125*5; break;
+			case WEAPON_GRENADE: AmmoRegenTime = 1000; break;
+			case WEAPON_RIFLE: AmmoRegenTime = 1200; break;
+			case WEAPON_SHOTGUN: AmmoRegenTime = 1000; break;
+		}
+	}
+
 	if(AmmoRegenTime)
 	{
 		// If equipped and not active, regen ammo?
@@ -483,7 +494,7 @@ void CCharacter::HandleWeapons()
 			if ((Server()->Tick() - m_aWeapons[m_ActiveWeapon].m_AmmoRegenStart) >= AmmoRegenTime * Server()->TickSpeed() / 1000)
 			{
 				// Add some ammo
-				m_aWeapons[m_ActiveWeapon].m_Ammo = min(m_aWeapons[m_ActiveWeapon].m_Ammo + 1, 10);
+				m_aWeapons[m_ActiveWeapon].m_Ammo = min(m_aWeapons[m_ActiveWeapon].m_Ammo + 1, (GameServer()->m_pController->IsZCatch()) ? 6 : 10);
 				m_aWeapons[m_ActiveWeapon].m_AmmoRegenStart = -1;
 			}
 		}

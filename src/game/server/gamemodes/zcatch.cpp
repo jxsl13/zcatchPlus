@@ -164,29 +164,31 @@ void CGameController_zCatch::OnCharacterSpawn(class CCharacter *pChr)
 	pChr->IncreaseHealth(10);
 	if(g_Config.m_SvMode == 2)
 		pChr->IncreaseArmor(10);
+
 	// give default weapons
 	switch(g_Config.m_SvMode)
 		{
-			case 1:
+			case 1: /* Instagib - Only Riffle */
 				pChr->GiveWeapon(WEAPON_RIFLE, -1);
 				break;
-			case 2:
+			case 2: /* All Weapons */
 				pChr->GiveWeapon(WEAPON_HAMMER, -1);
-				pChr->GiveWeapon(WEAPON_GUN, -1);
-				pChr->GiveWeapon(WEAPON_GRENADE, -1);
-				pChr->GiveWeapon(WEAPON_SHOTGUN, -1);
-				pChr->GiveWeapon(WEAPON_RIFLE, -1);
+				pChr->GiveWeapon(WEAPON_GUN, 6);
+				pChr->GiveWeapon(WEAPON_GRENADE, 6);
+				pChr->GiveWeapon(WEAPON_SHOTGUN, 6);
+				pChr->GiveWeapon(WEAPON_RIFLE, 6);
 				break;
-			case 3:
+			case 3: /* Hammer */
 				pChr->GiveWeapon(WEAPON_HAMMER, -1);
 				break;
-			case 4:
-				pChr->GiveWeapon(WEAPON_GRENADE, -1);
+			case 4: /* Grenade */
+				pChr->GiveWeapon(WEAPON_GRENADE, 6);
 				break;
-			case 5:
+			case 5: /* Ninja */
 				pChr->GiveNinja();
 				break;
 		}
+
 	//Update color of spawning tees
 	OnPlayerInfoChange(pChr->GetPlayer());
 }
