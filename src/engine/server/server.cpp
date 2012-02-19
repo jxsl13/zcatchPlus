@@ -287,17 +287,22 @@ void CServerBan::ConBanExt(IConsole::IResult *pResult, void *pUser)
 		net_addr_str(pThis->Server()->m_NetServer.ClientAddr(CID), aIP, sizeof(aIP), 0);
 
 		CPacker P;
+		P.Reset();
 		P.AddRaw(BANMASTER_IPREPORT, sizeof(BANMASTER_IPREPORT));
-		P.AddString(pThis->Server()->ClientName(CID), MAX_NAME_LENGTH);
-		P.AddString(aIP, sizeof(aIP));
-		P.AddString(pReason, str_length(pReason));
+		P.AddString(pThis->Server()->ClientName(CID), -1);
+		P.AddString(aIP, -1);
+		P.AddString(pReason, -1);
 
-		CNetChunk Packet;
-		Packet.m_ClientID = -1;
-		Packet.m_Flags = NETSENDFLAG_CONNLESS;
-		Packet.m_pData = P.Data();
-		Packet.m_DataSize = P.Size();
-		pThis->Server()->m_NetServer.SendToBanmasters(&Packet);
+		if(!P.Error())
+		{
+			CNetChunk Packet;
+			Packet.m_ClientID = -1;
+			Packet.m_Flags = NETSENDFLAG_CONNLESS;
+			Packet.m_pData = P.Data();
+			Packet.m_DataSize = P.Size();
+			pThis->Server()->m_NetServer.SendToBanmasters(&Packet);
+			pThis->Console()->Print(IConsole::OUTPUT_LEVEL_DEBUG, "banmaster", "Reported ban to banmasters");
+		}
 	}
 
 	if(StrAllnum(pStr))
