@@ -137,8 +137,8 @@ void AddRecvBan(NETADDR *pFromAddr, unsigned char *pData, int Size)
 	NETADDR ReportAddr;
 	if(net_addr_from_str(&ReportAddr, aIP) == 0 && aName[0] && aReason[0])
 	{
-		for(int i = 0; i < MAX_BAN_ENTRIES-1; i++)
-			mem_copy(&m_RecvBans[i+1], &m_RecvBans[i], sizeof(m_RecvBans[i]));
+		for(int i = MAX_BAN_ENTRIES-1; i > 0; i--)
+			mem_copy(&m_RecvBans[i], &m_RecvBans[i-1], sizeof(m_RecvBans[i]));
 
 		m_RecvBans[0].m_Addr = ReportAddr;
 		str_copy(m_RecvBans[0].m_aName, aName, sizeof(m_RecvBans[0].m_aName));
@@ -167,14 +167,15 @@ void ConRecvBans(IConsole::IResult *pResult, void *pUser)
 {
 	int Count = 0;
 	char aBuf[256];
-	for(int i = 0; i < MAX_BAN_ENTRIES; i++)
+	for(int i = MAX_BAN_ENTRIES-1; i >= 0; i--)
 	{
 		if(!m_RecvBans[i].m_aName[0])
 			continue;
 
 		char aIP[NETADDR_MAXSTRSIZE];
 		net_addr_str(&m_RecvBans[i].m_Addr, aIP, sizeof(aIP), false);
-		str_format(aBuf, sizeof(aBuf), "#%d - Name: %s | Reason: %s | IP: %s | Received %d sec. ago", i, m_RecvBans[i].m_aName, m_RecvBans[i].m_aReason, aIP, time_timestamp() - m_RecvBans[i].m_RecvTime);
+		int RecvTime = time_timestamp() - m_RecvBans[i].m_RecvTime;
+		str_format(aBuf, sizeof(aBuf), "#%d - Name: %s | Reason: %s | IP: %s | Received %d min and %d sec. ago", i, m_RecvBans[i].m_aName, m_RecvBans[i].m_aReason, aIP, RecvTime/60, RecvTime%60);
 		m_pConsole->Print(IConsole::OUTPUT_LEVEL_STANDARD, "banmaster", aBuf);
 		Count++;
 	}
@@ -187,7 +188,7 @@ void ConAddBan(IConsole::IResult *pResult, void *pUser)
 	int Index = pResult->GetInteger(0);
 	if(Index >= 0 && Index < MAX_BAN_ENTRIES && m_RecvBans[Index].m_aName[0])
 	{
-		m_NetBan.BanAddr(&m_RecvBans[Index].m_Addr, pResult->GetInteger(1), pResult->GetString(2));
+		m_NetBan.BanAddr(&m_RecvBans[Index].m_Addr, pResult->GetInteger(1)*60, pResult->GetString(2));
 	}
 	else
 		m_pConsole->Print(IConsole::OUTPUT_LEVEL_STANDARD, "banmaster", "Invalid index");
@@ -223,7 +224,7 @@ int main(int argc, const char **argv) // ignore_convention
 
 	// Register Commands
 	m_pConsole->Register("recvbans", "", CFGFLAG_BANMASTER, ConRecvBans, 0, "Show the last received bans");
-	m_pConsole->Register("addban", "iis", CFGFLAG_BANMASTER, ConAddBan, 0, "Ban IP by index");
+	m_pConsole->Register("addban", "iir", CFGFLAG_BANMASTER, ConAddBan, 0, "Ban IP by index");
 
 
 	m_NetBan.Init(m_pConsole, m_pStorage);
