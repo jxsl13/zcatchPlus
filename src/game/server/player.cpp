@@ -23,7 +23,7 @@ CPlayer::CPlayer(CGameContext *pGameServer, int ClientID, int Team)
 	m_TeamChangeTick = Server()->Tick();
 	
 	//zCatch
-	m_CatchedBy = -1;
+	m_CaughtBy = -1;
 	m_SpecExplicit = 0;
 	m_Kills = 0;
 	m_Deaths = 0;

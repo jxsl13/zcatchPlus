@@ -20,7 +20,7 @@ class CGameController_zCatch : public IGameController
 	
 	enum
 	{
-		ZCATCH_NOT_CATCHED = -1,
+		ZCATCH_NOT_CAUGHT = -1,
 	}; 
 	
 	virtual int OnCharacterDeath(class CCharacter *pVictim, class CPlayer *pKiller, int WeaponID);

@@ -98,7 +98,7 @@ public:
 	} m_Latency;
 	
 		//zCatch:
-	int m_CatchedBy;
+	int m_CaughtBy;
 	int m_SpecExplicit;
 	int m_Deaths;
 	int m_Kills;

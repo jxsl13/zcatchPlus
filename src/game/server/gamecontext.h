@@ -145,7 +145,7 @@ public:
 	
 	enum
 	{
-		ZCATCH_NOT_CATCHED = -1,
+		ZCATCH_NOT_CAUGHT = -1,
 	}; 
 	
 	struct CMutes

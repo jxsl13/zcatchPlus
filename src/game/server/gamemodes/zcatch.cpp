@@ -66,7 +66,7 @@ void CGameController_zCatch::DoWincheck()
 int CGameController_zCatch::OnCharacterDeath(class CCharacter *pVictim, class CPlayer *pKiller, int WeaponID)
 {
 	int VictimID =  pVictim->GetPlayer()->GetCID();
-	char buf[256];
+	char aBuf[256];
 	if(pKiller !=  pVictim->GetPlayer())
 	{
 		pKiller->m_Kills++;
@@ -77,14 +77,14 @@ int CGameController_zCatch::OnCharacterDeath(class CCharacter *pVictim, class CP
 		/* Check if the killer is already killed and in spectator (victim may died through wallshot) */
 		if(pKiller->GetTeam() != TEAM_SPECTATORS)
 		{
-			pVictim->GetPlayer()->m_CatchedBy = pKiller->GetCID();
+			pVictim->GetPlayer()->m_CaughtBy = pKiller->GetCID();
 			pVictim->GetPlayer()->SetTeamDirect(TEAM_SPECTATORS);
 		
 			if(pVictim->GetPlayer()->m_PlayerWantToFollowCatcher)
 				pVictim->GetPlayer()->m_SpectatorID = pKiller->GetCID(); // Let the victim follow his catcher
 		
-			str_format(buf, sizeof(buf), "Caught by \"%s\". You will join the game automatically when \"%s\" dies.", Server()->ClientName(pKiller->GetCID()), Server()->ClientName(pKiller->GetCID()));	
-			GameServer()->SendChatTarget(VictimID, buf);
+			str_format(aBuf, sizeof(aBuf), "Caught by \"%s\". You will join the game automatically when \"%s\" dies.", Server()->ClientName(pKiller->GetCID()), Server()->ClientName(pKiller->GetCID()));
+			GameServer()->SendChatTarget(VictimID, aBuf);
 		}
 	}
 	else
@@ -98,9 +98,9 @@ int CGameController_zCatch::OnCharacterDeath(class CCharacter *pVictim, class CP
 	{
 		if(GameServer()->m_apPlayers[i])
 		{
-			if(GameServer()->m_apPlayers[i]->m_CatchedBy == VictimID)
+			if(GameServer()->m_apPlayers[i]->m_CaughtBy == VictimID)
 			{
-				GameServer()->m_apPlayers[i]->m_CatchedBy = ZCATCH_NOT_CATCHED;
+				GameServer()->m_apPlayers[i]->m_CaughtBy = ZCATCH_NOT_CAUGHT;
 				GameServer()->m_apPlayers[i]->SetTeamDirect(GameServer()->m_pController->ClampTeam(1));
 				
 				if(pKiller != pVictim->GetPlayer())
@@ -122,7 +122,7 @@ void CGameController_zCatch::OnPlayerInfoChange(class CPlayer *pP)
 	{
 		int Num = 161;
 		for(int i = 0; i < MAX_CLIENTS; i++)
-			if(GameServer()->m_apPlayers[i] && GameServer()->m_apPlayers[i]->m_CatchedBy == pP->GetCID())
+			if(GameServer()->m_apPlayers[i] && GameServer()->m_apPlayers[i]->m_CaughtBy == pP->GetCID())
 				Num -= 10;
 		pP->m_TeeInfos.m_ColorBody = Num * 0x010000 + 0xff00;
 		pP->m_TeeInfos.m_ColorFeet = Num * 0x010000 + 0xff00;
@@ -146,7 +146,7 @@ void CGameController_zCatch::StartRound()
 	{
 		if(GameServer()->m_apPlayers[i])
 		{		
-			GameServer()->m_apPlayers[i]->m_CatchedBy = ZCATCH_NOT_CATCHED;
+			GameServer()->m_apPlayers[i]->m_CaughtBy = ZCATCH_NOT_CAUGHT;
 			GameServer()->m_apPlayers[i]->m_Kills = 0;
 			GameServer()->m_apPlayers[i]->m_Deaths = 0;
 			GameServer()->m_apPlayers[i]->m_TicksSpec = 0;
@@ -204,17 +204,17 @@ void CGameController_zCatch::EndRound()
 			{
 				GameServer()->m_apPlayers[i]->SetTeamDirect(GameServer()->m_pController->ClampTeam(1));
 				
-				char abuf[128];
-				str_format(abuf, sizeof(abuf), "Kills: %d | Deaths: %d", GameServer()->m_apPlayers[i]->m_Kills, GameServer()->m_apPlayers[i]->m_Deaths);				
-				GameServer()->SendChatTarget(i, abuf);
+				char aBuf[128];
+				str_format(aBuf, sizeof(aBuf), "Kills: %d | Deaths: %d", GameServer()->m_apPlayers[i]->m_Kills, GameServer()->m_apPlayers[i]->m_Deaths);
+				GameServer()->SendChatTarget(i, aBuf);
 				
 				if(GameServer()->m_apPlayers[i]->m_TicksSpec != 0 || GameServer()->m_apPlayers[i]->m_TicksIngame != 0)
 				{
 					double TimeInSpec = (GameServer()->m_apPlayers[i]->m_TicksSpec*100.0) / (GameServer()->m_apPlayers[i]->m_TicksIngame + GameServer()->m_apPlayers[i]->m_TicksSpec);
-					str_format(abuf, sizeof(abuf), "Spec: %.2f%% | Ingame: %.2f%%", (double)TimeInSpec, (double)(100.0 - TimeInSpec));
-					GameServer()->SendChatTarget(i, abuf);	
+					str_format(aBuf, sizeof(aBuf), "Spec: %.2f%% | Ingame: %.2f%%", (double)TimeInSpec, (double)(100.0 - TimeInSpec));
+					GameServer()->SendChatTarget(i, aBuf);
 				}
-				GameServer()->m_apPlayers[i]->m_CatchedBy = ZCATCH_NOT_CATCHED; //Set all players in server as non-catched
+				GameServer()->m_apPlayers[i]->m_CaughtBy = ZCATCH_NOT_CAUGHT; //Set all players in server as non-caught
 			}
 		}
 	}

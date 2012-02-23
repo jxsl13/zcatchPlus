@@ -544,61 +544,59 @@ void CGameContext::OnClientEnter(int ClientID)
 	m_apPlayers[ClientID]->Respawn();
 	
 	/* begin zCatch */
-	int leader_id = -1;
+	int LeaderID = -1;
 	int StartTeam = m_pController->ClampTeam(1);
 	
 	if(m_pController->IsZCatch())
 	{
-		int num = 0;
+		int Num = 0;
 		
-		for(int i=0; i<MAX_CLIENTS; i++)
+		for(int i = 0; i < MAX_CLIENTS; i++)
 		{
 			if(IsClientReady(i))
-				num++;
+				Num++;
 		}
-		if(num < 3)
+		if(Num < 3)
 			m_pController->EndRound();
 		
 		if(g_Config.m_SvAllowJoin == 1)
 		{
-			m_apPlayers[ClientID]->m_CatchedBy = ZCATCH_NOT_CATCHED;
-			m_apPlayers[ClientID]->m_SpecExplicit = (num < 3) ? 0 : 1;
-			StartTeam = (num < 3) ? m_pController->ClampTeam(1) : TEAM_SPECTATORS;
+			m_apPlayers[ClientID]->m_CaughtBy = ZCATCH_NOT_CAUGHT;
+			m_apPlayers[ClientID]->m_SpecExplicit = (Num < 3) ? 0 : 1;
+			StartTeam = (Num < 3) ? m_pController->ClampTeam(1) : TEAM_SPECTATORS;
 			SendBroadcast("You can join the game", ClientID);
-			
 		}
 		else if(g_Config.m_SvAllowJoin == 2)
 		{
-			int num2 = 0, num_prev = 0;
-			
+			int Num2 = 0, PrevNum = 0;
+
 			for(int i = 0; i < MAX_CLIENTS; i++)
 			{
 				if(m_apPlayers[i])
 				{
-					num2 = 0;
+					Num2 = 0;
 					for(int j = 0; j < MAX_CLIENTS; j++)
-		   			{
-			    			if(m_apPlayers[j] && m_apPlayers[j]->m_CatchedBy == i)
-				   			num2++;
-		    			}
-		    			if(num2 > num_prev)
-		   	 		{
-			    			leader_id = i;
-			    			num_prev = num2;
-		    			}
+						if(m_apPlayers[j] && m_apPlayers[j]->m_CaughtBy == i)
+							Num2++;
+
+					if(Num2 > PrevNum)
+					{
+						LeaderID = i;
+						PrevNum = Num2;
 		    		}
-		    	}
-		    	
-		    	if(leader_id > -1)
+				}
+		    }
+
+		    if(LeaderID > -1)
 			{
-				m_apPlayers[ClientID]->m_CatchedBy = leader_id;
+				m_apPlayers[ClientID]->m_CaughtBy = LeaderID;
 				m_apPlayers[ClientID]->m_SpecExplicit = 0;
-				m_apPlayers[ClientID]->m_SpectatorID = leader_id;
+				m_apPlayers[ClientID]->m_SpectatorID = LeaderID;
 				StartTeam = TEAM_SPECTATORS;
 			}
 			else
 			{
-				m_apPlayers[ClientID]->m_CatchedBy = ZCATCH_NOT_CATCHED;
+				m_apPlayers[ClientID]->m_CaughtBy = ZCATCH_NOT_CAUGHT;
 				m_apPlayers[ClientID]->m_SpecExplicit = 0;
 			}
 		}
@@ -625,10 +623,10 @@ void CGameContext::OnClientEnter(int ClientID)
 	    SendChatTarget(ClientID, "Welcome to zCatch!");
 	    SendChatTarget(ClientID, "type /cmdlist to get all commands");
 	    SendChatTarget(ClientID, "type /help for instructions");
-	    if(g_Config.m_SvAllowJoin == 2 && leader_id > -1)
+	    if(g_Config.m_SvAllowJoin == 2 && LeaderID > -1)
 	    {
 	    	char buf[128];
-	    	str_format(buf, sizeof(buf), "You will join the game when %s dies", Server()->ClientName(leader_id));
+	    	str_format(buf, sizeof(buf), "You will join the game when %s dies", Server()->ClientName(LeaderID));
 	    	SendChatTarget(ClientID, buf);	
 	    }
 	}
@@ -975,7 +973,7 @@ void CGameContext::OnMessage(int MsgID, CUnpacker *pUnpacker, int ClientID)
 		// Switch team on given client and kill/respawn him
 		if(m_pController->CanJoinTeam(pMsg->m_Team, ClientID))
 		{
-			if(m_pController->CanChangeTeam(pPlayer, pMsg->m_Team) && !m_pController->IsZCatch()) //zCatch)
+			if(m_pController->CanChangeTeam(pPlayer, pMsg->m_Team) && !m_pController->IsZCatch()) //zCatch
 			{
 				pPlayer->m_LastSetTeam = Server()->Tick();
 				if(pPlayer->GetTeam() == TEAM_SPECTATORS || pMsg->m_Team == TEAM_SPECTATORS)
@@ -984,23 +982,23 @@ void CGameContext::OnMessage(int MsgID, CUnpacker *pUnpacker, int ClientID)
 				(void)m_pController->CheckTeamBalance();
 				pPlayer->m_TeamChangeTick = Server()->Tick();
 			}
-			/* begin zCatch*/			
+			/* begin zCatch */
 			else if(m_pController->IsZCatch())
 			{	
-				if(pPlayer->m_CatchedBy >= 0)
+				if(pPlayer->m_CaughtBy >= 0)
 				{
 					char buf[256];
-					str_format(buf, sizeof(buf), "You will join automatically when \"%s\" dies.", Server()->ClientName(pPlayer->m_CatchedBy));
+					str_format(buf, sizeof(buf), "You will join automatically when \"%s\" dies.", Server()->ClientName(pPlayer->m_CaughtBy));
 					SendChatTarget(ClientID, buf);
 					return;
 				}
-				else if(pPlayer->m_CatchedBy == ZCATCH_NOT_CATCHED)
+				else if(pPlayer->m_CaughtBy == ZCATCH_NOT_CAUGHT)
 				{
 					pPlayer->m_LastSetTeam = Server()->Tick();
 					pPlayer->SetTeam(pMsg->m_Team);
 				}
 			}
-            /* end zCatch*/
+            /* end zCatch */
 			else
 				SendBroadcast("Teams must be balanced, please join other team", ClientID);
 		}

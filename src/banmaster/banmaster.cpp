@@ -160,7 +160,6 @@ void ReloadBans()
 	char aBuf[64];
 	str_format(aBuf, sizeof(aBuf), "bans_save %s", BANMASTER_BANSSAVEFILE);
 	m_pConsole->ExecuteLine(aBuf);
-	m_pConsole->ExecuteFile(BANMASTER_BANSSAVEFILE);
 }
 
 void ConRecvBans(IConsole::IResult *pResult, void *pUser)
@@ -287,7 +286,10 @@ int main(int argc, const char **argv) // ignore_convention
 					char aBuf[256];
 					net_addr_str(&CheckAddr, aIP, sizeof(aIP), false);
 					str_format(aBuf, sizeof(aBuf), "responded to checkmsg, ip='%s' checkaddr='%s' result=%s", aAddressStr, aIP, (Banned) ? "ban" : "ok");
-					m_pConsole->Print(IConsole::OUTPUT_LEVEL_ADDINFO, "banmaster", aBuf);
+					if(Banned)
+						m_pConsole->Print(IConsole::OUTPUT_LEVEL_STANDARD, "banmaster", aBuf);
+					else
+						m_pConsole->Print(IConsole::OUTPUT_LEVEL_ADDINFO, "banmaster", aBuf);
 				}
 			}
 			else if(Packet.m_DataSize >= (int)sizeof(BANMASTER_IPREPORT) && mem_comp(Packet.m_pData, BANMASTER_IPREPORT, sizeof(BANMASTER_IPREPORT)) == 0)
