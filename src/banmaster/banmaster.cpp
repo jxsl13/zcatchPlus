@@ -148,7 +148,7 @@ void AddRecvBan(NETADDR *pFromAddr, unsigned char *pData, int Size)
 		char aAddr[NETADDR_MAXSTRSIZE];
 		char aBuf[256];
 		net_addr_str(pFromAddr, aAddr, sizeof(aAddr), false);
-		str_format(aBuf, sizeof(aBuf), "Received ban from '%s', Name: %s, Reason: %s", aAddr, aName, aReason);
+		str_format(aBuf, sizeof(aBuf), "Received ban from '%s', Name: %s, IP: %s, Reason: %s", aAddr, aName, aIP, aReason);
 		m_pConsole->Print(IConsole::OUTPUT_LEVEL_STANDARD, "banmaster", aBuf);
 	}
 	else
