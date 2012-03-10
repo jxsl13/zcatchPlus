@@ -248,14 +248,6 @@ public:
 		MAX_BANMASTERS=16
 	};
 
-	struct CBanInfo
-	{
-		NETADDR m_Addr;
-		int m_Expires;
-		char m_Reason[128];
-	};
-
-private:
 	struct CSlot
 	{
 	public:
@@ -278,6 +270,7 @@ private:
 	CNetRecvUnpacker m_RecvUnpacker;
 
 public:
+	CNetServer();
 	int SetCallbacks(NETFUNC_NEWCLIENT pfnNewClient, NETFUNC_DELCLIENT pfnDelClient, void *pUser);
 
 	//
@@ -301,11 +294,14 @@ public:
 
 	//
 	void SetMaxClientsPerIP(int Max);
+
+	//
 	int BanmasterAdd(const char *pAddrStr);
 	int BanmasterNum() const;
 	NETADDR* BanmasterGet(int Index);
 	int BanmasterCheck(NETADDR *pAddr);
 	void BanmastersClear();
+	void SendToBanmasters(CNetChunk *pP);
 };
 
 class CNetConsole
