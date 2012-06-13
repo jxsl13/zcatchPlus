@@ -300,7 +300,7 @@ void CServerBan::ConBanExt(IConsole::IResult *pResult, void *pUser)
 			Packet.m_Flags = NETSENDFLAG_CONNLESS;
 			Packet.m_pData = P.Data();
 			Packet.m_DataSize = P.Size();
-			pThis->Server()->m_NetServer.SendToBanmasters(&Packet);
+			pThis->Server()->m_NetServer.m_Banmaster.SendToAll(&Packet);
 			pThis->Console()->Print(IConsole::OUTPUT_LEVEL_DEBUG, "banmaster", "Reported ban to banmasters");
 		}
 	}
@@ -1221,38 +1221,34 @@ void CServer::PumpNetwork()
 				{
 					SendServerInfo(&Packet.m_Address, ((unsigned char *)Packet.m_pData)[sizeof(SERVERBROWSE_GETINFO)]);
 				}
-
-				/*if(Packet.m_DataSize >= sizeof(BANMASTER_IPOK) &&
-				  mem_comp(Packet.m_pData, BANMASTER_IPOK, sizeof(BANMASTER_IPOK)) == 0 &&
-				  m_NetServer.BanmasterCheck(&Packet.m_Address) != -1)
-				{
-				}*/
-
-				if(Packet.m_DataSize >= sizeof(BANMASTER_IPBAN) &&
+				else if(Packet.m_DataSize >= sizeof(BANMASTER_IPBAN) &&
 				  mem_comp(Packet.m_pData, BANMASTER_IPBAN, sizeof(BANMASTER_IPBAN)) == 0)
 				{
 					if(!g_Config.m_SvGlobalBantime)
 						return;
 
-					if(m_NetServer.BanmasterCheck(&Packet.m_Address) == -1)
+					//Unpack packet
+					CUnpacker Up;
+					const char *pIP, *pReason, *pToken;
+					Up.Reset((unsigned char*)Packet.m_pData + sizeof(BANMASTER_IPBAN), Packet.m_DataSize - sizeof(BANMASTER_IPBAN));
+					pIP = Up.GetString(CUnpacker::SANITIZE_CC|CUnpacker::SKIP_START_WHITESPACES);
+					pReason = Up.GetString(CUnpacker::SANITIZE_CC|CUnpacker::SKIP_START_WHITESPACES);
+					pToken = Up.GetString(CUnpacker::SANITIZE_CC);
+
+					//check if it's a valid packet
+					if(Up.Error() || m_NetServer.m_Banmaster.CheckValidity(&Packet.m_Address, pToken) == -1)
 						return;
 
-					CUnpacker Up;
-					char aIp[NETADDR_MAXSTRSIZE];
-					char aReason[256];
 					NETADDR Addr;
-					Up.Reset((unsigned char*)Packet.m_pData + sizeof(BANMASTER_IPBAN), Packet.m_DataSize - sizeof(BANMASTER_IPBAN));
-					str_copy(aIp, Up.GetString(CUnpacker::SANITIZE_CC|CUnpacker::SKIP_START_WHITESPACES), sizeof(aIp));
-					str_copy(aReason, Up.GetString(CUnpacker::SANITIZE_CC|CUnpacker::SKIP_START_WHITESPACES), sizeof(aReason));
-					if(net_addr_from_str(&Addr, aIp))
+					if(net_addr_from_str(&Addr, pIP))
 					{
 						Console()->Print(IConsole::OUTPUT_LEVEL_DEBUG, "globalbans", "dropped weird message from banmaster");
 						return;
 					}
 
-					m_ServerBan.BanAddr(&Addr, g_Config.m_SvGlobalBantime * 60, aReason);
+					m_ServerBan.BanAddr(&Addr, g_Config.m_SvGlobalBantime * 60, pReason);
 					char aBuf[256];
-					str_format(aBuf, sizeof(aBuf), "added ban, ip=%s, reason='%s'", aIp, aReason);
+					str_format(aBuf, sizeof(aBuf), "added ban, ip=%s, reason='%s'", pIP, pReason);
 					Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "globalbans", aBuf);
 				}
 			}
@@ -1615,7 +1611,7 @@ void CServer::ConAddBanmaster(IConsole::IResult *pResult, void *pUser)
 {
 	CServer *pServer = (CServer *)pUser;
 	
-	int Result = pServer->m_NetServer.BanmasterAdd(pResult->GetString(0));
+	int Result = pServer->m_NetServer.m_Banmaster.Add(pResult->GetString(0));
 	
 	if(Result == 0)
 		pServer->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "server/banmaster", "succesfully added banmaster");
@@ -1630,14 +1626,14 @@ void CServer::ConAddBanmaster(IConsole::IResult *pResult, void *pUser)
 void CServer::ConBanmasters(IConsole::IResult *pResult, void *pUser)
 {
 	CServer *pServer = (CServer *)pUser;
-	int NumBanmasters = pServer->m_NetServer.BanmasterNum();
+	int NumBanmasters = pServer->m_NetServer.m_Banmaster.Num();
 	
 	char aBuf[128];
 	char aIpString[64];
 	
 	for(int i = 0; i < NumBanmasters; i++)
 	{
-		NETADDR *pBanmaster = pServer->m_NetServer.BanmasterGet(i);
+		NETADDR *pBanmaster = pServer->m_NetServer.m_Banmaster.Get(i);
 		net_addr_str(pBanmaster, aIpString, sizeof(aIpString), 0);
 		str_format(aBuf, sizeof(aBuf), "%d: %s", i, aIpString);
 		pServer->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "server/banmaster", aBuf);
@@ -1648,7 +1644,7 @@ void CServer::ConClearBanmasters(IConsole::IResult *pResult, void *pUser)
 {
 	CServer *pServer = (CServer *)pUser;
 	
-	pServer->m_NetServer.BanmastersClear();
+	pServer->m_NetServer.m_Banmaster.Clear();
 	pServer->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "server/banmaster", "cleared banmaster list");
 }
 

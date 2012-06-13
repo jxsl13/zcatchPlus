@@ -243,11 +243,6 @@ public:
 class CNetServer
 {
 public:
-	enum
-	{
-		MAX_BANMASTERS=16
-	};
-
 	struct CSlot
 	{
 	public:
@@ -259,9 +254,6 @@ public:
 	CSlot m_aSlots[NET_MAX_CLIENTS];
 	int m_MaxClients;
 	int m_MaxClientsPerIP;
-
-	NETADDR m_aBanmasters[MAX_BANMASTERS];
-	int m_NumBanmasters;
 
 	NETFUNC_NEWCLIENT m_pfnNewClient;
 	NETFUNC_DELCLIENT m_pfnDelClient;
@@ -295,13 +287,29 @@ public:
 	//
 	void SetMaxClientsPerIP(int Max);
 
-	//
-	int BanmasterAdd(const char *pAddrStr);
-	int BanmasterNum() const;
-	NETADDR* BanmasterGet(int Index);
-	int BanmasterCheck(NETADDR *pAddr);
-	void BanmastersClear();
-	void SendToBanmasters(CNetChunk *pP);
+	class CBanmaster
+	{
+	public:
+		enum
+		{
+			MAX_BANMASTERS = 16,
+			MAX_TOKEN_LENGTH = 16,
+		};
+
+		CNetServer *m_pNet;
+		NETADDR m_aBanmasters[MAX_BANMASTERS];
+		char m_aBanmasterToken[MAX_TOKEN_LENGTH];
+		int m_NumBanmasters;
+
+		int Add(const char *pAddrStr);
+		int Num() const;
+		NETADDR* Get(int Index);
+		int CheckValidity(NETADDR *pAddr, const char* pToken);
+		void Clear();
+		void SendToAll(CNetChunk *pP);
+		void GenerateToken();
+	};
+	CBanmaster m_Banmaster;
 };
 
 class CNetConsole

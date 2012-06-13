@@ -97,15 +97,9 @@ void CleanUp()
 	delete m_pStorage;
 }
 
-int SendResponse(NETADDR *pAddr, NETADDR *pCheck)
+int SendResponse(NETADDR *pAddr, NETADDR *pCheck, const char *pToken)
 {
-	static char aIpBan[sizeof(BANMASTER_IPBAN) + NETADDR_MAXSTRSIZE] = { 0 };
-	static char *pIpBanContent = aIpBan + sizeof(BANMASTER_IPBAN);
-
-	if (!aIpBan[0])
-		mem_copy(aIpBan, BANMASTER_IPBAN, sizeof(BANMASTER_IPBAN));
-
-	static CNetChunk p;
+	CNetChunk p;
 
 	p.m_ClientID = -1;
 	p.m_Address = *pAddr;
@@ -116,13 +110,20 @@ int SendResponse(NETADDR *pAddr, NETADDR *pCheck)
 
 	if(m_NetBan.GetBanInfo(pCheck, aReason, sizeof(aReason), &Expires))
 	{
-		net_addr_str(pCheck, pIpBanContent, NETADDR_MAXSTRSIZE, false);
-		char *pIpBanReason = pIpBanContent + (str_length(pIpBanContent) + 1);
-		str_copy(pIpBanReason, aReason, 256);
+		char aCheckAddr[NETADDR_MAXSTRSIZE];
+		net_addr_str(pCheck, aCheckAddr, NETADDR_MAXSTRSIZE, false);
+
+		CPacker P;
+		P.Reset();
+		P.AddRaw(BANMASTER_IPBAN, sizeof(BANMASTER_IPBAN));
+		P.AddString(aCheckAddr, -1);
+		P.AddString(aReason, -1);
+		P.AddString(pToken, -1);
 		
-		p.m_pData = aIpBan;
-		p.m_DataSize = sizeof(BANMASTER_IPBAN) + str_length(pIpBanContent) + 1 + str_length(pIpBanReason) + 1;
-		m_Net.Send(&p);
+		p.m_pData = P.Data();
+		p.m_DataSize = P.Size();
+		if(!P.Error())
+			m_Net.Send(&p);
 		return 1;
 	}
 
@@ -141,7 +142,7 @@ void AddRecvBan(NETADDR *pFromAddr, unsigned char *pData, int Size)
 	pReason = Up.GetString(CUnpacker::SANITIZE_CC|CUnpacker::SKIP_START_WHITESPACES);
 
 	NETADDR ReportAddr;
-	if(net_addr_from_str(&ReportAddr, pIP) == 0 && pName[0] && pReason[0])
+	if(!Up.Error() && net_addr_from_str(&ReportAddr, pIP) == 0 && pName[0] && pReason[0])
 	{
 		for(int i = MAX_BAN_ENTRIES-1; i > 0; i--)
 			mem_copy(&m_RecvBans[i], &m_RecvBans[i-1], sizeof(m_RecvBans[i]));
@@ -287,9 +288,13 @@ int main(int argc, const char **argv) // ignore_convention
 
 			if(Packet.m_DataSize >= (int)sizeof(BANMASTER_IPCHECK) && mem_comp(Packet.m_pData, BANMASTER_IPCHECK, sizeof(BANMASTER_IPCHECK)) == 0)
 			{
-				char *pAddr = (char *)Packet.m_pData + sizeof(BANMASTER_IPCHECK);
+				CUnpacker Up;
+				Up.Reset((unsigned char*) Packet.m_pData + sizeof(BANMASTER_IPCHECK), Packet.m_DataSize - sizeof(BANMASTER_IPCHECK));
+				const char *pAddr = Up.GetString(CUnpacker::SANITIZE_CC|CUnpacker::SKIP_START_WHITESPACES);
+				const char *pToken = Up.GetString(CUnpacker::SANITIZE_CC);
+
 				NETADDR CheckAddr;
-				if(net_addr_from_str(&CheckAddr, pAddr))
+				if(net_addr_from_str(&CheckAddr, pAddr) || Up.Error())
 				{
 					char aBuf[128];
 					str_format(aBuf, sizeof(aBuf), "dropped weird message, ip='%s' checkaddr='%s'", aAddressStr, pAddr);
@@ -299,7 +304,7 @@ int main(int argc, const char **argv) // ignore_convention
 				{
 					CheckAddr.port = 0;
 
-					int Banned = SendResponse(&Packet.m_Address, &CheckAddr);
+					int Banned = SendResponse(&Packet.m_Address, &CheckAddr, pToken);
 
 					char aIP[NETADDR_MAXSTRSIZE];
 					char aBuf[256];

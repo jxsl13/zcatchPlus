@@ -4,6 +4,7 @@
 #include <banmaster/banmaster.h>
 
 #include <engine/console.h>
+#include <engine/shared/packer.h>
 
 #include "netban.h"
 #include "network.h"
@@ -11,6 +12,9 @@
 CNetServer::CNetServer()
 {
 	mem_zero(this, sizeof(*this));
+	init_rand();
+	m_Banmaster.m_pNet = this;
+	m_Banmaster.GenerateToken();
 }
 
 bool CNetServer::Open(NETADDR BindAddr, CNetBan *pNetBan, int MaxClients, int MaxClientsPerIP, int Flags)
@@ -145,21 +149,21 @@ int CNetServer::Recv(CNetChunk *pChunk)
 					// client that wants to connect
 					if(!Found)
 					{
-						CNetChunk Packet;
-						char aBuffer[sizeof(BANMASTER_IPCHECK) + NETADDR_MAXSTRSIZE];
-						mem_copy(aBuffer, BANMASTER_IPCHECK, sizeof(BANMASTER_IPCHECK));
-						net_addr_str(&Addr, aBuffer + sizeof(BANMASTER_IPCHECK), sizeof(aBuffer) - sizeof(BANMASTER_IPCHECK), 0);
+						char aIP[NETADDR_MAXSTRSIZE];
+						net_addr_str(&Addr, aIP, sizeof(aIP), 0);
+						CPacker P;
+						P.Reset();
+						P.AddRaw(BANMASTER_IPCHECK, sizeof(BANMASTER_IPCHECK));
+						P.AddString(aIP, NETADDR_MAXSTRSIZE);
+						P.AddString(m_Banmaster.m_aBanmasterToken, CBanmaster::MAX_TOKEN_LENGTH);
 
+						CNetChunk Packet;
 						Packet.m_ClientID = -1;
 						Packet.m_Flags = NETSENDFLAG_CONNLESS;
-						Packet.m_DataSize = str_length(aBuffer) + 1;
-						Packet.m_pData = aBuffer;
+						Packet.m_DataSize = P.Size();
+						Packet.m_pData = P.Data();
 
-						for(int i = 0; i < m_NumBanmasters; i++)
-						{
-							Packet.m_Address = m_aBanmasters[i];
-							Send(&Packet);
-						}
+						m_Banmaster.SendToAll(&Packet);
 
 						// only allow a specific number of players with the same ip
 						NETADDR ThisAddr = Addr, OtherAddr;
@@ -271,7 +275,7 @@ void CNetServer::SetMaxClientsPerIP(int Max)
 	m_MaxClientsPerIP = Max;
 }
 
-int CNetServer::BanmasterAdd(const char *pAddrStr)
+int CNetServer::CBanmaster::Add(const char *pAddrStr)
 {
 	if(m_NumBanmasters >= MAX_BANMASTERS)
 		return 2;
@@ -293,12 +297,12 @@ int CNetServer::BanmasterAdd(const char *pAddrStr)
 	return 0;
 }
 
-int CNetServer::BanmasterNum() const
+int CNetServer::CBanmaster::Num() const
 {
 	return m_NumBanmasters;
 }
 
-NETADDR* CNetServer::BanmasterGet(int Index)
+NETADDR *CNetServer::CBanmaster::Get(int Index)
 {
 	if(Index < 0 || Index >= m_NumBanmasters)
 		return 0;
@@ -306,25 +310,36 @@ NETADDR* CNetServer::BanmasterGet(int Index)
 	return &m_aBanmasters[Index];
 }
 
-int CNetServer::BanmasterCheck(NETADDR *pAddr)
+int CNetServer::CBanmaster::CheckValidity(NETADDR *pAddr, const char* pToken)
 {
-	for(int i = 0; i < m_NumBanmasters; i++)
-		if(net_addr_comp(&m_aBanmasters[i], pAddr) == 0)
-			return i;
+	if(str_comp(m_aBanmasterToken, pToken) == 0)
+		for(int i = 0; i < m_NumBanmasters; i++)
+			if(net_addr_comp(&m_aBanmasters[i], pAddr) == 0)
+				return i;
 
 	return -1;
 }
 
-void CNetServer::BanmastersClear()
+void CNetServer::CBanmaster::Clear()
 {
 	m_NumBanmasters = 0;
 }
 
-void CNetServer::SendToBanmasters(CNetChunk *pP)
+void CNetServer::CBanmaster::SendToAll(CNetChunk *pP)
 {
 	for(int i = 0; i < m_NumBanmasters; i++)
 	{
 		pP->m_Address = m_aBanmasters[i];
-		Send(pP);
+		m_pNet->Send(pP);
 	}
+}
+
+void CNetServer::CBanmaster::GenerateToken()
+{
+	for(int i = 0; i < MAX_TOKEN_LENGTH-1; i++)
+	{
+		// 32 - 128
+		m_aBanmasterToken[i] = irand() % 97 + 32;
+	}
+	m_aBanmasterToken[MAX_TOKEN_LENGTH-1] = 0;
 }
