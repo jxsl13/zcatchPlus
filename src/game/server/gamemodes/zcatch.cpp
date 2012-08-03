@@ -4,7 +4,7 @@
 
 #include <engine/shared/config.h>
 #include <game/server/gamecontext.h>
-#include "zcatch.hpp"
+#include "zcatch.h"
 
 CGameController_zCatch::CGameController_zCatch(class CGameContext *pGameServer) 
 : IGameController(pGameServer)

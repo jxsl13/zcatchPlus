@@ -13,7 +13,7 @@
 #include "gamemodes/tdm.h"
 #include "gamemodes/ctf.h"
 #include "gamemodes/mod.h"
-#include "gamemodes/zcatch.hpp"
+#include "gamemodes/zcatch.h"
 
 enum
 {
