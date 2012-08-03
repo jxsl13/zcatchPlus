@@ -261,7 +261,8 @@ void CGameContext::SendChat(int ChatterClientID, int Team, const char *pText)
 		// send to the clients
 		for(int i = 0; i < MAX_CLIENTS; i++)
 		{
-			if(m_apPlayers[i] && m_apPlayers[i]->GetTeam() == Team)
+			//if(m_apPlayers[i] && m_apPlayers[i]->GetTeam() == Team)
+			if(m_apPlayers[i] && ChatterClientID >= 0 && ChatterClientID < MAX_CLIENTS && m_apPlayers[ChatterClientID] && m_apPlayers[ChatterClientID]->m_SpecExplicit == m_apPlayers[i]->m_SpecExplicit)
 				Server()->SendPackMsg(&Msg, MSGFLAG_VITAL|MSGFLAG_NORECORD, i);
 		}
 	}
