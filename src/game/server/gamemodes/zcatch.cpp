@@ -17,7 +17,7 @@ void CGameController_zCatch::Tick()
 {
 	DoWincheck();
 	IGameController::Tick();
-	
+
 	if(m_OldMode != g_Config.m_SvMode)
 	{
 		Server()->MapReload();
@@ -33,7 +33,7 @@ bool CGameController_zCatch::IsZCatch()
 void CGameController_zCatch::DoWincheck()
 {
 	int Players = 0, Players_Spec = 0, Players_SpecExplicit = 0;	
-	
+
 	for(int i = 0; i < MAX_CLIENTS; i++)
 	{
 		if(GameServer()->m_apPlayers[i])
@@ -45,7 +45,7 @@ void CGameController_zCatch::DoWincheck()
 				Players_SpecExplicit++;
 		}
 	}
-	
+
 	if(Players == 1)
 	{
 		//Do nothing
@@ -59,7 +59,7 @@ void CGameController_zCatch::DoWincheck()
 		}
 		EndRound();
 	}
-	
+
 	IGameController::DoWincheck(); //do also usual wincheck
 }
 
@@ -71,18 +71,18 @@ int CGameController_zCatch::OnCharacterDeath(class CCharacter *pVictim, class CP
 	{
 		pKiller->m_Kills++;
 		pVictim->GetPlayer()->m_Deaths++; 
-		
+
 		pKiller->m_Score++;
-		
+
 		/* Check if the killer is already killed and in spectator (victim may died through wallshot) */
 		if(pKiller->GetTeam() != TEAM_SPECTATORS)
 		{
 			pVictim->GetPlayer()->m_CaughtBy = pKiller->GetCID();
 			pVictim->GetPlayer()->SetTeamDirect(TEAM_SPECTATORS);
-		
+
 			if(pVictim->GetPlayer()->m_PlayerWantToFollowCatcher)
 				pVictim->GetPlayer()->m_SpectatorID = pKiller->GetCID(); // Let the victim follow his catcher
-		
+
 			str_format(aBuf, sizeof(aBuf), "Caught by \"%s\". You will join the game automatically when \"%s\" dies.", Server()->ClientName(pKiller->GetCID()), Server()->ClientName(pKiller->GetCID()));
 			GameServer()->SendChatTarget(VictimID, aBuf);
 		}
@@ -108,11 +108,11 @@ int CGameController_zCatch::OnCharacterDeath(class CCharacter *pVictim, class CP
 			}
 		}
 	}
-		
+
 	// Update colors
 	OnPlayerInfoChange(pKiller);
 	OnPlayerInfoChange(pVictim->GetPlayer());
-	
+
 	return 0;
 }
 
@@ -140,8 +140,8 @@ void CGameController_zCatch::StartRound()
 	GameServer()->m_World.m_Paused = false;
 	m_aTeamscore[TEAM_RED] = 0;
 	m_aTeamscore[TEAM_BLUE] = 0;
-	m_UnbalancedTick = -1;
 	m_ForceBalanced = false;
+	Server()->DemoRecorder_HandleAutoStart();
 	for(int i=0; i<MAX_CLIENTS; i++)
 	{
 		if(GameServer()->m_apPlayers[i])
@@ -153,9 +153,9 @@ void CGameController_zCatch::StartRound()
 			GameServer()->m_apPlayers[i]->m_TicksIngame = 0;
 		}
 	}
-	char aBufMsg[256];
-	str_format(aBufMsg, sizeof(aBufMsg), "start round type='%s' teamplay='%d'", m_pGameType, m_GameFlags&GAMEFLAG_TEAMS);
-	GameServer()->Console()->Print(IConsole::OUTPUT_LEVEL_DEBUG, "game", aBufMsg);
+	char aBuf[256];
+	str_format(aBuf, sizeof(aBuf), "start round type='%s' teamplay='%d'", m_pGameType, m_GameFlags&GAMEFLAG_TEAMS);
+	GameServer()->Console()->Print(IConsole::OUTPUT_LEVEL_DEBUG, "game", aBuf);
 }
 
 void CGameController_zCatch::OnCharacterSpawn(class CCharacter *pChr)
@@ -199,7 +199,7 @@ void CGameController_zCatch::EndRound()
 	{
 		if(GameServer()->m_apPlayers[i])
 		{
-				
+
 			if(GameServer()->m_apPlayers[i]->m_SpecExplicit == 0)
 			{
 				GameServer()->m_apPlayers[i]->SetTeamDirect(GameServer()->m_pController->ClampTeam(1));
@@ -207,7 +207,7 @@ void CGameController_zCatch::EndRound()
 				char aBuf[128];
 				str_format(aBuf, sizeof(aBuf), "Kills: %d | Deaths: %d", GameServer()->m_apPlayers[i]->m_Kills, GameServer()->m_apPlayers[i]->m_Deaths);
 				GameServer()->SendChatTarget(i, aBuf);
-				
+
 				if(GameServer()->m_apPlayers[i]->m_TicksSpec != 0 || GameServer()->m_apPlayers[i]->m_TicksIngame != 0)
 				{
 					double TimeInSpec = (GameServer()->m_apPlayers[i]->m_TicksSpec*100.0) / (GameServer()->m_apPlayers[i]->m_TicksIngame + GameServer()->m_apPlayers[i]->m_TicksSpec);
