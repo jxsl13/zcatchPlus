@@ -110,6 +110,7 @@ MACRO_CONFIG_INT(SvAnticamperRange, sv_anticamper_range, 200, 0, 1000, CFGFLAG_S
 
 MACRO_CONFIG_INT(SvVoteForceReason, sv_vote_forcereason, 1, 0, 1, CFGFLAG_SERVER, "Allow only votes with a reason (except settings)")
 MACRO_CONFIG_INT(SvGrenadeMinDamage, sv_grenade_min_damage, 4, 1, 6, CFGFLAG_SERVER, "How much damage the grenade must do to kill the player (depends how far away it explodes)")
+MACRO_CONFIG_INT(SvGrenadeBullets, sv_grenade_bullets, -1, -1, 10, CFGFLAG_SERVER, "Default amount of bullets for the grenade (-1 = endless ammo), otherwise it reloads after some time")
 MACRO_CONFIG_INT(SvSuicideTime, sv_suicide_time, 15, 0, 60, CFGFLAG_SERVER, "Minimum time between suicides. 0 to forbid suicides completely")
 MACRO_CONFIG_INT(SvKillPenalty, sv_kill_penalty, 5, 0, 50, CFGFLAG_SERVER, "The amount of points which the score will be decreased on each suicide")
 #endif
