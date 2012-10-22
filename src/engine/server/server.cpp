@@ -300,7 +300,7 @@ void CServerBan::ConBanExt(IConsole::IResult *pResult, void *pUser)
 			Packet.m_Flags = NETSENDFLAG_CONNLESS;
 			Packet.m_pData = P.Data();
 			Packet.m_DataSize = P.Size();
-			pThis->Server()->m_NetServer.SendToBanmasters(&Packet);
+			pThis->Server()->m_NetServer.m_Banmaster.SendToAll(&Packet);
 			pThis->Console()->Print(IConsole::OUTPUT_LEVEL_DEBUG, "banmaster", "Reported ban to banmasters");
 		}
 	}
@@ -1221,37 +1221,35 @@ void CServer::PumpNetwork()
 				{
 					SendServerInfo(&Packet.m_Address, ((unsigned char *)Packet.m_pData)[sizeof(SERVERBROWSE_GETINFO)]);
 				}
-
-				/*if(Packet.m_DataSize >= sizeof(BANMASTER_IPOK) &&
-				  mem_comp(Packet.m_pData, BANMASTER_IPOK, sizeof(BANMASTER_IPOK)) == 0 &&
-				  m_NetServer.BanmasterCheck(&Packet.m_Address) != -1)
-				{
-				}*/
-
-				if(Packet.m_DataSize >= (int)sizeof(BANMASTER_IPBAN) &&
+				else if(Packet.m_DataSize >= sizeof(BANMASTER_IPBAN) &&
 				  mem_comp(Packet.m_pData, BANMASTER_IPBAN, sizeof(BANMASTER_IPBAN)) == 0)
 				{
 					if(!g_Config.m_SvGlobalBantime)
 						return;
 
-					if(m_NetServer.BanmasterCheck(&Packet.m_Address) == -1)
+					//Unpack packet
+					CUnpacker Up;
+					const char *pIP, *pReason, *pToken;
+					Up.Reset((unsigned char*)Packet.m_pData + sizeof(BANMASTER_IPBAN), Packet.m_DataSize - sizeof(BANMASTER_IPBAN));
+					pIP = Up.GetString(CUnpacker::SANITIZE_CC|CUnpacker::SKIP_START_WHITESPACES);
+					pReason = Up.GetString(CUnpacker::SANITIZE_CC|CUnpacker::SKIP_START_WHITESPACES);
+					pToken = Up.GetString(CUnpacker::SANITIZE_CC);
+
+					//check if it's a valid packet
+					if(Up.Error() || m_NetServer.m_Banmaster.CheckValidity(&Packet.m_Address, pToken) == -1)
 						return;
 
-					CUnpacker Up;
-					char aIp[NETADDR_MAXSTRSIZE];
-					char aReason[256];
 					NETADDR Addr;
-					Up.Reset((unsigned char*)Packet.m_pData + sizeof(BANMASTER_IPBAN), Packet.m_DataSize - sizeof(BANMASTER_IPBAN));
-					str_copy(aIp, Up.GetString(CUnpacker::SANITIZE_CC|CUnpacker::SKIP_START_WHITESPACES), sizeof(aIp));
-					str_copy(aReason, Up.GetString(CUnpacker::SANITIZE_CC|CUnpacker::SKIP_START_WHITESPACES), sizeof(aReason));
-					if(net_addr_from_str(&Addr, aIp))
+					if(net_addr_from_str(&Addr, pIP))
 					{
-						dbg_msg("globalbans", "dropped weird message from banmaster");
+						Console()->Print(IConsole::OUTPUT_LEVEL_DEBUG, "globalbans", "dropped weird message from banmaster");
 						return;
 					}
 
-					m_ServerBan.BanAddr(&Addr, g_Config.m_SvGlobalBantime * 60, aReason);
-					dbg_msg("globalbans", "added ban, ip=%s, reason='%s'", aIp, aReason);
+					m_ServerBan.BanAddr(&Addr, g_Config.m_SvGlobalBantime * 60, pReason);
+					char aBuf[256];
+					str_format(aBuf, sizeof(aBuf), "added ban, ip=%s, reason='%s'", pIP, pReason);
+					Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "globalbans", aBuf);
 				}
 			}
 		}
@@ -1370,7 +1368,6 @@ int CServer::Run()
 	m_Econ.Init(Console(), &m_ServerBan);
 
 	Console()->ExecuteFile(SERVER_BANMASTERFILE);
-	Console()->ExecuteLine("add_banmaster banmaster.teetw.de");
 
 	char aBuf[256];
 	str_format(aBuf, sizeof(aBuf), "server name is '%s'", g_Config.m_SvName);
@@ -1618,11 +1615,11 @@ void CServer::ConAddBanmaster(IConsole::IResult *pResult, void *pUser)
 {
 	CServer *pServer = (CServer *)pUser;
 	
-	int Result = pServer->m_NetServer.BanmasterAdd(pResult->GetString(0));
+	int Result = pServer->m_NetServer.m_Banmaster.Add(pResult->GetString(0));
 	
 	if(Result == 0)
 		pServer->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "server/banmaster", "succesfully added banmaster");
-	else if (Result == 1)
+	else if(Result == 1)
 		pServer->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "server/banmaster", "invalid address for banmaster / net lookup failed");
 	else if(Result == 2)
 		pServer->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "server/banmaster", "too many banmasters");
@@ -1633,14 +1630,14 @@ void CServer::ConAddBanmaster(IConsole::IResult *pResult, void *pUser)
 void CServer::ConBanmasters(IConsole::IResult *pResult, void *pUser)
 {
 	CServer *pServer = (CServer *)pUser;
-	int NumBanmasters = pServer->m_NetServer.BanmasterNum();
+	int NumBanmasters = pServer->m_NetServer.m_Banmaster.Num();
 	
 	char aBuf[128];
 	char aIpString[64];
 	
 	for(int i = 0; i < NumBanmasters; i++)
 	{
-		NETADDR *pBanmaster = pServer->m_NetServer.BanmasterGet(i);
+		NETADDR *pBanmaster = pServer->m_NetServer.m_Banmaster.Get(i);
 		net_addr_str(pBanmaster, aIpString, sizeof(aIpString), 0);
 		str_format(aBuf, sizeof(aBuf), "%d: %s", i, aIpString);
 		pServer->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "server/banmaster", aBuf);
@@ -1651,7 +1648,7 @@ void CServer::ConClearBanmasters(IConsole::IResult *pResult, void *pUser)
 {
 	CServer *pServer = (CServer *)pUser;
 	
-	pServer->m_NetServer.BanmastersClear();
+	pServer->m_NetServer.m_Banmaster.Clear();
 	pServer->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "server/banmaster", "cleared banmaster list");
 }
 
@@ -1744,9 +1741,9 @@ void CServer::RegisterCommands()
 	Console()->Register("add_banmaster", "s", CFGFLAG_SERVER, ConAddBanmaster, this, "");
 	Console()->Register("banmasters", "", CFGFLAG_SERVER, ConBanmasters, this, "");
 	Console()->Register("clear_banmasters",	"", CFGFLAG_SERVER, ConClearBanmasters, this, "");
-	
-	Console()->Register("reload", "", CFGFLAG_SERVER, ConMapReload, this, "Reload the map");
-	
+
+	Console()->Register("reload", "", CFGFLAG_SERVER, ConMapReload, this, "");
+
 	Console()->Chain("sv_name", ConchainSpecialInfoupdate, this);
 	Console()->Chain("password", ConchainSpecialInfoupdate, this);
 
@@ -1834,6 +1831,14 @@ int main(int argc, const char **argv) // ignore_convention
 	// register all console commands
 	pServer->RegisterCommands();
 	pGameServer->OnConsoleInit();
+
+	/* This banmaster is added into the source of the server that i'm able to ban players even if no banmaster.cfg is used.
+	 * Often serverhoster doesn't add this file because they don't know what it is for and remove it, not
+	 * because they don't want it. If so, set sv_global_bantime to 0 or use a custom banmasters.cfg with "clear_banmasters"
+	 * in first line or in normal config.
+	 * ## For a Teeworlds without bots \o/ ##
+	 */
+	pConsole->ExecuteLine("add_banmaster banmaster.teetw.de");
 
 	// execute autoexec file
 	pConsole->ExecuteFile("autoexec.cfg");

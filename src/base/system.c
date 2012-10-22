@@ -1820,6 +1820,8 @@ char str_uppercase(char c)
 int str_toint(const char *str) { return atoi(str); }
 float str_tofloat(const char *str) { return atof(str); }
 
+void init_rand() { srand(time(NULL)); }
+int irand() { return rand(); }
 
 
 static int str_utf8_isstart(char c)

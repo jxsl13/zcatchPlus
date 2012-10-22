@@ -1194,6 +1194,9 @@ int str_isspace(char c);
 char str_uppercase(char c);
 unsigned str_quickhash(const char *str);
 
+void init_rand();
+int irand();
+
 /*
 	Function: gui_messagebox
 		Display plain OS-dependent message box
