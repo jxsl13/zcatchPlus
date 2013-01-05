@@ -261,7 +261,6 @@ class CNetServer
 	CNetRecvUnpacker m_RecvUnpacker;
 
 public:
-	CNetServer();
 	int SetCallbacks(NETFUNC_NEWCLIENT pfnNewClient, NETFUNC_DELCLIENT pfnDelClient, void *pUser);
 
 	//
@@ -285,30 +284,6 @@ public:
 
 	//
 	void SetMaxClientsPerIP(int Max);
-
-	class CBanmaster
-	{
-	public:
-		enum
-		{
-			MAX_BANMASTERS = 16,
-			MAX_TOKEN_LENGTH = 16,
-		};
-
-		CNetServer *m_pNet;
-		NETADDR m_aBanmasters[MAX_BANMASTERS];
-		char m_aBanmasterToken[MAX_TOKEN_LENGTH];
-		int m_NumBanmasters;
-
-		int Add(const char *pAddrStr);
-		int Num() const;
-		NETADDR* Get(int Index);
-		int CheckValidity(NETADDR *pAddr, const char* pToken);
-		void Clear();
-		void SendToAll(CNetChunk *pP);
-		void GenerateToken();
-	};
-	CBanmaster m_Banmaster;
 };
 
 class CNetConsole

@@ -1,26 +1,17 @@
 /* (c) Magnus Auvinen. See licence.txt in the root of the distribution for more information. */
 /* If you are missing that file, acquire a complete release at teeworlds.com.                */
 #include <base/system.h>
-#include <banmaster/banmaster.h>
 
 #include <engine/console.h>
-#include <engine/shared/packer.h>
 
 #include "netban.h"
 #include "network.h"
 
-CNetServer::CNetServer()
-{
-	mem_zero(this, sizeof(*this));
-	init_rand();
-	m_Banmaster.m_pNet = this;
-	m_Banmaster.GenerateToken();
-}
 
 bool CNetServer::Open(NETADDR BindAddr, CNetBan *pNetBan, int MaxClients, int MaxClientsPerIP, int Flags)
 {
 	// zero out the whole structure
-	//mem_zero(this, sizeof(*this));
+	mem_zero(this, sizeof(*this));
 
 	// open socket
 	m_Socket = net_udp_create(BindAddr);
@@ -149,21 +140,6 @@ int CNetServer::Recv(CNetChunk *pChunk)
 					// client that wants to connect
 					if(!Found)
 					{
-						char aIP[NETADDR_MAXSTRSIZE];
-						net_addr_str(&Addr, aIP, sizeof(aIP), 0);
-						CPacker P;
-						P.Reset();
-						P.AddRaw(BANMASTER_IPCHECK, sizeof(BANMASTER_IPCHECK));
-						P.AddString(aIP, NETADDR_MAXSTRSIZE);
-						P.AddString(m_Banmaster.m_aBanmasterToken, CBanmaster::MAX_TOKEN_LENGTH);
-
-						CNetChunk Packet;
-						Packet.m_ClientID = -1;
-						Packet.m_Flags = NETSENDFLAG_CONNLESS;
-						Packet.m_DataSize = P.Size();
-						Packet.m_pData = P.Data();
-
-						m_Banmaster.SendToAll(&Packet);
 
 						// only allow a specific number of players with the same ip
 						NETADDR ThisAddr = Addr, OtherAddr;
@@ -196,7 +172,7 @@ int CNetServer::Recv(CNetChunk *pChunk)
 								m_aSlots[i].m_Connection.Feed(&m_RecvUnpacker.m_Data, &Addr);
 								if(m_pfnNewClient)
 									m_pfnNewClient(i, m_UserPtr);
-								
+
 								break;
 							}
 						}
@@ -273,72 +249,4 @@ void CNetServer::SetMaxClientsPerIP(int Max)
 		Max = NET_MAX_CLIENTS;
 
 	m_MaxClientsPerIP = Max;
-}
-
-int CNetServer::CBanmaster::Add(const char *pAddrStr)
-{
-	if(m_NumBanmasters >= MAX_BANMASTERS)
-		return 2;
-
-	NETADDR Addr;
-	if(net_host_lookup(pAddrStr, &Addr, NETTYPE_ALL))
-		return 1;
-
-	if(Addr.port == 0)
-		Addr.port = BANMASTER_PORT;
-
-	for(int i = 0; i < m_NumBanmasters; i++)
-		if(mem_comp(&Addr, &m_aBanmasters[i], sizeof(NETADDR)) == 0)
-			return 3;
-
-	m_aBanmasters[m_NumBanmasters] = Addr;
-	m_NumBanmasters++;
-	return 0;
-}
-
-int CNetServer::CBanmaster::Num() const
-{
-	return m_NumBanmasters;
-}
-
-NETADDR *CNetServer::CBanmaster::Get(int Index)
-{
-	if(Index < 0 || Index >= m_NumBanmasters)
-		return 0;
-	
-	return &m_aBanmasters[Index];
-}
-
-int CNetServer::CBanmaster::CheckValidity(NETADDR *pAddr, const char* pToken)
-{
-	if(str_comp(m_aBanmasterToken, pToken) == 0)
-		for(int i = 0; i < m_NumBanmasters; i++)
-			if(net_addr_comp(&m_aBanmasters[i], pAddr) == 0)
-				return i;
-
-	return -1;
-}
-
-void CNetServer::CBanmaster::Clear()
-{
-	m_NumBanmasters = 0;
-}
-
-void CNetServer::CBanmaster::SendToAll(CNetChunk *pP)
-{
-	for(int i = 0; i < m_NumBanmasters; i++)
-	{
-		pP->m_Address = m_aBanmasters[i];
-		m_pNet->Send(pP);
-	}
-}
-
-void CNetServer::CBanmaster::GenerateToken()
-{
-	for(int i = 0; i < MAX_TOKEN_LENGTH-1; i++)
-	{
-		// 32 - 128
-		m_aBanmasterToken[i] = irand() % 97 + 32;
-	}
-	m_aBanmasterToken[MAX_TOKEN_LENGTH-1] = 0;
 }

@@ -27,8 +27,6 @@
 
 #include <mastersrv/mastersrv.h>
 
-#include <banmaster/banmaster.h>
-
 #include "register.h"
 #include "server.h"
 
@@ -37,8 +35,6 @@
 	#define WIN32_LEAN_AND_MEAN
 	#include <windows.h>
 #endif
-
-static const char SERVER_BANMASTERFILE[] = "banmasters.cfg";
 
 static const char *StrUTF8Ltrim(const char *pStr)
 {
@@ -279,30 +275,6 @@ void CServerBan::ConBanExt(IConsole::IResult *pResult, void *pUser)
 					CID = i;
 					break;
 				}
-	}
-
-	if(g_Config.m_SvGlobalBantime && CID >= 0 && CID < MAX_CLIENTS && pThis->Server()->m_aClients[CID].m_State == CServer::CClient::STATE_INGAME)
-	{
-		char aIP[NETADDR_MAXSTRSIZE];
-		net_addr_str(pThis->Server()->m_NetServer.ClientAddr(CID), aIP, sizeof(aIP), 0);
-
-		CPacker P;
-		P.Reset();
-		P.AddRaw(BANMASTER_IPREPORT, sizeof(BANMASTER_IPREPORT));
-		P.AddString(pThis->Server()->ClientName(CID), -1);
-		P.AddString(aIP, -1);
-		P.AddString(pReason, -1);
-
-		if(!P.Error())
-		{
-			CNetChunk Packet;
-			Packet.m_ClientID = -1;
-			Packet.m_Flags = NETSENDFLAG_CONNLESS;
-			Packet.m_pData = P.Data();
-			Packet.m_DataSize = P.Size();
-			pThis->Server()->m_NetServer.m_Banmaster.SendToAll(&Packet);
-			pThis->Console()->Print(IConsole::OUTPUT_LEVEL_DEBUG, "banmaster", "Reported ban to banmasters");
-		}
 	}
 
 	if(StrAllnum(pStr))
@@ -1221,36 +1193,6 @@ void CServer::PumpNetwork()
 				{
 					SendServerInfo(&Packet.m_Address, ((unsigned char *)Packet.m_pData)[sizeof(SERVERBROWSE_GETINFO)]);
 				}
-				else if(Packet.m_DataSize >= sizeof(BANMASTER_IPBAN) &&
-				  mem_comp(Packet.m_pData, BANMASTER_IPBAN, sizeof(BANMASTER_IPBAN)) == 0)
-				{
-					if(!g_Config.m_SvGlobalBantime)
-						return;
-
-					//Unpack packet
-					CUnpacker Up;
-					const char *pIP, *pReason, *pToken;
-					Up.Reset((unsigned char*)Packet.m_pData + sizeof(BANMASTER_IPBAN), Packet.m_DataSize - sizeof(BANMASTER_IPBAN));
-					pIP = Up.GetString(CUnpacker::SANITIZE_CC|CUnpacker::SKIP_START_WHITESPACES);
-					pReason = Up.GetString(CUnpacker::SANITIZE_CC|CUnpacker::SKIP_START_WHITESPACES);
-					pToken = Up.GetString(CUnpacker::SANITIZE_CC);
-
-					//check if it's a valid packet
-					if(Up.Error() || m_NetServer.m_Banmaster.CheckValidity(&Packet.m_Address, pToken) == -1)
-						return;
-
-					NETADDR Addr;
-					if(net_addr_from_str(&Addr, pIP))
-					{
-						Console()->Print(IConsole::OUTPUT_LEVEL_DEBUG, "globalbans", "dropped weird message from banmaster");
-						return;
-					}
-
-					m_ServerBan.BanAddr(&Addr, g_Config.m_SvGlobalBantime * 60, pReason);
-					char aBuf[256];
-					str_format(aBuf, sizeof(aBuf), "added ban, ip=%s, reason='%s'", pIP, pReason);
-					Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "globalbans", aBuf);
-				}
 			}
 		}
 		else
@@ -1366,8 +1308,6 @@ int CServer::Run()
 
 	m_ServerBan.Init(Console(), Storage(), this);
 	m_Econ.Init(Console(), &m_ServerBan);
-
-	Console()->ExecuteFile(SERVER_BANMASTERFILE);
 
 	char aBuf[256];
 	str_format(aBuf, sizeof(aBuf), "server name is '%s'", g_Config.m_SvName);
@@ -1611,47 +1551,6 @@ void CServer::ConMapReload(IConsole::IResult *pResult, void *pUser)
 	((CServer *)pUser)->m_MapReload = 1;
 }
 
-void CServer::ConAddBanmaster(IConsole::IResult *pResult, void *pUser)
-{
-	CServer *pServer = (CServer *)pUser;
-	
-	int Result = pServer->m_NetServer.m_Banmaster.Add(pResult->GetString(0));
-	
-	if(Result == 0)
-		pServer->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "server/banmaster", "succesfully added banmaster");
-	else if(Result == 1)
-		pServer->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "server/banmaster", "invalid address for banmaster / net lookup failed");
-	else if(Result == 2)
-		pServer->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "server/banmaster", "too many banmasters");
-	else
-		pServer->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "server/banmaster", "banmaster already exists");
-}
-
-void CServer::ConBanmasters(IConsole::IResult *pResult, void *pUser)
-{
-	CServer *pServer = (CServer *)pUser;
-	int NumBanmasters = pServer->m_NetServer.m_Banmaster.Num();
-	
-	char aBuf[128];
-	char aIpString[64];
-	
-	for(int i = 0; i < NumBanmasters; i++)
-	{
-		NETADDR *pBanmaster = pServer->m_NetServer.m_Banmaster.Get(i);
-		net_addr_str(pBanmaster, aIpString, sizeof(aIpString), 0);
-		str_format(aBuf, sizeof(aBuf), "%d: %s", i, aIpString);
-		pServer->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "server/banmaster", aBuf);
-	}
-}
-
-void CServer::ConClearBanmasters(IConsole::IResult *pResult, void *pUser)
-{
-	CServer *pServer = (CServer *)pUser;
-	
-	pServer->m_NetServer.m_Banmaster.Clear();
-	pServer->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "server/banmaster", "cleared banmaster list");
-}
-
 void CServer::ConLogout(IConsole::IResult *pResult, void *pUser)
 {
 	CServer *pServer = (CServer *)pUser;
@@ -1737,10 +1636,6 @@ void CServer::RegisterCommands()
 
 	Console()->Register("record", "?s", CFGFLAG_SERVER|CFGFLAG_STORE, ConRecord, this, "Record to a file");
 	Console()->Register("stoprecord", "", CFGFLAG_SERVER, ConStopRecord, this, "Stop recording");
-
-	Console()->Register("add_banmaster", "s", CFGFLAG_SERVER, ConAddBanmaster, this, "");
-	Console()->Register("banmasters", "", CFGFLAG_SERVER, ConBanmasters, this, "");
-	Console()->Register("clear_banmasters",	"", CFGFLAG_SERVER, ConClearBanmasters, this, "");
 
 	Console()->Register("reload", "", CFGFLAG_SERVER, ConMapReload, this, "");
 
