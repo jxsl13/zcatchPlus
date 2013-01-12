@@ -104,7 +104,6 @@ public:
 	int m_Deaths;
 	int m_Kills;
 	int m_LastKillTry;
-	bool m_PlayerWantToFollowCatcher;
 	
 	int m_TicksSpec;
 	int m_TicksIngame;

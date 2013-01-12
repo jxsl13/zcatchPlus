@@ -744,7 +744,6 @@ void CGameContext::OnMessage(int MsgID, CUnpacker *pUnpacker, int ClientID)
 			SendChatTarget(ClientID, " ");
 			SendChatTarget(ClientID, "/info or /about - see information about author.");
 			SendChatTarget(ClientID, "/help - learn how to play.");
-			SendChatTarget(ClientID, "/follow 1 or /follow 0 - Enables/Disables following of the catcher.");
 		}
 		else if(!str_comp("/help", pMsg->m_pMessage))
 		{
@@ -754,22 +753,10 @@ void CGameContext::OnMessage(int MsgID, CUnpacker *pUnpacker, int ClientID)
 			SendChatTarget(ClientID, "So the only way to win is to kill every player without beeing killed.");
 			SendChatTarget(ClientID, "Have fun!");
 		}
-		else if(!str_comp("/follow 0", pMsg->m_pMessage))
-		{
-			pPlayer->m_PlayerWantToFollowCatcher = 0;
-			pPlayer->m_SpectatorID = SPEC_FREEVIEW;
-			SendChatTarget(ClientID, "Follow of catcher disabled.");
-		}
-		else if(!str_comp("/follow 1", pMsg->m_pMessage))
-		{
-			pPlayer->m_PlayerWantToFollowCatcher = 1;
-			SendChatTarget(ClientID, "Follow of catcher enabled.");
-		}	
 		else if(!str_comp_num("/", pMsg->m_pMessage, 1))
 			SendChatTarget(ClientID, "Unknown command.");
 		else
 			SendChat(ClientID, Team, pMsg->m_pMessage);
-
 		/* end zCatch */
 	}
 	else if(MsgID == NETMSGTYPE_CL_CALLVOTE)

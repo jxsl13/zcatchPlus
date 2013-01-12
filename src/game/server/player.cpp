@@ -27,7 +27,6 @@ CPlayer::CPlayer(CGameContext *pGameServer, int ClientID, int Team)
 	m_SpecExplicit = 0;
 	m_Kills = 0;
 	m_Deaths = 0;
-	m_PlayerWantToFollowCatcher = g_Config.m_SvFollowCatcher;
 	m_LastKillTry = Server()->Tick();
 	m_TicksSpec = 0;
 	m_TicksIngame = 0;

@@ -78,8 +78,7 @@ int CGameController_zCatch::OnCharacterDeath(class CCharacter *pVictim, class CP
 			pVictim->GetPlayer()->m_CaughtBy = pKiller->GetCID();
 			pVictim->GetPlayer()->SetTeamDirect(TEAM_SPECTATORS);
 
-			if(pVictim->GetPlayer()->m_PlayerWantToFollowCatcher)
-				pVictim->GetPlayer()->m_SpectatorID = pKiller->GetCID(); // Let the victim follow his catcher
+			pVictim->GetPlayer()->m_SpectatorID = pKiller->GetCID(); // Let the victim follow his catcher
 
 			char aBuf[256];
 			str_format(aBuf, sizeof(aBuf), "Caught by \"%s\". You will join the game automatically when \"%s\" dies.", Server()->ClientName(pKiller->GetCID()), Server()->ClientName(pKiller->GetCID()));
