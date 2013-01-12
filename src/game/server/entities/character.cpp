@@ -59,23 +59,21 @@ bool CCharacter::Spawn(CPlayer *pPlayer, vec2 Pos)
 	m_LastAction = -1;
 	
 	/*zCatch */
-	if(GameServer()->m_pController->IsZCatch() && g_Config.m_SvMode == 1)
+	switch(g_Config.m_SvMode)
 	{
+	case 1:
 		m_ActiveWeapon = WEAPON_RIFLE;
 		m_LastWeapon = WEAPON_RIFLE;
-	}
-	else if(GameServer()->m_pController->IsZCatch() && g_Config.m_SvMode == 3)
-	{
+		break;
+	case 3:
 		m_ActiveWeapon = WEAPON_HAMMER;
 		m_LastWeapon = WEAPON_HAMMER;
-	}
-	else if(GameServer()->m_pController->IsZCatch() && g_Config.m_SvMode == 4)
-	{
+		break;
+	case 4:
 		m_ActiveWeapon = WEAPON_GRENADE;
 		m_LastWeapon = WEAPON_GRENADE;
-	}
-	else
-	{
+		break;
+	default:
 		m_ActiveWeapon = WEAPON_GUN;
 		m_LastWeapon = WEAPON_HAMMER;
 	}
@@ -138,20 +136,17 @@ void CCharacter::HandleNinja()
 	if(m_ActiveWeapon != WEAPON_NINJA)
 		return;
 
-	/* zCatch */
-	if(GameServer()->m_pController->IsZCatch() == false)
+	/* zCatch - Disable for Ninja-Mode
+	if ((Server()->Tick() - m_Ninja.m_ActivationTick) > (g_pData->m_Weapons.m_Ninja.m_Duration * Server()->TickSpeed() / 1000))
 	{
-		if ((Server()->Tick() - m_Ninja.m_ActivationTick) > (g_pData->m_Weapons.m_Ninja.m_Duration * Server()->TickSpeed() / 1000))
-		{
-			// time's up, return
-			m_aWeapons[WEAPON_NINJA].m_Got = false;
-			m_ActiveWeapon = m_LastWeapon;
+		// time's up, return
+		m_aWeapons[WEAPON_NINJA].m_Got = false;
+		m_ActiveWeapon = m_LastWeapon;
 
-			SetWeapon(m_ActiveWeapon);
-			return;
-		}
+		SetWeapon(m_ActiveWeapon);
+		return;
 	}
-	/* zCatch end*/
+	*/
 	
 	// force ninja Weapon
 	SetWeapon(WEAPON_NINJA);
@@ -472,7 +467,7 @@ void CCharacter::HandleWeapons()
 
 	// ammo regen
 	int AmmoRegenTime = g_pData->m_Weapons.m_aId[m_ActiveWeapon].m_Ammoregentime;
-	if(GameServer()->m_pController->IsZCatch() && m_aWeapons[m_ActiveWeapon].m_Ammo > -1)
+	if(m_aWeapons[m_ActiveWeapon].m_Ammo > -1)
 	{
 		switch(m_ActiveWeapon)
 		{
@@ -494,7 +489,7 @@ void CCharacter::HandleWeapons()
 			if ((Server()->Tick() - m_aWeapons[m_ActiveWeapon].m_AmmoRegenStart) >= AmmoRegenTime * Server()->TickSpeed() / 1000)
 			{
 				// Add some ammo
-				m_aWeapons[m_ActiveWeapon].m_Ammo = min(m_aWeapons[m_ActiveWeapon].m_Ammo + 1, (GameServer()->m_pController->IsZCatch()) ? g_Config.m_SvGrenadeBullets : 10);
+				m_aWeapons[m_ActiveWeapon].m_Ammo = min(m_aWeapons[m_ActiveWeapon].m_Ammo + 1, g_Config.m_SvGrenadeBullets);
 				m_aWeapons[m_ActiveWeapon].m_AmmoRegenStart = -1;
 			}
 		}
@@ -791,22 +786,14 @@ bool CCharacter::TakeDamage(vec2 Force, int Dmg, int From, int Weapon)
 		return false;
 	
 	/* zCatch */
-	if(GameServer()->m_pController->IsZCatch())
-	{
-		if(From == m_pPlayer->GetCID() || Weapon == WEAPON_GAME)
-			return false;
+	if(From == m_pPlayer->GetCID() || Weapon == WEAPON_GAME)
+		return false;
 
-		if(g_Config.m_SvMode == 4 && Weapon == WEAPON_GRENADE && Dmg < g_Config.m_SvGrenadeMinDamage)
-			return false;
+	if(g_Config.m_SvMode == 4 && Weapon == WEAPON_GRENADE && Dmg < g_Config.m_SvGrenadeMinDamage)
+		return false;
 
-		m_Health = 0;
-		m_Armor = 0;
-	}
-	else
-	{
-		if(From == m_pPlayer->GetCID())
-			Dmg = max(1, Dmg/2);
-	}
+	m_Health = 0;
+	m_Armor = 0;
 	/* end zCatch */
 	
 	m_DamageTaken++;

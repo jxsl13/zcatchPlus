@@ -12,13 +12,13 @@
 */
 class IGameController
 {
+protected:
 	vec2 m_aaSpawnPoints[3][64];
 	int m_aNumSpawnPoints[3];
 
 	class CGameContext *m_pGameServer;
 	class IServer *m_pServer;
 
-protected:
 	CGameContext *GameServer() const { return m_pGameServer; }
 	IServer *Server() const { return m_pServer; }
 
@@ -138,12 +138,10 @@ public:
 	virtual int GetAutoTeam(int NotThisID);
 	virtual bool CanJoinTeam(int Team, int NotThisID);
 	bool CheckTeamBalance();
-	bool CanChangeTeam(CPlayer *pPplayer, int JoinTeam);
+	virtual bool CanChangeTeam(CPlayer *pPlayer, int JoinTeam);
 	int ClampTeam(int Team);
 
 	virtual void PostReset();
-	
-	virtual bool IsZCatch();
 };
 
 #endif

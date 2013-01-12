@@ -1,13 +1,16 @@
 /* (c) Magnus Auvinen. See licence.txt in the root of the distribution for more information. */
 /* If you are missing that file, acquire a complete release at teeworlds.com.                */
-/* zCatch by erd and Teetime */
+/* zCatch by erd and Teetime                                                                 */
 
 #include <engine/shared/config.h>
 #include <game/server/gamecontext.h>
+#include <game/server/gamecontroller.h>
+#include <game/server/entities/character.h>
+#include <game/server/player.h>
 #include "zcatch.h"
 
-CGameController_zCatch::CGameController_zCatch(class CGameContext *pGameServer) 
-: IGameController(pGameServer)
+CGameController_zCatch::CGameController_zCatch(class CGameContext *pGameServer) :
+		IGameController(pGameServer)
 {
 	m_pGameType = "zCatch";
 	m_OldMode = g_Config.m_SvMode;
@@ -25,14 +28,9 @@ void CGameController_zCatch::Tick()
 	}
 }
 
-bool CGameController_zCatch::IsZCatch()
-{
-	return true;
-}
-
 void CGameController_zCatch::DoWincheck()
 {
-	int Players = 0, Players_Spec = 0, Players_SpecExplicit = 0;	
+	int Players = 0, Players_Spec = 0, Players_SpecExplicit = 0;
 
 	for(int i = 0; i < MAX_CLIENTS; i++)
 	{
@@ -50,7 +48,7 @@ void CGameController_zCatch::DoWincheck()
 	{
 		//Do nothing
 	}
-	else if((Players - Players_Spec == 1) && (Players != Players_Spec) && (Players - Players_SpecExplicit != 1)) 
+	else if((Players - Players_Spec == 1) && (Players != Players_Spec) && (Players - Players_SpecExplicit != 1))
 	{
 		for(int i = 0; i < MAX_CLIENTS; i++)
 		{
@@ -65,12 +63,12 @@ void CGameController_zCatch::DoWincheck()
 
 int CGameController_zCatch::OnCharacterDeath(class CCharacter *pVictim, class CPlayer *pKiller, int WeaponID)
 {
-	int VictimID =  pVictim->GetPlayer()->GetCID();
-	char aBuf[256];
-	if(pKiller !=  pVictim->GetPlayer())
+	int VictimID = pVictim->GetPlayer()->GetCID();
+
+	if(pKiller != pVictim->GetPlayer())
 	{
 		pKiller->m_Kills++;
-		pVictim->GetPlayer()->m_Deaths++; 
+		pVictim->GetPlayer()->m_Deaths++;
 
 		pKiller->m_Score++;
 
@@ -83,6 +81,7 @@ int CGameController_zCatch::OnCharacterDeath(class CCharacter *pVictim, class CP
 			if(pVictim->GetPlayer()->m_PlayerWantToFollowCatcher)
 				pVictim->GetPlayer()->m_SpectatorID = pKiller->GetCID(); // Let the victim follow his catcher
 
+			char aBuf[256];
 			str_format(aBuf, sizeof(aBuf), "Caught by \"%s\". You will join the game automatically when \"%s\" dies.", Server()->ClientName(pKiller->GetCID()), Server()->ClientName(pKiller->GetCID()));
 			GameServer()->SendChatTarget(VictimID, aBuf);
 		}
@@ -94,15 +93,15 @@ int CGameController_zCatch::OnCharacterDeath(class CCharacter *pVictim, class CP
 			pVictim->GetPlayer()->m_Score -= g_Config.m_SvKillPenalty;
 	}
 
-	for(int i=0; i < MAX_CLIENTS; i++)
+	for(int i = 0; i < MAX_CLIENTS; i++)
 	{
 		if(GameServer()->m_apPlayers[i])
 		{
 			if(GameServer()->m_apPlayers[i]->m_CaughtBy == VictimID)
 			{
-				GameServer()->m_apPlayers[i]->m_CaughtBy = ZCATCH_NOT_CAUGHT;
+				GameServer()->m_apPlayers[i]->m_CaughtBy = CPlayer::ZCATCH_NOT_CAUGHT;
 				GameServer()->m_apPlayers[i]->SetTeamDirect(GameServer()->m_pController->ClampTeam(1));
-				
+
 				if(pKiller != pVictim->GetPlayer())
 					pKiller->m_Score++;
 			}
@@ -142,11 +141,11 @@ void CGameController_zCatch::StartRound()
 	m_aTeamscore[TEAM_BLUE] = 0;
 	m_ForceBalanced = false;
 	Server()->DemoRecorder_HandleAutoStart();
-	for(int i=0; i<MAX_CLIENTS; i++)
+	for(int i = 0; i < MAX_CLIENTS; i++)
 	{
 		if(GameServer()->m_apPlayers[i])
-		{		
-			GameServer()->m_apPlayers[i]->m_CaughtBy = ZCATCH_NOT_CAUGHT;
+		{
+			GameServer()->m_apPlayers[i]->m_CaughtBy = CPlayer::ZCATCH_NOT_CAUGHT;
 			GameServer()->m_apPlayers[i]->m_Kills = 0;
 			GameServer()->m_apPlayers[i]->m_Deaths = 0;
 			GameServer()->m_apPlayers[i]->m_TicksSpec = 0;
@@ -167,27 +166,27 @@ void CGameController_zCatch::OnCharacterSpawn(class CCharacter *pChr)
 
 	// give default weapons
 	switch(g_Config.m_SvMode)
-		{
-			case 1: /* Instagib - Only Riffle */
-				pChr->GiveWeapon(WEAPON_RIFLE, -1);
-				break;
-			case 2: /* All Weapons */
-				pChr->GiveWeapon(WEAPON_HAMMER, -1);
-				pChr->GiveWeapon(WEAPON_GUN, 6);
-				pChr->GiveWeapon(WEAPON_GRENADE, 6);
-				pChr->GiveWeapon(WEAPON_SHOTGUN, 6);
-				pChr->GiveWeapon(WEAPON_RIFLE, 6);
-				break;
-			case 3: /* Hammer */
-				pChr->GiveWeapon(WEAPON_HAMMER, -1);
-				break;
-			case 4: /* Grenade */
-				pChr->GiveWeapon(WEAPON_GRENADE, g_Config.m_SvGrenadeBullets);
-				break;
-			case 5: /* Ninja */
-				pChr->GiveNinja();
-				break;
-		}
+	{
+	case 1: /* Instagib - Only Riffle */
+		pChr->GiveWeapon(WEAPON_RIFLE, -1);
+		break;
+	case 2: /* All Weapons */
+		pChr->GiveWeapon(WEAPON_HAMMER, -1);
+		pChr->GiveWeapon(WEAPON_GUN, 6);
+		pChr->GiveWeapon(WEAPON_GRENADE, 6);
+		pChr->GiveWeapon(WEAPON_SHOTGUN, 6);
+		pChr->GiveWeapon(WEAPON_RIFLE, 6);
+		break;
+	case 3: /* Hammer */
+		pChr->GiveWeapon(WEAPON_HAMMER, -1);
+		break;
+	case 4: /* Grenade */
+		pChr->GiveWeapon(WEAPON_GRENADE, g_Config.m_SvGrenadeBullets);
+		break;
+	case 5: /* Ninja */
+		pChr->GiveNinja();
+		break;
+	}
 
 	//Update color of spawning tees
 	OnPlayerInfoChange(pChr->GetPlayer());
@@ -203,18 +202,18 @@ void CGameController_zCatch::EndRound()
 			if(GameServer()->m_apPlayers[i]->m_SpecExplicit == 0)
 			{
 				GameServer()->m_apPlayers[i]->SetTeamDirect(GameServer()->m_pController->ClampTeam(1));
-				
+
 				char aBuf[128];
 				str_format(aBuf, sizeof(aBuf), "Kills: %d | Deaths: %d", GameServer()->m_apPlayers[i]->m_Kills, GameServer()->m_apPlayers[i]->m_Deaths);
 				GameServer()->SendChatTarget(i, aBuf);
 
 				if(GameServer()->m_apPlayers[i]->m_TicksSpec != 0 || GameServer()->m_apPlayers[i]->m_TicksIngame != 0)
 				{
-					double TimeInSpec = (GameServer()->m_apPlayers[i]->m_TicksSpec*100.0) / (GameServer()->m_apPlayers[i]->m_TicksIngame + GameServer()->m_apPlayers[i]->m_TicksSpec);
-					str_format(aBuf, sizeof(aBuf), "Spec: %.2f%% | Ingame: %.2f%%", (double)TimeInSpec, (double)(100.0 - TimeInSpec));
+					double TimeInSpec = (GameServer()->m_apPlayers[i]->m_TicksSpec * 100.0) / (GameServer()->m_apPlayers[i]->m_TicksIngame + GameServer()->m_apPlayers[i]->m_TicksSpec);
+					str_format(aBuf, sizeof(aBuf), "Spec: %.2f%% | Ingame: %.2f%%", (double) TimeInSpec, (double) (100.0 - TimeInSpec));
 					GameServer()->SendChatTarget(i, aBuf);
 				}
-				GameServer()->m_apPlayers[i]->m_CaughtBy = ZCATCH_NOT_CAUGHT; //Set all players in server as non-caught
+				GameServer()->m_apPlayers[i]->m_CaughtBy = CPlayer::ZCATCH_NOT_CAUGHT; //Set all players in server as non-caught
 			}
 		}
 	}
@@ -225,4 +224,23 @@ void CGameController_zCatch::EndRound()
 	GameServer()->m_World.m_Paused = true;
 	m_GameOverTick = Server()->Tick();
 	m_SuddenDeath = 0;
+}
+
+bool CGameController_zCatch::CanChangeTeam(CPlayer *pPlayer, int JoinTeam)
+{
+	if(pPlayer->m_CaughtBy >= 0)
+		return false;
+	return true;
+}
+
+bool CGameController_zCatch::OnEntity(int Index, vec2 Pos)
+{
+	if(Index == ENTITY_SPAWN)
+		m_aaSpawnPoints[0][m_aNumSpawnPoints[0]++] = Pos;
+	else if(Index == ENTITY_SPAWN_RED)
+		m_aaSpawnPoints[1][m_aNumSpawnPoints[1]++] = Pos;
+	else if(Index == ENTITY_SPAWN_BLUE)
+		m_aaSpawnPoints[2][m_aNumSpawnPoints[2]++] = Pos;
+
+	return false;
 }

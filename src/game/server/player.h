@@ -97,7 +97,8 @@ public:
 		int m_Max;
 	} m_Latency;
 	
-		//zCatch:
+	//zCatch:
+	enum { ZCATCH_NOT_CAUGHT = -1 };
 	int m_CaughtBy;
 	int m_SpecExplicit;
 	int m_Deaths;

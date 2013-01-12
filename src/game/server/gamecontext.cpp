@@ -9,10 +9,10 @@
 #include <game/version.h>
 #include <game/collision.h>
 #include <game/gamecore.h>
-#include "gamemodes/dm.h"
+/*#include "gamemodes/dm.h"
 #include "gamemodes/tdm.h"
 #include "gamemodes/ctf.h"
-#include "gamemodes/mod.h"
+#include "gamemodes/mod.h"*/
 #include "gamemodes/zcatch.h"
 
 enum
@@ -548,62 +548,59 @@ void CGameContext::OnClientEnter(int ClientID)
 	int LeaderID = -1;
 	int StartTeam = m_pController->ClampTeam(1);
 	
-	if(m_pController->IsZCatch())
+	int Num = 0;
+
+	for(int i = 0; i < MAX_CLIENTS; i++)
 	{
-		int Num = 0;
-		
+		if(IsClientReady(i))
+			Num++;
+	}
+	if(Num < 3)
+		m_pController->EndRound();
+
+	if(g_Config.m_SvAllowJoin == 1)
+	{
+		m_apPlayers[ClientID]->m_CaughtBy = CPlayer::ZCATCH_NOT_CAUGHT;
+		m_apPlayers[ClientID]->m_SpecExplicit = (Num < 3) ? 0 : 1;
+		StartTeam = (Num < 3) ? m_pController->ClampTeam(1) : TEAM_SPECTATORS;
+		SendBroadcast("You can join the game", ClientID);
+	}
+	else if(g_Config.m_SvAllowJoin == 2)
+	{
+		int Num2 = 0, PrevNum = 0;
+
 		for(int i = 0; i < MAX_CLIENTS; i++)
 		{
-			if(IsClientReady(i))
-				Num++;
-		}
-		if(Num < 3)
-			m_pController->EndRound();
-		
-		if(g_Config.m_SvAllowJoin == 1)
-		{
-			m_apPlayers[ClientID]->m_CaughtBy = ZCATCH_NOT_CAUGHT;
-			m_apPlayers[ClientID]->m_SpecExplicit = (Num < 3) ? 0 : 1;
-			StartTeam = (Num < 3) ? m_pController->ClampTeam(1) : TEAM_SPECTATORS;
-			SendBroadcast("You can join the game", ClientID);
-		}
-		else if(g_Config.m_SvAllowJoin == 2)
-		{
-			int Num2 = 0, PrevNum = 0;
-
-			for(int i = 0; i < MAX_CLIENTS; i++)
+			if(m_apPlayers[i])
 			{
-				if(m_apPlayers[i])
+				Num2 = 0;
+				for(int j = 0; j < MAX_CLIENTS; j++)
+					if(m_apPlayers[j] && m_apPlayers[j]->m_CaughtBy == i)
+						Num2++;
+
+				if(Num2 > PrevNum)
 				{
-					Num2 = 0;
-					for(int j = 0; j < MAX_CLIENTS; j++)
-						if(m_apPlayers[j] && m_apPlayers[j]->m_CaughtBy == i)
-							Num2++;
-
-					if(Num2 > PrevNum)
-					{
-						LeaderID = i;
-						PrevNum = Num2;
-		    		}
+					LeaderID = i;
+					PrevNum = Num2;
 				}
-		    }
+			}
+		}
 
-		    if(LeaderID > -1)
-			{
-				m_apPlayers[ClientID]->m_CaughtBy = LeaderID;
-				m_apPlayers[ClientID]->m_SpecExplicit = 0;
-				m_apPlayers[ClientID]->m_SpectatorID = LeaderID;
-				StartTeam = TEAM_SPECTATORS;
-			}
-			else
-			{
-				m_apPlayers[ClientID]->m_CaughtBy = ZCATCH_NOT_CAUGHT;
-				m_apPlayers[ClientID]->m_SpecExplicit = 0;
-			}
+		if(LeaderID > -1)
+		{
+			m_apPlayers[ClientID]->m_CaughtBy = LeaderID;
+			m_apPlayers[ClientID]->m_SpecExplicit = 0;
+			m_apPlayers[ClientID]->m_SpectatorID = LeaderID;
+			StartTeam = TEAM_SPECTATORS;
 		}
 		else
-			StartTeam = m_pController->GetAutoTeam(ClientID);
+		{
+			m_apPlayers[ClientID]->m_CaughtBy = CPlayer::ZCATCH_NOT_CAUGHT;
+			m_apPlayers[ClientID]->m_SpecExplicit = 0;
+		}
 	}
+	else
+		StartTeam = m_pController->GetAutoTeam(ClientID);
 	
 	m_apPlayers[ClientID]->SetTeamDirect(StartTeam);
 	
@@ -619,17 +616,14 @@ void CGameContext::OnClientEnter(int ClientID)
 	m_VoteUpdate = true;
 	
 	/* zCatch begin */
-   	if(m_pController->IsZCatch())
+	SendChatTarget(ClientID, "Welcome to zCatch!");
+	SendChatTarget(ClientID, "type /cmdlist to get all commands");
+	SendChatTarget(ClientID, "type /help for instructions");
+	if(g_Config.m_SvAllowJoin == 2 && LeaderID > -1)
 	{
-	    SendChatTarget(ClientID, "Welcome to zCatch!");
-	    SendChatTarget(ClientID, "type /cmdlist to get all commands");
-	    SendChatTarget(ClientID, "type /help for instructions");
-	    if(g_Config.m_SvAllowJoin == 2 && LeaderID > -1)
-	    {
-	    	char buf[128];
-	    	str_format(buf, sizeof(buf), "You will join the game when %s dies", Server()->ClientName(LeaderID));
-	    	SendChatTarget(ClientID, buf);	
-	    }
+		char buf[128];
+		str_format(buf, sizeof(buf), "You will join the game when %s dies", Server()->ClientName(LeaderID));
+		SendChatTarget(ClientID, buf);
 	}
 	/* zCatch end */
 }
@@ -974,34 +968,18 @@ void CGameContext::OnMessage(int MsgID, CUnpacker *pUnpacker, int ClientID)
 		// Switch team on given client and kill/respawn him
 		if(m_pController->CanJoinTeam(pMsg->m_Team, ClientID))
 		{
-			if(m_pController->CanChangeTeam(pPlayer, pMsg->m_Team) && !m_pController->IsZCatch()) //zCatch
+			if(m_pController->CanChangeTeam(pPlayer, pMsg->m_Team))
 			{
 				pPlayer->m_LastSetTeam = Server()->Tick();
-				if(pPlayer->GetTeam() == TEAM_SPECTATORS || pMsg->m_Team == TEAM_SPECTATORS)
-					m_VoteUpdate = true;
 				pPlayer->SetTeam(pMsg->m_Team);
-				(void)m_pController->CheckTeamBalance();
-				pPlayer->m_TeamChangeTick = Server()->Tick();
 			}
-			/* begin zCatch */
-			else if(m_pController->IsZCatch())
-			{	
-				if(pPlayer->m_CaughtBy >= 0)
-				{
-					char buf[256];
-					str_format(buf, sizeof(buf), "You will join automatically when \"%s\" dies.", Server()->ClientName(pPlayer->m_CaughtBy));
-					SendChatTarget(ClientID, buf);
-					return;
-				}
-				else if(pPlayer->m_CaughtBy == ZCATCH_NOT_CAUGHT)
-				{
-					pPlayer->m_LastSetTeam = Server()->Tick();
-					pPlayer->SetTeam(pMsg->m_Team);
-				}
-			}
-            /* end zCatch */
 			else
-				SendBroadcast("Teams must be balanced, please join other team", ClientID);
+			{
+				char aBuf[256];
+				str_format(aBuf, sizeof(aBuf), "You will join automatically when \"%s\" dies.", Server()->ClientName(pPlayer->m_CaughtBy));
+				SendChatTarget(ClientID, aBuf);
+				return;
+			}
 		}
 		else
 		{
@@ -1774,7 +1752,7 @@ void CGameContext::OnInit(/*class IKernel *pKernel*/)
 	//players = new CPlayer[MAX_CLIENTS];
 
 	// select gametype
-	if(str_comp(g_Config.m_SvGametype, "mod") == 0)
+	/*if(str_comp(g_Config.m_SvGametype, "mod") == 0)
 		m_pController = new CGameControllerMOD(this);
 	else if(str_comp(g_Config.m_SvGametype, "ctf") == 0)
 		m_pController = new CGameControllerCTF(this);
@@ -1783,7 +1761,8 @@ void CGameContext::OnInit(/*class IKernel *pKernel*/)
 	else if(str_comp_nocase(g_Config.m_SvGametype, "zcatch") == 0)
 		m_pController = new CGameController_zCatch(this);
 	else
-		m_pController = new CGameControllerDM(this);
+		m_pController = new CGameControllerDM(this);*/
+	m_pController = new CGameController_zCatch(this);
 
 	// setup core world
 	//for(int i = 0; i < MAX_CLIENTS; i++)

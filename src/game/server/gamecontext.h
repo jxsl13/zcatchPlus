@@ -143,11 +143,6 @@ public:
 		CHAT_BLUE=1
 	};
 	
-	enum
-	{
-		ZCATCH_NOT_CAUGHT = -1,
-	}; 
-	
 	struct CMutes
 	{
 		char m_IP[NETADDR_MAXSTRSIZE];
