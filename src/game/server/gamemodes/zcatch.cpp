@@ -63,6 +63,9 @@ void CGameController_zCatch::DoWincheck()
 
 int CGameController_zCatch::OnCharacterDeath(class CCharacter *pVictim, class CPlayer *pKiller, int WeaponID)
 {
+	if(!pKiller)
+		return 0;
+
 	int VictimID = pVictim->GetPlayer()->GetCID();
 
 	if(pKiller != pVictim->GetPlayer())
