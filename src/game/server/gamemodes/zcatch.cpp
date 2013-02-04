@@ -174,16 +174,16 @@ void CGameController_zCatch::OnCharacterSpawn(class CCharacter *pChr)
 		break;
 	case 2: /* All Weapons */
 		pChr->GiveWeapon(WEAPON_HAMMER, -1);
-		pChr->GiveWeapon(WEAPON_GUN, 6);
-		pChr->GiveWeapon(WEAPON_GRENADE, 6);
-		pChr->GiveWeapon(WEAPON_SHOTGUN, 6);
-		pChr->GiveWeapon(WEAPON_RIFLE, 6);
+		pChr->GiveWeapon(WEAPON_GUN, g_Config.m_SvWeaponsAmmo);
+		pChr->GiveWeapon(WEAPON_GRENADE, g_Config.m_SvWeaponsAmmo);
+		pChr->GiveWeapon(WEAPON_SHOTGUN, g_Config.m_SvWeaponsAmmo);
+		pChr->GiveWeapon(WEAPON_RIFLE, g_Config.m_SvWeaponsAmmo);
 		break;
 	case 3: /* Hammer */
 		pChr->GiveWeapon(WEAPON_HAMMER, -1);
 		break;
 	case 4: /* Grenade */
-		pChr->GiveWeapon(WEAPON_GRENADE, g_Config.m_SvGrenadeBullets);
+		pChr->GiveWeapon(WEAPON_GRENADE, g_Config.m_SvGrenadeEndlessAmmo ? -1 : g_Config.m_SvWeaponsAmmo);
 		break;
 	case 5: /* Ninja */
 		pChr->GiveNinja();
