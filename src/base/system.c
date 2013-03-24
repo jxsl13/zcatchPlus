@@ -80,7 +80,7 @@ void dbg_assert_imp(const char *filename, int line, int test, const char *msg)
 
 void dbg_break()
 {
-	*((unsigned*)0) = 0x0;
+	*((volatile unsigned*)0) = 0x0;
 }
 
 void dbg_msg(const char *sys, const char *fmt, ...)
@@ -166,6 +166,8 @@ void *mem_alloc_debug(const char *filename, int line, unsigned size, unsigned al
 	MEMTAIL *tail;
 	MEMHEADER *header = (struct MEMHEADER *)malloc(size+sizeof(MEMHEADER)+sizeof(MEMTAIL));
 	dbg_assert(header != 0, "mem_alloc failure");
+	if(!header)
+		return NULL;
 	tail = (struct MEMTAIL *)(((char*)(header+1))+size);
 	header->size = size;
 	header->filename = filename;
@@ -477,7 +479,7 @@ int lock_try(LOCK lock)
 #if defined(CONF_FAMILY_UNIX)
 	return pthread_mutex_trylock((LOCKINTERNAL *)lock);
 #elif defined(CONF_FAMILY_WINDOWS)
-	return TryEnterCriticalSection((LPCRITICAL_SECTION)lock);
+	return !TryEnterCriticalSection((LPCRITICAL_SECTION)lock);
 #else
 	#error not implemented on this platform
 #endif
@@ -505,18 +507,20 @@ void lock_release(LOCK lock)
 #endif
 }
 
-#if defined(CONF_FAMILY_UNIX)
-void semaphore_init(SEMAPHORE *sem) { sem_init(sem, 0, 0); }
-void semaphore_wait(SEMAPHORE *sem) { sem_wait(sem); }
-void semaphore_signal(SEMAPHORE *sem) { sem_post(sem); }
-void semaphore_destroy(SEMAPHORE *sem) { sem_destroy(sem); }
-#elif defined(CONF_FAMILY_WINDOWS)
-void semaphore_init(SEMAPHORE *sem) { *sem = CreateSemaphore(0, 0, 10000, 0); }
-void semaphore_wait(SEMAPHORE *sem) { WaitForSingleObject((HANDLE)*sem, 0L); }
-void semaphore_signal(SEMAPHORE *sem) { ReleaseSemaphore((HANDLE)*sem, 1, NULL); }
-void semaphore_destroy(SEMAPHORE *sem) { CloseHandle((HANDLE)*sem); }
-#else
-	#error not implemented on this platform
+#if !defined(CONF_PLATFORM_MACOSX)
+	#if defined(CONF_FAMILY_UNIX)
+	void semaphore_init(SEMAPHORE *sem) { sem_init(sem, 0, 0); }
+	void semaphore_wait(SEMAPHORE *sem) { sem_wait(sem); }
+	void semaphore_signal(SEMAPHORE *sem) { sem_post(sem); }
+	void semaphore_destroy(SEMAPHORE *sem) { sem_destroy(sem); }
+	#elif defined(CONF_FAMILY_WINDOWS)
+	void semaphore_init(SEMAPHORE *sem) { *sem = CreateSemaphore(0, 0, 10000, 0); }
+	void semaphore_wait(SEMAPHORE *sem) { WaitForSingleObject((HANDLE)*sem, INFINITE); }
+	void semaphore_signal(SEMAPHORE *sem) { ReleaseSemaphore((HANDLE)*sem, 1, NULL); }
+	void semaphore_destroy(SEMAPHORE *sem) { CloseHandle((HANDLE)*sem); }
+	#else
+		#error not implemented on this platform
+	#endif
 #endif
 
 
@@ -903,6 +907,7 @@ NETSOCKET net_udp_create(NETADDR bindaddr)
 	NETSOCKET sock = invalid_socket;
 	NETADDR tmpbindaddr = bindaddr;
 	int broadcast = 1;
+	int recvsize = 65536;
 
 	if(bindaddr.type&NETTYPE_IPV4)
 	{
@@ -917,13 +922,13 @@ NETSOCKET net_udp_create(NETADDR bindaddr)
 		{
 			sock.type |= NETTYPE_IPV4;
 			sock.ipv4sock = socket;
+
+			/* set boardcast */
+			setsockopt(socket, SOL_SOCKET, SO_BROADCAST, (const char*)&broadcast, sizeof(broadcast));
+
+			/* set receive buffer size */
+			setsockopt(socket, SOL_SOCKET, SO_RCVBUF, (char*)&recvsize, sizeof(recvsize));
 		}
-
-		/* set non-blocking */
-		net_set_non_blocking(sock);
-
-		/* set boardcast */
-		setsockopt(socket, SOL_SOCKET, SO_BROADCAST, (const char*)&broadcast, sizeof(broadcast));
 	}
 
 	if(bindaddr.type&NETTYPE_IPV6)
@@ -939,14 +944,17 @@ NETSOCKET net_udp_create(NETADDR bindaddr)
 		{
 			sock.type |= NETTYPE_IPV6;
 			sock.ipv6sock = socket;
+
+			/* set boardcast */
+			setsockopt(socket, SOL_SOCKET, SO_BROADCAST, (const char*)&broadcast, sizeof(broadcast));
+
+			/* set receive buffer size */
+			setsockopt(socket, SOL_SOCKET, SO_RCVBUF, (char*)&recvsize, sizeof(recvsize));
 		}
-
-		/* set non-blocking */
-		net_set_non_blocking(sock);
-
-		/* set boardcast */
-		setsockopt(socket, SOL_SOCKET, SO_BROADCAST, (const char*)&broadcast, sizeof(broadcast));
 	}
+
+	/* set non-blocking */
+	net_set_non_blocking(sock);
 
 	/* return */
 	return sock;

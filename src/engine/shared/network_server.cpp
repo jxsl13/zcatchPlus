@@ -30,7 +30,7 @@ bool CNetServer::Open(NETADDR BindAddr, CNetBan *pNetBan, int MaxClients, int Ma
 	m_MaxClientsPerIP = MaxClientsPerIP;
 
 	for(int i = 0; i < NET_MAX_CLIENTS; i++)
-		m_aSlots[i].m_Connection.Init(m_Socket);
+		m_aSlots[i].m_Connection.Init(m_Socket, true);
 
 	return true;
 }
@@ -69,11 +69,17 @@ int CNetServer::Drop(int ClientID, const char *pReason)
 
 int CNetServer::Update()
 {
+	int64 Now = time_get();
 	for(int i = 0; i < MaxClients(); i++)
 	{
 		m_aSlots[i].m_Connection.Update();
 		if(m_aSlots[i].m_Connection.State() == NET_CONNSTATE_ERROR)
-			Drop(i, m_aSlots[i].m_Connection.ErrorString());
+		{
+			if(Now - m_aSlots[i].m_Connection.ConnectTime() < time_freq()/2 && NetBan())
+				NetBan()->BanAddr(ClientAddr(i), 60, "Stressing network");
+			else
+				Drop(i, m_aSlots[i].m_Connection.ErrorString());
+		}
 	}
 
 	return 0;
