@@ -136,16 +136,8 @@ void CGameController_zCatch::OnPlayerInfoChange(class CPlayer *pP)
 
 void CGameController_zCatch::StartRound()
 {
-	ResetGame();
+	IGameController::StartRound();
 
-	m_RoundStartTick = Server()->Tick();
-	m_SuddenDeath = 0;
-	m_GameOverTick = -1;
-	GameServer()->m_World.m_Paused = false;
-	m_aTeamscore[TEAM_RED] = 0;
-	m_aTeamscore[TEAM_BLUE] = 0;
-	m_ForceBalanced = false;
-	Server()->DemoRecorder_HandleAutoStart();
 	for(int i = 0; i < MAX_CLIENTS; i++)
 	{
 		if(GameServer()->m_apPlayers[i])
@@ -157,9 +149,6 @@ void CGameController_zCatch::StartRound()
 			GameServer()->m_apPlayers[i]->m_TicksIngame = 0;
 		}
 	}
-	char aBuf[256];
-	str_format(aBuf, sizeof(aBuf), "start round type='%s' teamplay='%d'", m_pGameType, m_GameFlags&GAMEFLAG_TEAMS);
-	GameServer()->Console()->Print(IConsole::OUTPUT_LEVEL_DEBUG, "game", aBuf);
 }
 
 void CGameController_zCatch::OnCharacterSpawn(class CCharacter *pChr)
