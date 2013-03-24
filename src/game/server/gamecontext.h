@@ -145,14 +145,15 @@ public:
 	
 	struct CMutes
 	{
-		char m_IP[NETADDR_MAXSTRSIZE];
+		char m_aIP[NETADDR_MAXSTRSIZE];
 		int m_Expires;
 	}; 
 	CMutes m_aMutes[MAX_MUTES];
 	// helper functions
-	void AddMute(const char* IP, int Secs);
-	void AddMute(int ClientID, int Secs);
-	int Muted(const char* IP);
+	void AddMute(const char* pIP, int Secs);
+	void AddMute(int ClientID, int Secs, bool Auto = false);
+	int Muted(const char *pIP);
+	int Muted(int ClientID);
 	void CleanMutes();
 
 	// network
