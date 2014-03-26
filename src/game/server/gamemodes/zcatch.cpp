@@ -1,6 +1,7 @@
 /* (c) Magnus Auvinen. See licence.txt in the root of the distribution for more information. */
 /* If you are missing that file, acquire a complete release at teeworlds.com.                */
 /* zCatch by erd and Teetime                                                                 */
+/* Modified by Teelevision for zCatch/TeeVi, see readme.txt and license.txt.                 */
 
 #include <engine/shared/config.h>
 #include <game/server/gamecontext.h>
@@ -12,7 +13,7 @@
 CGameController_zCatch::CGameController_zCatch(class CGameContext *pGameServer) :
 		IGameController(pGameServer)
 {
-	m_pGameType = "zCatch";
+	m_pGameType = "zCatch/TeeVi";
 	m_OldMode = g_Config.m_SvMode;
 }
 

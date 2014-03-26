@@ -1,5 +1,6 @@
 /* (c) Magnus Auvinen. See licence.txt in the root of the distribution for more information. */
 /* If you are missing that file, acquire a complete release at teeworlds.com.                */
+/* Modified by Teelevision for zCatch/TeeVi, see readme.txt and license.txt.                 */
 #ifndef ENGINE_SERVER_SERVER_H
 #define ENGINE_SERVER_SERVER_H
 
@@ -64,6 +65,16 @@ class CServer : public IServer
 	class IGameServer *m_pGameServer;
 	class IConsole *m_pConsole;
 	class IStorage *m_pStorage;
+	
+	// keep track of how many admins are logged in
+	int numLoggedInAdmins;
+	void DecreaseLoggedInAdmins() {
+		if (--numLoggedInAdmins < 1) UpdateServerInfo();
+	}
+	void IncreaseLoggedInAdmins() {
+		if (++numLoggedInAdmins) UpdateServerInfo();
+	}
+	
 public:
 	class IGameServer *GameServer() { return m_pGameServer; }
 	class IConsole *Console() { return m_pConsole; }

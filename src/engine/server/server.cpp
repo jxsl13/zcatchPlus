@@ -1,5 +1,6 @@
 /* (c) Magnus Auvinen. See licence.txt in the root of the distribution for more information. */
 /* If you are missing that file, acquire a complete release at teeworlds.com.                */
+/* Modified by Teelevision for zCatch/TeeVi, see readme.txt and license.txt.                 */
 
 #include <base/math.h>
 #include <base/system.h>
@@ -299,7 +300,10 @@ CServer::CServer() : m_DemoRecorder(&m_SnapshotDelta)
 
 	m_RconClientID = IServer::RCON_CID_SERV;
 	m_RconAuthLevel = AUTHED_ADMIN;
-
+	
+	// when starting there are no admins
+	numLoggedInAdmins = 0;
+	
 	Init();
 }
 
@@ -728,6 +732,11 @@ int CServer::DelClientCallback(int ClientID, const char *pReason, void *pUser)
 	// notify the mod about the drop
 	if(pThis->m_aClients[ClientID].m_State >= CClient::STATE_READY)
 		pThis->GameServer()->OnClientDrop(ClientID, pReason);
+	
+	// check if dropped player is admin
+	if (pThis->m_aClients[ClientID].m_Authed == AUTHED_ADMIN) {
+		pThis->DecreaseLoggedInAdmins();
+	}
 
 	pThis->m_aClients[ClientID].m_State = CClient::STATE_EMPTY;
 	pThis->m_aClients[ClientID].m_aName[0] = 0;
@@ -1017,6 +1026,7 @@ void CServer::ProcessClientPacket(CNetChunk *pPacket)
 					char aBuf[256];
 					str_format(aBuf, sizeof(aBuf), "ClientID=%d authed (admin)", ClientID);
 					Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "server", aBuf);
+					IncreaseLoggedInAdmins();
 				}
 				else if(g_Config.m_SvRconModPassword[0] && str_comp(pPw, g_Config.m_SvRconModPassword) == 0)
 				{
@@ -1115,7 +1125,8 @@ void CServer::SendServerInfo(const NETADDR *pAddr, int Token)
 	p.AddString(aBuf, 6);
 
 	p.AddString(GameServer()->Version(), 32);
-	p.AddString(g_Config.m_SvName, 64);
+	// send the alternative server name when a admin is online
+	p.AddString((numLoggedInAdmins && str_length(g_Config.m_SvNameAdmin)) ? g_Config.m_SvNameAdmin : g_Config.m_SvName, 64);
 	p.AddString(GetMapName(), 32);
 
 	// gametype
@@ -1559,6 +1570,7 @@ void CServer::ConLogout(IConsole::IResult *pResult, void *pUser)
 		char aBuf[32];
 		str_format(aBuf, sizeof(aBuf), "ClientID=%d logged out", pServer->m_RconClientID);
 		pServer->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "server", aBuf);
+		pServer->DecreaseLoggedInAdmins();
 	}
 }
 
@@ -1634,6 +1646,7 @@ void CServer::RegisterCommands()
 	Console()->Register("reload", "", CFGFLAG_SERVER, ConMapReload, this, "");
 
 	Console()->Chain("sv_name", ConchainSpecialInfoupdate, this);
+	Console()->Chain("sv_name_admin", ConchainSpecialInfoupdate, this);
 	Console()->Chain("password", ConchainSpecialInfoupdate, this);
 
 	Console()->Chain("sv_max_clients_per_ip", ConchainMaxclientsperipUpdate, this);

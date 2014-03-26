@@ -1,3 +1,11 @@
+This software called "zCatch/TeeVi" is a modification of "zCatch" which is
+a modification of "Teeworlds".
+See license.txt.
+
+#############################################################################
+The following is the content of the readme.txt distributed with zCatch:
+#############################################################################
+
 Copyright (c) 2012 Magnus Auvinen
 
 
