@@ -1,5 +1,6 @@
 /* (c) Magnus Auvinen. See licence.txt in the root of the distribution for more information. */
 /* If you are missing that file, acquire a complete release at teeworlds.com.                */
+/* Modified by Teelevision for zCatch/TeeVi, see readme.txt and license.txt.                 */
 #include <new>
 #include <base/math.h>
 #include <engine/shared/config.h>
@@ -715,29 +716,18 @@ void CGameContext::OnMessage(int MsgID, CUnpacker *pUnpacker, int ClientID)
 		}
 
 		/* begin zCatch*/
-		if(!str_comp("/info", pMsg->m_pMessage) || !str_comp("/about", pMsg->m_pMessage))
+		if(!str_comp("/info", pMsg->m_pMessage))
 		{
 			char aBuf[128];
-			str_format(aBuf, sizeof(aBuf), "zCatch version %s by erd and Teetime. Type /cmdlist for all commands.", ZCATCH_VERSION);
-			SendChatTarget(ClientID, " ");
+			str_format(aBuf, sizeof(aBuf), "zCatch version %s by erd and Teetime, modified by Teelevision.", ZCATCH_VERSION);
 			SendChatTarget(ClientID, aBuf);
-		}
-		else if(!str_comp("/cmdlist", pMsg->m_pMessage))
-		{
-			SendChatTarget(ClientID, " ");
-			SendChatTarget(ClientID, "/info or /about - see information about author.");
-			SendChatTarget(ClientID, "/help - learn how to play.");
-		}
-		else if(!str_comp("/help", pMsg->m_pMessage))
-		{
-			SendChatTarget(ClientID, " ");
 			SendChatTarget(ClientID, "The winner is the tee which is left over at the end.");
 			SendChatTarget(ClientID, "If you die, all players that you killed will respawn.");
 			SendChatTarget(ClientID, "So the only way to win is to kill every player without beeing killed.");
 			SendChatTarget(ClientID, "Have fun!");
 		}
 		else if(!str_comp_num("/", pMsg->m_pMessage, 1))
-			SendChatTarget(ClientID, "Unknown command.");
+			SendChatTarget(ClientID, "Unknown command, try /info");
 		else
 		{
 			//Check if muted
