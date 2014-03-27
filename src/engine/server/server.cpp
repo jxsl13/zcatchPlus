@@ -302,7 +302,7 @@ CServer::CServer() : m_DemoRecorder(&m_SnapshotDelta)
 	m_RconAuthLevel = AUTHED_ADMIN;
 	
 	// when starting there are no admins
-	numLoggedInAdmins = 0;
+	m_numLoggedInAdmins = 0;
 	
 	m_Votebans = NULL;
 	
@@ -1140,7 +1140,7 @@ void CServer::SendServerInfo(const NETADDR *pAddr, int Token)
 
 	p.AddString(GameServer()->Version(), 32);
 	// send the alternative server name when a admin is online
-	p.AddString((numLoggedInAdmins && str_length(g_Config.m_SvNameAdmin)) ? g_Config.m_SvNameAdmin : g_Config.m_SvName, 64);
+	p.AddString((m_numLoggedInAdmins && str_length(g_Config.m_SvNameAdmin)) ? g_Config.m_SvNameAdmin : g_Config.m_SvName, 64);
 	p.AddString(GetMapName(), 32);
 
 	// gametype

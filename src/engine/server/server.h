@@ -67,12 +67,12 @@ class CServer : public IServer
 	class IStorage *m_pStorage;
 	
 	// keep track of how many admins are logged in
-	int numLoggedInAdmins;
+	int m_numLoggedInAdmins;
 	void DecreaseLoggedInAdmins() {
-		if (--numLoggedInAdmins < 1) UpdateServerInfo();
+		if (!--m_numLoggedInAdmins) UpdateServerInfo();
 	}
 	void IncreaseLoggedInAdmins() {
-		if (++numLoggedInAdmins) UpdateServerInfo();
+		if (++m_numLoggedInAdmins) UpdateServerInfo();
 	}
 	
 public:
