@@ -154,6 +154,11 @@ public:
 			Contains the current posititon of the entity.
 	*/
 	vec2 m_Pos;
+	
+	// nearby characters
+	bool m_CharactersNearbyInitialized;
+	bool m_CharactersNearby[MAX_CLIENTS];
+	void SetCharactersNearby();
 };
 
 #endif

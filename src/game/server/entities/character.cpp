@@ -416,6 +416,8 @@ void CCharacter::FireWeapon()
 			// pack the Projectile and send it to the client Directly
 			CNetObj_Projectile p;
 			pProj->FillInfo(&p);
+			
+			pProj->SetCharactersNearby();
 
 			CMsgPacker Msg(NETMSGTYPE_SV_EXTRAPROJECTILE);
 			Msg.AddInt(1);
