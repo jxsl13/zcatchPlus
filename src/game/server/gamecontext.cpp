@@ -775,10 +775,10 @@ void CGameContext::OnMessage(int MsgID, CUnpacker *pUnpacker, int ClientID)
 		char aChatmsg[512];
 		
 		// check voteban
-		if(pPlayer->m_VoteBannedUntilTick > Server()->Tick())
+		int left = Server()->ClientVotebannedTime(ClientID);
+		if(left)
 		{
-			int left = (pPlayer->m_VoteBannedUntilTick - Server()->Tick()) / Server()->TickSpeed();
-			str_format(aChatmsg, sizeof(aChatmsg), "You must wait %d:%02d min until you are allowed to vote again.", left/60, left%60);
+			str_format(aChatmsg, sizeof(aChatmsg), "You are not allowed to vote for the next %d:%02d min.", left/60, left%60);
 			SendChatTarget(ClientID, aChatmsg);
 			return;
 		}
@@ -1695,61 +1695,6 @@ void CGameContext::ConUnmuteIP(IConsole::IResult *pResult, void *pUserData)
 	}
 }
 
-void CGameContext::ConVoteban(IConsole::IResult *pResult, void *pUserData)
-{
-	CGameContext *pSelf = (CGameContext *)pUserData;
-	char aBuf[128];
-	int CID = pResult->GetInteger(0);
-	if(CID < 0 || CID >= MAX_CLIENTS || !pSelf->m_apPlayers[CID])
-	{
-		pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Server", "Invalid ClientID");
-		return;
-	}
-	int time = (pResult->NumArguments() > 1) ? pResult->GetInteger(1) : 300;
-	pSelf->m_apPlayers[CID]->m_VoteBannedUntilTick = pSelf->Server()->Tick() + time * pSelf->Server()->TickSpeed();
-	str_format(aBuf, sizeof(aBuf), "%s has been votebanned for %d:%02d min.", pSelf->Server()->ClientName(CID), time/60, time%60);
-	pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Server", aBuf);
-	pSelf->SendChatTarget(-1, aBuf);
-}
-
-void CGameContext::ConUnvoteban(IConsole::IResult *pResult, void *pUserData)
-{
-	CGameContext *pSelf = (CGameContext *)pUserData;
-	char aBuf[128];
-	int CID = pResult->GetInteger(0);
-	if(CID < 0 || CID >= MAX_CLIENTS || !pSelf->m_apPlayers[CID])
-	{
-		pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Server", "Invalid ClientID");
-		return;
-	}
-	pSelf->m_apPlayers[CID]->m_VoteBannedUntilTick = 0;
-	str_format(aBuf, sizeof(aBuf), "%s has been un-votebanned.", pSelf->Server()->ClientName(CID));
-	pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Server", aBuf);
-}
-
-void CGameContext::ConVotebans(IConsole::IResult *pResult, void *pUserData)
-{
-	CGameContext *pSelf = (CGameContext *)pUserData;
-	char aBuf[128];
-	char aAddrStr[NETADDR_MAXSTRSIZE];
-	int time;
-	int count = 0;
-	
-	for(int i = 0; i < MAX_CLIENTS; i++)
-	{
-		if(pSelf->m_apPlayers[i] && pSelf->m_apPlayers[i]->m_VoteBannedUntilTick > pSelf->Server()->Tick())
-		{
-			pSelf->Server()->GetClientAddr(i, aAddrStr, sizeof(aAddrStr));
-			time = (pSelf->m_apPlayers[i]->m_VoteBannedUntilTick - pSelf->Server()->Tick()) / pSelf->Server()->TickSpeed();
-			str_format(aBuf, sizeof(aBuf), "id=%d addr=%s name='%s' time=%d:%02d min", i, aAddrStr, pSelf->Server()->ClientName(i), time/60, time%60);
-			pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Server", aBuf);
-			count++;
-		}
-	}
-	str_format(aBuf, sizeof(aBuf), "%d voteban(s)", count);
-	pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Server", aBuf);
-}
-
 void CGameContext::OnConsoleInit()
 {
 	m_pServer = Kernel()->RequestInterface<IServer>();
@@ -1781,10 +1726,6 @@ void CGameContext::OnConsoleInit()
 	Console()->Register("unmuteid", "i", CFGFLAG_SERVER, ConUnmuteID, this, "Unmutes a player by its client id");
 	Console()->Register("unmuteip", "i", CFGFLAG_SERVER, ConUnmuteIP, this, "Removes a mute by its index");
 	Console()->Register("mutes", "", CFGFLAG_SERVER, ConMutes, this, "Show all mutes");
-	
-	Console()->Register("voteban", "i?i", CFGFLAG_SERVER, ConVoteban, this, "Voteban a player by id");
-	Console()->Register("unvoteban", "i", CFGFLAG_SERVER, ConUnvoteban, this, "Remove voteban on player by id");
-	Console()->Register("votebans", "", CFGFLAG_SERVER, ConVotebans, this, "Show all votebans");
 		
 	Console()->Chain("sv_motd", ConchainSpecialMotdupdate, this);
 }

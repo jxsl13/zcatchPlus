@@ -114,9 +114,6 @@ public:
 	int m_CampTick;
 	vec2 m_CampPos;
 	
-	// voteban system
-	int m_VoteBannedUntilTick;
-	
 private:
 	CCharacter *m_pCharacter;
 	CGameContext *m_pGameServer;

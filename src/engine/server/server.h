@@ -170,6 +170,7 @@ public:
 	CMapChecker m_MapChecker;
 
 	CServer();
+	~CServer();
 
 	int TrySetClientName(int ClientID, const char *pName);
 
@@ -251,6 +252,32 @@ public:
 	
 	//zCatch
 	virtual void MapReload();
+	
+	// voteban system
+	// struct CVotebanAddr
+	// {
+		// unsigned char ip[16];
+		// unsigned int type;
+	// };
+	struct CVoteban
+	{
+		// CVotebanAddr m_Addr;
+		NETADDR m_Addr;
+		int m_Expire;
+		CVoteban *m_Next;
+	};
+	CVoteban *m_Votebans;
+	int ClientVotebannedTime(int ClientID);
+	void AdjustVotebanTime(int offset);
+	void AddVotebanAddr(const NETADDR *addr, int expire);
+	void AddVoteban(int ClientID, int time);
+	void RemoveVoteban(int ClientID);
+	void RemoveVotebanAddr(const NETADDR *addr);
+	CVoteban **IsVotebannedAddr(const NETADDR *addr);
+	void CleanVotebans();
+	static void ConVoteban(IConsole::IResult *pResult, void *pUser);
+	static void ConUnvoteban(IConsole::IResult *pResult, void *pUser);
+	static void ConVotebans(IConsole::IResult *pResult, void *pUser);
 };
 
 #endif

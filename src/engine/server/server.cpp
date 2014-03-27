@@ -304,7 +304,20 @@ CServer::CServer() : m_DemoRecorder(&m_SnapshotDelta)
 	// when starting there are no admins
 	numLoggedInAdmins = 0;
 	
+	m_Votebans = NULL;
+	
 	Init();
+}
+
+CServer::~CServer()
+{
+	// delte votebans
+	while(m_Votebans != NULL)
+	{
+		CVoteban *tmp = m_Votebans->m_Next;
+		delete m_Votebans;
+		m_Votebans = tmp;
+	}
 }
 
 
@@ -445,6 +458,7 @@ int CServer::Init()
 		m_aClients[i].m_Snapshots.Init();
 	}
 
+	AdjustVotebanTime(m_CurrentGameTick);
 	m_CurrentGameTick = 0;
 
 	return 0;
@@ -1357,6 +1371,7 @@ int CServer::Run()
 					}
 
 					m_GameStartTime = time_get();
+					AdjustVotebanTime(m_CurrentGameTick);
 					m_CurrentGameTick = 0;
 					Kernel()->ReregisterInterface(GameServer());
 					GameServer()->OnInit();
@@ -1452,6 +1467,163 @@ int CServer::Run()
 	if(m_pCurrentMapData)
 		mem_free(m_pCurrentMapData);
 	return 0;
+}
+
+// returns the time in seconds that the client is votebanned or 0 if he isn't
+int CServer::ClientVotebannedTime(int ClientID)
+{
+	CVoteban **v = IsVotebannedAddr(m_NetServer.ClientAddr(ClientID));
+	if(v != NULL && (*v)->m_Expire > Tick())
+		return ((*v)->m_Expire - Tick()) / TickSpeed();
+	return 0;
+}
+
+// decreases the time of all votebans by the given offset of ticks
+void CServer::AdjustVotebanTime(int offset)
+{
+	CleanVotebans();
+	CVoteban *v = m_Votebans;
+	while(v != NULL)
+	{
+		v->m_Expire -= offset;
+		v = v->m_Next;
+	}
+}
+
+// adds a new voteban for a specific address
+void CServer::AddVotebanAddr(const NETADDR *addr, int expire)
+{
+	CVoteban **v = IsVotebannedAddr(addr);
+	// create new
+	if(!v)
+	{
+		CVoteban *v = new CVoteban;
+		v->m_Addr = *addr;
+		v->m_Expire = expire;
+		// insert front
+		v->m_Next = m_Votebans;
+		m_Votebans = v;
+	}
+	// update existing entry
+	else
+		(*v)->m_Expire = expire;
+}
+
+// adds a new voteban for a client's address
+void CServer::AddVoteban(int ClientID, int time)
+{
+	int expire = Tick() + time * TickSpeed();
+	AddVotebanAddr(m_NetServer.ClientAddr(ClientID), expire);
+}
+
+// removes a voteban from a client's address
+void CServer::RemoveVoteban(int ClientID)
+{
+	RemoveVotebanAddr(m_NetServer.ClientAddr(ClientID));
+}
+
+// removes a voteban on an address
+void CServer::RemoveVotebanAddr(const NETADDR *addr)
+{
+	CVoteban **v = IsVotebannedAddr(addr);
+	if(*v != NULL)
+	{
+		CVoteban *next = (*v)->m_Next;
+		delete *v;
+		*v = next;
+	}
+}
+
+// returns the voteban with the given address if it exists
+CServer::CVoteban **CServer::IsVotebannedAddr(const NETADDR *addr)
+{
+	CVoteban **v = &m_Votebans;
+	while(*v != NULL)
+	{
+		// only check ip-type and ip, not port
+		if((*v)->m_Addr.type == addr->type && !mem_comp(&(*v)->m_Addr.ip, &addr->ip, sizeof(unsigned char[16])))
+			return v;
+		v = &(*v)->m_Next;
+	}
+	return NULL;
+}
+
+// removes expired votebans
+void CServer::CleanVotebans()
+{
+	CVoteban **v = &m_Votebans;
+	while(*v != NULL)
+	{
+		if((*v)->m_Expire <= Tick())
+		{
+			CVoteban *next = (*v)->m_Next;
+			delete *v;
+			*v = next;
+		}
+		else
+			v = &(*v)->m_Next;
+	}
+}
+
+void CServer::ConVoteban(IConsole::IResult *pResult, void *pUser)
+{
+	CServer* pThis = static_cast<CServer *>(pUser);
+	int ClientID = pResult->GetInteger(0);
+	if(ClientID < 0 || ClientID >= MAX_CLIENTS || pThis->m_aClients[ClientID].m_State == CServer::CClient::STATE_EMPTY)
+	{
+		pThis->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Server", "Invalid ClientID");
+		return;
+	}
+	int time = (pResult->NumArguments() > 1) ? pResult->GetInteger(1) : 300;
+	pThis->AddVoteban(ClientID, time);
+	// message to console and chat
+	char aBuf[128];
+	str_format(aBuf, sizeof(aBuf), "%s has been votebanned for %d:%02d min.", pThis->ClientName(ClientID), time/60, time%60);
+	pThis->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Server", aBuf);
+	// pSelf->SendChatTarget(-1, aBuf);
+}
+
+void CServer::ConUnvoteban(IConsole::IResult *pResult, void *pUser)
+{
+	CServer* pThis = static_cast<CServer *>(pUser);
+	int ClientID = pResult->GetInteger(0);
+	if(ClientID < 0 || ClientID >= MAX_CLIENTS || pThis->m_aClients[ClientID].m_State == CServer::CClient::STATE_EMPTY)
+	{
+		pThis->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Server", "Invalid ClientID");
+		return;
+	}
+	pThis->RemoveVoteban(ClientID);
+	// message to console
+	char aBuf[128];
+	str_format(aBuf, sizeof(aBuf), "%s has been un-votebanned.", pThis->ClientName(ClientID));
+	pThis->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Server", aBuf);
+}
+
+void CServer::ConVotebans(IConsole::IResult *pResult, void *pUser)
+{
+	CServer* pThis = static_cast<CServer *>(pUser);
+	char aBuf[128];
+	char aAddrStr[NETADDR_MAXSTRSIZE];
+	int time;
+	int count = 0;
+	
+	pThis->CleanVotebans();
+	CVoteban *v = pThis->m_Votebans;
+	NETADDR addr;
+	while(v != NULL)
+	{
+		addr.type = v->m_Addr.type;
+		mem_copy(addr.ip, v->m_Addr.ip, sizeof(unsigned char[16]));
+		net_addr_str(&addr, aAddrStr, sizeof(aAddrStr), false);
+		time = (v->m_Expire - pThis->Tick()) / pThis->TickSpeed();
+		str_format(aBuf, sizeof(aBuf), "addr=%s time=%d:%02d min", aAddrStr, time/60, time%60);
+		pThis->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Server", aBuf);
+		count++;
+		v = v->m_Next;
+	}
+	
+	str_format(aBuf, sizeof(aBuf), "%d votebanned ip(s)", count);
+	pThis->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Server", aBuf);
 }
 
 void CServer::ConKick(IConsole::IResult *pResult, void *pUser)
@@ -1652,6 +1824,10 @@ void CServer::RegisterCommands()
 	Console()->Chain("sv_max_clients_per_ip", ConchainMaxclientsperipUpdate, this);
 	Console()->Chain("mod_command", ConchainModCommandUpdate, this);
 	Console()->Chain("console_output_level", ConchainConsoleOutputLevelUpdate, this);
+	
+	Console()->Register("voteban", "i?i", CFGFLAG_SERVER, ConVoteban, this, "Voteban a player by id");
+	Console()->Register("unvoteban", "i", CFGFLAG_SERVER, ConUnvoteban, this, "Remove voteban on player by id");
+	Console()->Register("votebans", "", CFGFLAG_SERVER, ConVotebans, this, "Show all votebans");
 
 	// register console commands in sub parts
 	m_ServerBan.InitServerBan(Console(), Storage(), this);

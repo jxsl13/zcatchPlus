@@ -1,5 +1,6 @@
 /* (c) Magnus Auvinen. See licence.txt in the root of the distribution for more information. */
 /* If you are missing that file, acquire a complete release at teeworlds.com.                */
+/* Modified by Teelevision for zCatch/TeeVi, see readme.txt and license.txt.                 */
 #ifndef ENGINE_SERVER_H
 #define ENGINE_SERVER_H
 #include "kernel.h"
@@ -32,6 +33,7 @@ public:
 	virtual bool ClientIngame(int ClientID) = 0;
 	virtual int GetClientInfo(int ClientID, CClientInfo *pInfo) = 0;
 	virtual void GetClientAddr(int ClientID, char *pAddrStr, int Size) = 0;
+	virtual int ClientVotebannedTime(int ClientID) = 0;
 
 	virtual int SendMsg(CMsgPacker *pMsg, int Flags, int ClientID) = 0;
 
