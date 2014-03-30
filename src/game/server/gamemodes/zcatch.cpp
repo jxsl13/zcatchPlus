@@ -58,11 +58,11 @@ void CGameController_zCatch::DoWincheck()
 				if(GameServer()->m_apPlayers[i] && GameServer()->m_apPlayers[i]->GetTeam() != TEAM_SPECTATORS)
 				{
 					GameServer()->m_apPlayers[i]->m_Score += g_Config.m_SvBonus;
-					if(Players_Ingame <= 4)
+					if(Players_Ingame < g_Config.m_SvLastStandingPlayers)
 						GameServer()->m_apPlayers[i]->ReleaseZCatchVictim(CPlayer::ZCATCH_RELEASE_ALL);
 				}
 			}
-			if(Players_Ingame <= 4)
+			if(Players_Ingame < g_Config.m_SvLastStandingPlayers)
 				GameServer()->SendChatTarget(-1, "Too less players to end round. All players have been released.");
 			else
 				EndRound();
