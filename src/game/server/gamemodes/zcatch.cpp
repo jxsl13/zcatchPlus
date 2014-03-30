@@ -20,8 +20,6 @@ CGameController_zCatch::CGameController_zCatch(class CGameContext *pGameServer) 
 void CGameController_zCatch::Tick()
 {
 	IGameController::Tick();
-	if(m_GameOverTick == -1)
-		CalcPlayerColor();
 
 	if(m_OldMode != g_Config.m_SvMode)
 	{
@@ -43,23 +41,31 @@ void CGameController_zCatch::DoWincheck()
 				Players++;
 				if(GameServer()->m_apPlayers[i]->GetTeam() == TEAM_SPECTATORS)
 					Players_Spec++;
-				if(GameServer()->m_apPlayers[i]->m_SpecExplicit == 1)
+				if(GameServer()->m_apPlayers[i]->m_SpecExplicit)
 					Players_SpecExplicit++;
 			}
 		}
+		int Players_Ingame = Players - Players_SpecExplicit;
 
-		if(Players == 1)
+		if(Players_Ingame <= 1)
 		{
 			//Do nothing
 		}
-		else if((Players - Players_Spec == 1) && (Players != Players_Spec) && (Players - Players_SpecExplicit != 1))
+		else if((Players - Players_Spec) == 1)
 		{
 			for(int i = 0; i < MAX_CLIENTS; i++)
 			{
 				if(GameServer()->m_apPlayers[i] && GameServer()->m_apPlayers[i]->GetTeam() != TEAM_SPECTATORS)
+				{
 					GameServer()->m_apPlayers[i]->m_Score += g_Config.m_SvBonus;
+					if(Players_Ingame <= 4)
+						GameServer()->m_apPlayers[i]->ReleaseZCatchVictim(CPlayer::ZCATCH_RELEASE_ALL);
+				}
 			}
-			EndRound();
+			if(Players_Ingame <= 4)
+				GameServer()->SendChatTarget(-1, "Too less players to end round. All players have been released.");
+			else
+				EndRound();
 		}
 
 		IGameController::DoWincheck(); //do also usual wincheck
@@ -71,66 +77,50 @@ int CGameController_zCatch::OnCharacterDeath(class CCharacter *pVictim, class CP
 	if(!pKiller)
 		return 0;
 
-	int VictimID = pVictim->GetPlayer()->GetCID();
-
-	if(pKiller != pVictim->GetPlayer())
+	CPlayer *victim = pVictim->GetPlayer();
+	if(pKiller != victim)
 	{
-		pKiller->m_Kills++;
-		pVictim->GetPlayer()->m_Deaths++;
-
-		pKiller->m_Score++;
-
+		pKiller->m_Score += victim->m_zCatchNumKillsInARow + 1;
+		++pKiller->m_Kills;
+		++victim->m_Deaths;
 		/* Check if the killer is already killed and in spectator (victim may died through wallshot) */
 		if(pKiller->GetTeam() != TEAM_SPECTATORS)
 		{
-			pVictim->GetPlayer()->m_CaughtBy = pKiller->GetCID();
-			pVictim->GetPlayer()->SetTeamDirect(TEAM_SPECTATORS);
-
-			pVictim->GetPlayer()->m_SpectatorID = pKiller->GetCID(); // Let the victim follow his catcher
-
+			++pKiller->m_zCatchNumKillsInARow;
+			pKiller->AddZCatchVictim(victim->GetCID());
 			char aBuf[256];
-			str_format(aBuf, sizeof(aBuf), "Caught by \"%s\". You will join the game automatically when \"%s\" dies.", Server()->ClientName(pKiller->GetCID()), Server()->ClientName(pKiller->GetCID()));
-			GameServer()->SendChatTarget(VictimID, aBuf);
+			str_format(aBuf, sizeof(aBuf), "You are caught until '%s' dies.", Server()->ClientName(pKiller->GetCID()));
+			GameServer()->SendChatTarget(victim->GetCID(), aBuf);
 		}
 	}
 	else
 	{
-		//Punish selfkill/death
+		// selfkill/death
 		if(WeaponID == WEAPON_SELF || WeaponID == WEAPON_WORLD)
-			pVictim->GetPlayer()->m_Score -= g_Config.m_SvKillPenalty;
-	}
-
-	for(int i = 0; i < MAX_CLIENTS; i++)
-	{
-		if(GameServer()->m_apPlayers[i])
 		{
-			if(GameServer()->m_apPlayers[i]->m_CaughtBy == VictimID)
-			{
-				GameServer()->m_apPlayers[i]->m_CaughtBy = CPlayer::ZCATCH_NOT_CAUGHT;
-				GameServer()->m_apPlayers[i]->SetTeamDirect(GameServer()->m_pController->ClampTeam(1));
-
-				if(pKiller != pVictim->GetPlayer())
-					pKiller->m_Score++;
-			}
+			victim->m_Score -= g_Config.m_SvKillPenalty;
+			++victim->m_Deaths;
 		}
 	}
 
+	// release all the victim's victims
+	victim->ReleaseZCatchVictim(CPlayer::ZCATCH_RELEASE_ALL);
+	victim->m_zCatchNumKillsInARow = 0;
+
 	// Update colors
-	OnPlayerInfoChange(pVictim->GetPlayer());
+	OnPlayerInfoChange(victim);
+	OnPlayerInfoChange(pKiller);
 
 	return 0;
 }
 
 void CGameController_zCatch::OnPlayerInfoChange(class CPlayer *pP)
 {
-	if(g_Config.m_SvColorIndicator)
+	if(g_Config.m_SvColorIndicator && pP->m_zCatchNumKillsInARow <= 20)
 	{
-		int Num = 161;
-		for(int i = 0; i < MAX_CLIENTS; i++)
-			if(GameServer()->m_apPlayers[i] && GameServer()->m_apPlayers[i]->m_CaughtBy == pP->GetCID())
-				Num -= 10;
+		int Num = max(0, 160 - pP->m_zCatchNumKillsInARow * 10);
 		pP->m_TeeInfos.m_ColorBody = Num * 0x010000 + 0xff00;
-		pP->m_TeeInfos.m_ColorFeet = Num * 0x010000 + 0xff00;
+		pP->m_TeeInfos.m_ColorFeet = pP->m_zCatchNumKillsInARow == 20 ? 0x40ff00 : pP->m_TeeInfos.m_ColorBody;
 		pP->m_TeeInfos.m_UseCustomColor = 1;
 	}
 }
@@ -143,7 +133,6 @@ void CGameController_zCatch::StartRound()
 	{
 		if(GameServer()->m_apPlayers[i])
 		{
-			GameServer()->m_apPlayers[i]->m_CaughtBy = CPlayer::ZCATCH_NOT_CAUGHT;
 			GameServer()->m_apPlayers[i]->m_Kills = 0;
 			GameServer()->m_apPlayers[i]->m_Deaths = 0;
 			GameServer()->m_apPlayers[i]->m_TicksSpec = 0;
@@ -194,7 +183,7 @@ void CGameController_zCatch::EndRound()
 		if(GameServer()->m_apPlayers[i])
 		{
 
-			if(GameServer()->m_apPlayers[i]->m_SpecExplicit == 0)
+			if(!GameServer()->m_apPlayers[i]->m_SpecExplicit)
 			{
 				GameServer()->m_apPlayers[i]->SetTeamDirect(GameServer()->m_pController->ClampTeam(1));
 
@@ -208,7 +197,9 @@ void CGameController_zCatch::EndRound()
 					str_format(aBuf, sizeof(aBuf), "Spec: %.2f%% | Ingame: %.2f%%", (double) TimeInSpec, (double) (100.0 - TimeInSpec));
 					GameServer()->SendChatTarget(i, aBuf);
 				}
-				GameServer()->m_apPlayers[i]->m_CaughtBy = CPlayer::ZCATCH_NOT_CAUGHT; //Set all players in server as non-caught
+				// release all players
+				GameServer()->m_apPlayers[i]->ReleaseZCatchVictim(CPlayer::ZCATCH_RELEASE_ALL);
+				GameServer()->m_apPlayers[i]->m_zCatchNumKillsInARow = 0;
 			}
 		}
 	}
@@ -238,16 +229,4 @@ bool CGameController_zCatch::OnEntity(int Index, vec2 Pos)
 		m_aaSpawnPoints[2][m_aNumSpawnPoints[2]++] = Pos;
 
 	return false;
-}
-
-void CGameController_zCatch::CalcPlayerColor()
-{
-	for(int i = 0; i < MAX_CLIENTS; i++)
-	{
-		CPlayer *pP = GameServer()->m_apPlayers[i];
-		if(!pP)
-			continue;
-		if(pP->GetTeam() != TEAM_SPECTATORS)
-			OnPlayerInfoChange(pP);
-	}
 }

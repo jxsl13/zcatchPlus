@@ -23,8 +23,6 @@ public:
 	virtual bool OnEntity(int Index, vec2 Pos);
 	virtual bool CanChangeTeam(CPlayer *pPlayer, int JoinTeam);
 	virtual void EndRound();
-
-	void CalcPlayerColor();
 };
 
 #endif

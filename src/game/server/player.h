@@ -98,9 +98,8 @@ public:
 	} m_Latency;
 	
 	//zCatch:
-	enum { ZCATCH_NOT_CAUGHT = -1 };
 	int m_CaughtBy;
-	int m_SpecExplicit;
+	bool m_SpecExplicit;
 	int m_Deaths;
 	int m_Kills;
 	int m_LastKillTry;
@@ -113,6 +112,25 @@ public:
 	bool m_SentCampMsg;
 	int m_CampTick;
 	vec2 m_CampPos;
+	
+	// zCatch/TeeVi
+	enum
+	{
+		ZCATCH_NOT_CAUGHT = -1,
+		ZCATCH_RELEASE_ALL = -1
+	};
+	struct CZCatchVictim
+	{
+		int ClientID;
+		CZCatchVictim *prev;
+	};
+	CZCatchVictim *m_ZCatchVictims;
+	int m_zCatchNumVictims;
+	int m_zCatchNumKillsInARow;
+	void AddZCatchVictim(int ClientID);
+	void ReleaseZCatchVictim(int ClientID, int limit = 0);
+	bool HasZCatchVictims() { return (m_ZCatchVictims != NULL); }
+	int LastZCatchVictim() { return HasZCatchVictims() ? m_ZCatchVictims->ClientID : -1; }
 	
 private:
 	CCharacter *m_pCharacter;

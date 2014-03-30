@@ -23,18 +23,25 @@ CPlayer::CPlayer(CGameContext *pGameServer, int ClientID, int Team)
 	m_TeamChangeTick = Server()->Tick();
 	
 	//zCatch
-	m_CaughtBy = -1;
-	m_SpecExplicit = 0;
+	m_CaughtBy = ZCATCH_NOT_CAUGHT;
+	m_SpecExplicit = false;
 	m_Kills = 0;
 	m_Deaths = 0;
 	m_LastKillTry = Server()->Tick();
 	m_TicksSpec = 0;
 	m_TicksIngame = 0;
 	m_ChatTicks = 0;
+	
+	// zCatch/TeeVi
+	m_ZCatchVictims = NULL;
+	m_zCatchNumVictims = 0;
+	m_zCatchNumKillsInARow = 0;
 }
 
 CPlayer::~CPlayer()
 {
+	ReleaseZCatchVictim(ZCATCH_RELEASE_ALL);
+	
 	delete m_pCharacter;
 	m_pCharacter = 0;
 }
@@ -295,8 +302,6 @@ void CPlayer::SetTeam(int Team, bool DoChatMsg)
 	str_format(aBuf, sizeof(aBuf), "team_join player='%d:%s' m_Team=%d", m_ClientID, Server()->ClientName(m_ClientID), m_Team);
 	GameServer()->Console()->Print(IConsole::OUTPUT_LEVEL_DEBUG, "game", aBuf);
 
-	GameServer()->m_pController->OnPlayerInfoChange(GameServer()->m_apPlayers[m_ClientID]);
-
 	if(Team == TEAM_SPECTATORS)
 	{
 		// update spectator modes
@@ -305,10 +310,10 @@ void CPlayer::SetTeam(int Team, bool DoChatMsg)
 			if(GameServer()->m_apPlayers[i] && GameServer()->m_apPlayers[i]->m_SpectatorID == m_ClientID)
 				GameServer()->m_apPlayers[i]->m_SpectatorID = SPEC_FREEVIEW;
 		}
-		m_SpecExplicit = 1;
+		m_SpecExplicit = true;
 	}
 	else
-		m_SpecExplicit = 0;
+		m_SpecExplicit = false;
 }
 
 void CPlayer::SetTeamDirect(int Team)
@@ -376,4 +381,55 @@ int CPlayer::Anticamper()
 		return 1;
 	}
 	return 0;
+}
+
+// catch another player
+void CPlayer::AddZCatchVictim(int ClientID)
+{
+	CPlayer *victim = GameServer()->m_apPlayers[ClientID];
+	if(victim)
+	{
+		// add to list of victims
+		CZCatchVictim *v = new CZCatchVictim;
+		v->ClientID = ClientID;
+		v->prev = m_ZCatchVictims;
+		m_ZCatchVictims = v;
+		++m_zCatchNumVictims;
+		// set victim's status
+		victim->m_CaughtBy = m_ClientID;
+		victim->m_SpecExplicit = false;
+		victim->SetTeamDirect(TEAM_SPECTATORS);
+		victim->m_SpectatorID = m_ClientID;
+	}
+}
+
+// release one or more of the victims
+void CPlayer::ReleaseZCatchVictim(int ClientID, int limit)
+{
+	CZCatchVictim **v = &m_ZCatchVictims;
+	CZCatchVictim *tmp;
+	CPlayer *victim;
+	int count = 0;
+	while(*v != NULL)
+	{
+		if(ClientID == ZCATCH_RELEASE_ALL || (*v)->ClientID == ClientID)
+		{
+			victim = GameServer()->m_apPlayers[(*v)->ClientID];
+			if(victim)
+			{
+				victim->m_CaughtBy = ZCATCH_NOT_CAUGHT;
+				victim->SetTeamDirect(GameServer()->m_pController->ClampTeam(1));
+				victim->m_SpectatorID = SPEC_FREEVIEW;
+			}
+			// delete from list
+			tmp = (*v)->prev;
+			delete *v;
+			*v = tmp;
+			--m_zCatchNumVictims;
+			if (limit && ++count >= limit)
+				return;
+		}
+		else
+			v = &(*v)->prev;
+	}
 }

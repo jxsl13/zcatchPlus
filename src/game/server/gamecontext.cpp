@@ -459,7 +459,7 @@ void CGameContext::OnTick()
 					/* zCatch - Allow voting from players in spectators (needed or the last 2 players ingame can kick the whole server),
 					 * but deny votes from players who are explicit in spec
 					*/
-					if(!m_apPlayers[i] || m_apPlayers[i]->m_SpecExplicit == 1 || aVoteChecked[i])	// don't count in votes by spectators
+					if(!m_apPlayers[i] || m_apPlayers[i]->m_SpecExplicit || aVoteChecked[i])	// don't count in votes by spectators
 						continue;
 
 					int ActVote = m_apPlayers[i]->m_Vote;
@@ -545,88 +545,56 @@ void CGameContext::OnClientPredictedInput(int ClientID, void *pInput)
 
 void CGameContext::OnClientEnter(int ClientID)
 {
+	CPlayer *p = m_apPlayers[ClientID];
 	//world.insert_entity(&players[client_id]);
-	m_apPlayers[ClientID]->Respawn();
+	p->Respawn();
 	
 	/* begin zCatch */
-	int LeaderID = -1;
-	int StartTeam = m_pController->ClampTeam(1);
+	CPlayer *leader = NULL;
 	
-	int Num = 0;
-
+	int NumReady = 0;
 	for(int i = 0; i < MAX_CLIENTS; i++)
 	{
 		if(IsClientReady(i))
-			Num++;
+			NumReady++;
 	}
-	if(Num < 3)
-		m_pController->EndRound();
 
+	// sv_allow_join 1: Allow new players to join the game without need to wait for the next round
 	if(g_Config.m_SvAllowJoin == 1)
 	{
-		m_apPlayers[ClientID]->m_CaughtBy = CPlayer::ZCATCH_NOT_CAUGHT;
-		m_apPlayers[ClientID]->m_SpecExplicit = (Num < 3) ? 0 : 1;
-		StartTeam = (Num < 3) ? m_pController->ClampTeam(1) : TEAM_SPECTATORS;
+		p->m_SpecExplicit = (NumReady > 2);
+		p->SetTeamDirect(p->m_SpecExplicit ? TEAM_SPECTATORS : m_pController->ClampTeam(1));
 		SendBroadcast("You can join the game", ClientID);
 	}
+	// sv_allow_join 2: The player will join when the player with the most kills dies
 	else if(g_Config.m_SvAllowJoin == 2)
 	{
-		int Num2 = 0, PrevNum = 0;
-
 		for(int i = 0; i < MAX_CLIENTS; i++)
-		{
-			if(m_apPlayers[i])
-			{
-				Num2 = 0;
-				for(int j = 0; j < MAX_CLIENTS; j++)
-					if(m_apPlayers[j] && m_apPlayers[j]->m_CaughtBy == i)
-						Num2++;
-
-				if(Num2 > PrevNum)
-				{
-					LeaderID = i;
-					PrevNum = Num2;
-				}
-			}
-		}
-
-		if(LeaderID > -1)
-		{
-			m_apPlayers[ClientID]->m_CaughtBy = LeaderID;
-			m_apPlayers[ClientID]->m_SpecExplicit = 0;
-			m_apPlayers[ClientID]->m_SpectatorID = LeaderID;
-			StartTeam = TEAM_SPECTATORS;
-		}
+			if(m_apPlayers[i] && ((leader && m_apPlayers[i]->m_zCatchNumKillsInARow > leader->m_zCatchNumKillsInARow) || (!leader && m_apPlayers[i]->m_zCatchNumKillsInARow)))
+				leader = m_apPlayers[i];
+		if(leader)
+			leader->AddZCatchVictim(ClientID);
 		else
-		{
-			m_apPlayers[ClientID]->m_CaughtBy = CPlayer::ZCATCH_NOT_CAUGHT;
-			m_apPlayers[ClientID]->m_SpecExplicit = 0;
-		}
+			p->m_SpecExplicit = false;
 	}
-	else
-		StartTeam = m_pController->GetAutoTeam(ClientID);
-	
-	m_apPlayers[ClientID]->SetTeamDirect(StartTeam);
 	
 	/* end zCatch */
 	
 	char aBuf[512];
-	str_format(aBuf, sizeof(aBuf), "'%s' entered and joined the %s", Server()->ClientName(ClientID), m_pController->GetTeamName(m_apPlayers[ClientID]->GetTeam()));
+	str_format(aBuf, sizeof(aBuf), "'%s' entered and joined the %s", Server()->ClientName(ClientID), m_pController->GetTeamName(p->GetTeam()));
 	SendChat(-1, CGameContext::CHAT_ALL, aBuf);
 
-	str_format(aBuf, sizeof(aBuf), "team_join player='%d:%s' team=%d", ClientID, Server()->ClientName(ClientID), m_apPlayers[ClientID]->GetTeam());
+	str_format(aBuf, sizeof(aBuf), "team_join player='%d:%s' team=%d", ClientID, Server()->ClientName(ClientID), p->GetTeam());
 	Console()->Print(IConsole::OUTPUT_LEVEL_DEBUG, "game", aBuf);
 
 	m_VoteUpdate = true;
 	
 	/* zCatch begin */
-	SendChatTarget(ClientID, "Welcome to zCatch!");
-	SendChatTarget(ClientID, "type /cmdlist to get all commands");
-	SendChatTarget(ClientID, "type /help for instructions");
-	if(g_Config.m_SvAllowJoin == 2 && LeaderID > -1)
+	SendChatTarget(ClientID, "Welcome to zCatch! Type /info for more.");
+	if(g_Config.m_SvAllowJoin == 2 && leader)
 	{
 		char buf[128];
-		str_format(buf, sizeof(buf), "You will join the game when %s dies", Server()->ClientName(LeaderID));
+		str_format(buf, sizeof(buf), "You will join the game when '%s' dies", Server()->ClientName(leader->GetCID()));
 		SendChatTarget(ClientID, buf);
 	}
 	/* zCatch end */
@@ -663,6 +631,9 @@ void CGameContext::OnClientConnected(int ClientID)
 
 void CGameContext::OnClientDrop(int ClientID, const char *pReason)
 {
+	if(m_apPlayers[ClientID]->m_CaughtBy > CPlayer::ZCATCH_NOT_CAUGHT)
+		m_apPlayers[m_apPlayers[ClientID]->m_CaughtBy]->ReleaseZCatchVictim(ClientID);
+	
 	AbortVoteKickOnDisconnect(ClientID);
 	m_apPlayers[ClientID]->OnDisconnect(pReason);
 	delete m_apPlayers[ClientID];
@@ -763,7 +734,7 @@ void CGameContext::OnMessage(int MsgID, CUnpacker *pUnpacker, int ClientID)
 		int64 Now = Server()->Tick();
 		pPlayer->m_LastVoteTry = Now;
 		// zCatch - Only People who are explicit in Spectators can't vote!
-		if(pPlayer->m_SpecExplicit == 1) //zCatch
+		if(pPlayer->m_SpecExplicit) //zCatch
 		{
 			SendChatTarget(ClientID, "Spectators aren't allowed to start a vote.");
 			return;
@@ -840,7 +811,7 @@ void CGameContext::OnMessage(int MsgID, CUnpacker *pUnpacker, int ClientID)
 			{
 				int PlayerNum = 0;
 				for(int i = 0; i < MAX_CLIENTS; ++i)
-					if(m_apPlayers[i] && m_apPlayers[i]->m_SpecExplicit != 1) // zCatch - Count all Players who are not explicit in spectator
+					if(m_apPlayers[i] && !m_apPlayers[i]->m_SpecExplicit) // zCatch - Count all Players who are not explicit in spectator
 						++PlayerNum;
 
 				if(PlayerNum < g_Config.m_SvVoteKickMin)
@@ -1149,11 +1120,21 @@ void CGameContext::OnMessage(int MsgID, CUnpacker *pUnpacker, int ClientID)
 		{
 			SendChatTarget(ClientID, "You can't kill yourself while you're frozen.");
 		}
+		else if(pPlayer->HasZCatchVictims())
+		{
+			int lastVictim = pPlayer->LastZCatchVictim();
+			pPlayer->ReleaseZCatchVictim(CPlayer::ZCATCH_RELEASE_ALL, 1);
+			char aBuf[128];
+			str_format(aBuf, sizeof(aBuf), "You released '%s'. (%d left)", Server()->ClientName(lastVictim), pPlayer->m_zCatchNumVictims);
+			SendChatTarget(ClientID, aBuf);
+			str_format(aBuf, sizeof(aBuf), "You were released by '%s'.", Server()->ClientName(ClientID));
+			SendChatTarget(lastVictim, aBuf);
+			return;
+		}
 		else
 		{
 			pPlayer->m_LastKill = Server()->Tick();
 			pPlayer->KillCharacter(WEAPON_SELF);
-			pPlayer->m_Deaths++;
 			return;
 		}
 		pPlayer->m_LastKillTry = Server()->Tick();
