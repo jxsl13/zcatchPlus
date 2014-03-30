@@ -532,6 +532,12 @@ void CCharacter::GiveNinja()
 	GameServer()->CreateSound(m_Pos, SOUND_PICKUP_NINJA);
 }
 
+void CCharacter::GiveAmmo(int Weapon, int Ammo)
+{
+	if(m_aWeapons[Weapon].m_Got && m_aWeapons[Weapon].m_Ammo > -1)
+		m_aWeapons[Weapon].m_Ammo = min(m_aWeapons[Weapon].m_Ammo + Ammo, min(g_Config.m_SvWeaponsAmmo, g_pData->m_Weapons.m_aId[Weapon].m_Maxammo));
+}
+
 void CCharacter::SetEmote(int Emote, int Tick)
 {
 	m_EmoteType = Emote;

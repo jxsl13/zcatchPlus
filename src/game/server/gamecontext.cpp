@@ -138,6 +138,7 @@ void CGameContext::CreateExplosion(vec2 Pos, int Owner, int Weapon, bool NoDamag
 		float Radius = 135.0f;
 		float InnerRadius = 48.0f;
 		int Num = m_World.FindEntities(Pos, Radius, (CEntity**)apEnts, MAX_CLIENTS, CGameWorld::ENTTYPE_CHARACTER);
+		bool someoneWasHit = false;
 		for(int i = 0; i < Num; i++)
 		{
 			if(!limitVictims || victims[apEnts[i]->GetPlayer()->GetCID()])
@@ -150,8 +151,18 @@ void CGameContext::CreateExplosion(vec2 Pos, int Owner, int Weapon, bool NoDamag
 				l = 1-clamp((l-InnerRadius)/(Radius-InnerRadius), 0.0f, 1.0f);
 				float Dmg = 6 * l;
 				if((int)Dmg)
+				{
 					apEnts[i]->TakeDamage(ForceDir*Dmg*2, (int)Dmg, Owner, Weapon);
+					someoneWasHit = true;
+				}
 			}
+		}
+		// give the owner the ammo back if he hit someone else or himself (like rocketjump)
+		if(someoneWasHit)
+		{
+			CCharacter *ownerChar = GetPlayerChar(Owner);
+			if(ownerChar)
+				ownerChar->GiveAmmo(Weapon, 1);
 		}
 	}
 }
