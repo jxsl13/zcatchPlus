@@ -133,9 +133,12 @@ public:
 	int LastZCatchVictim() { return HasZCatchVictims() ? m_ZCatchVictims->ClientID : -1; }
 	
 	// bot detection
-	int m_IsBot;
+	int m_IsAimBot;
 	int m_AimBotIndex;
 	int m_AimBotLastDetection;
+	float m_AimBotTargetSpeed;
+	vec2 m_CurrentTarget;
+	vec2 m_LastTarget;
 	CCharacter::LastPosition m_AimBotLastDetectionPos;
 	CCharacter::LastPosition m_AimBotLastDetectionPosVictim;
 	

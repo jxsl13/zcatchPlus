@@ -158,6 +158,24 @@ bool CCharacter::AimedAtCharRecently(float aimX, float aimY, const CCharacter *c
 	return false;
 }
 
+float CCharacter::HowCloseToXRecently(vec2 x, const LastPosition *&pos, int firstTick)
+{
+	float lowest = 1000.0;
+	// start with the most recent position
+	firstTick = max(firstTick, Server()->Tick() - m_LastPositionsSize);
+	for(int lastTick = Server()->Tick(); lastTick > firstTick; --lastTick)
+	{
+		int i = lastTick % m_LastPositionsSize;
+		float d = distance(x, vec2(m_LastPositions[i].x, m_LastPositions[i].y));
+		if(d < lowest)
+		{
+			pos = &m_LastPositions[i];
+			lowest = d;
+		}
+	}
+	return lowest;
+}
+
 void CCharacter::SetWeapon(int W)
 {
 	if(W == m_ActiveWeapon)

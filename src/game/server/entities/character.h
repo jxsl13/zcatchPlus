@@ -75,6 +75,7 @@ public:
 	};
 	bool HasBeenThereRecently(float x, float y, const LastPosition *&pos, int firstTick, int lastTick) const;
 	bool AimedAtCharRecently(float aimX, float aimY, const CCharacter *c, const LastPosition *&pos, const LastPosition *&posVictim, int firstTick);
+	float HowCloseToXRecently(vec2 x, const LastPosition *&pos, int firstTick);
 
 private:
 	// player controlling this character

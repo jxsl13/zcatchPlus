@@ -38,9 +38,14 @@ CPlayer::CPlayer(CGameContext *pGameServer, int ClientID, int Team)
 	m_zCatchNumKillsInARow = 0;
 	
 	// bot detection
-	m_IsBot = false;
+	m_IsAimBot = 0;
 	m_AimBotIndex = 0;
 	m_AimBotLastDetection = 0;
+	m_AimBotTargetSpeed = .0;
+	m_CurrentTarget.x = 0;
+	m_CurrentTarget.y = 0;
+	m_LastTarget.x = 0;
+	m_LastTarget.y = 0;
 }
 
 CPlayer::~CPlayer()
@@ -127,6 +132,12 @@ void CPlayer::Tick()
 		++m_LastActionTick;
 		++m_TeamChangeTick;
  	}
+	
+	// bot detection
+	m_LastTarget = m_CurrentTarget;
+	m_CurrentTarget.x = m_LatestActivity.m_TargetX;
+	m_CurrentTarget.y = m_LatestActivity.m_TargetY;
+	m_AimBotTargetSpeed = abs(distance(m_CurrentTarget, m_LastTarget));
 }
 
 void CPlayer::PostTick()

@@ -530,48 +530,85 @@ void CGameContext::OnTick()
 	// bot detection
 	// it is based on the behaviour of some bots to shoot at a player's _exact_ position
 	// check each player
-	for(int i = 0; i < MAX_CLIENTS; ++i)
+	if(g_Config.m_SvBotDetection)
 	{
-		CCharacter *ci, *cj;
-		CPlayer *p;
-		// abort if player is not ingame or already detected as a bot
-		if(!(p = m_apPlayers[i]) || p->m_IsBot || !(ci = GetPlayerChar(i)))
-			continue;
-		
-		// check against every other player
-		for(int j = 0; j < MAX_CLIENTS; ++j)
+		for(int i = 0; i < MAX_CLIENTS; ++i)
 		{
-			const CCharacter::LastPosition *pos, *posVictim;
-
-			// other placer needs to be ingame and in sight. don't detect the same position again
-			if(j != i && (cj = GetPlayerChar(j)) && cj->NetworkClipped(i) == 0 && ci->AimedAtCharRecently(p->m_LatestActivity.m_TargetX, p->m_LatestActivity.m_TargetY, cj, pos, posVictim, p->m_AimBotLastDetection) && !(pos->x == p->m_AimBotLastDetectionPos.x && pos->y == p->m_AimBotLastDetectionPos.y && posVictim->x == p->m_AimBotLastDetectionPosVictim.x && posVictim->y == p->m_AimBotLastDetectionPosVictim.y))
+			CCharacter *ci, *cj;
+			CPlayer *p;
+			// abort if player is not ingame or already detected as a bot
+			if(!(p = m_apPlayers[i]) || p->m_IsAimBot || !(ci = GetPlayerChar(i)))
+				continue;
+			
+			// check against every other player
+			for(int j = 0; j < MAX_CLIENTS; ++j)
 			{
-				p->m_AimBotLastDetection = Server()->Tick();
-				p->m_AimBotLastDetectionPos = *pos;
-				p->m_AimBotLastDetectionPosVictim = *posVictim;
-				++p->m_AimBotIndex;
-				// write to console
-				char aBuf[128];
-				str_format(aBuf, sizeof(aBuf), "player=%d victim=%d a_index=%d", i, j, p->m_AimBotIndex);
-				Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "botdetect", aBuf);
-				// check if threshold is exceeded
-				if(p->m_AimBotIndex >= 10)
+
+				if(j != i && (cj = GetPlayerChar(j)))
 				{
-					p->m_IsBot = true;
-					// alert the chat
-					char aBuf[128];
-					str_format(aBuf, sizeof(aBuf), "'%s' might be botting", Server()->ClientName(i));
-					SendChat(-1, CGameContext::CHAT_ALL, aBuf);
+					const CCharacter::LastPosition *pos, *posVictim;
+					
+					// fast aiming bot detection
+					if(g_Config.m_SvBotDetection&BOT_DETECTION_FAST_AIM && p->m_AimBotTargetSpeed > 300.0 && !(p->m_AimBotLastDetectionPos.x == ci->m_Pos.x && p->m_AimBotLastDetectionPos.y == ci->m_Pos.y))
+					{
+						vec2 t(ci->m_Pos.x + p->m_LatestActivity.m_TargetX, ci->m_Pos.y + p->m_LatestActivity.m_TargetY);
+						float hc = cj->HowCloseToXRecently(t, posVictim, p->m_AimBotLastDetection);
+						float precision = p->m_AimBotTargetSpeed * (256.0 - hc * hc);
+						// don't detect same position twice
+						if(precision > 0 && !(posVictim->x == p->m_AimBotLastDetectionPosVictim.x && posVictim->y == p->m_AimBotLastDetectionPosVictim.y))
+						{
+							if(precision >= 50000.0)
+							{
+								p->m_AimBotLastDetection = Server()->Tick();
+								p->m_AimBotLastDetectionPos.x = ci->m_Pos.x;
+								p->m_AimBotLastDetectionPos.y = ci->m_Pos.y;
+								p->m_AimBotLastDetectionPosVictim = *posVictim;
+								p->m_AimBotIndex += 2 * min(3, (int)(precision / 50000));
+								// write to console
+								char aBuf[128];
+								str_format(aBuf, sizeof(aBuf), "player=%d victim=%d a_index=%d precision=%d speed=%d distance=%d", i, j, p->m_AimBotIndex, (int)precision, (int)p->m_AimBotTargetSpeed, (int)hc);
+								Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "botdetect", aBuf);
+								// don't check other players
+								break;
+							}
+						}
+					}
+					
+					// follow bot detection
+					// other placer needs to be ingame and in sight. don't detect the same position again
+					else if(g_Config.m_SvBotDetection&BOT_DETECTION_FOLLOW && cj->NetworkClipped(i) == 0 && ci->AimedAtCharRecently(p->m_LatestActivity.m_TargetX, p->m_LatestActivity.m_TargetY, cj, pos, posVictim, p->m_AimBotLastDetection) && !(pos->x == p->m_AimBotLastDetectionPos.x && pos->y == p->m_AimBotLastDetectionPos.y && posVictim->x == p->m_AimBotLastDetectionPosVictim.x && posVictim->y == p->m_AimBotLastDetectionPosVictim.y))
+					{
+						p->m_AimBotLastDetection = Server()->Tick();
+						p->m_AimBotLastDetectionPos = *pos;
+						p->m_AimBotLastDetectionPosVictim = *posVictim;
+						++p->m_AimBotIndex;
+						// write to console
+						char aBuf[128];
+						str_format(aBuf, sizeof(aBuf), "player=%d victim=%d a_index=%d", i, j, p->m_AimBotIndex);
+						Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "botdetect", aBuf);
+						// don't check other players
+						break;
+					}
+					
 				}
-				// don't check other players
-				break;
 			}
 			
+			// check if threshold is exceeded
+			if(p->m_AimBotIndex >= 10)
+			{
+				p->m_IsAimBot = Server()->Tick();
+				// alert the admins
+				char aBuf[128];
+				str_format(aBuf, sizeof(aBuf), "'%s' might be botting", Server()->ClientName(i));
+				for(int j = 0; j < MAX_CLIENTS; ++j)
+					if(Server()->IsAuthed(j))
+						SendChatTarget(j, aBuf);
+			}
+			
+			// reduce once every 2 seconds (tolerance)
+			if(((Server()->Tick() % (Server()->TickSpeed() * 2)) == 0) && p->m_AimBotIndex)
+				--p->m_AimBotIndex;
 		}
-		
-		// reduce once every 2 seconds (tolerance)
-		if(((Server()->Tick() % (Server()->TickSpeed() * 2)) == 0) && p->m_AimBotIndex)
-			--p->m_AimBotIndex;
 	}
 
 #ifdef CONF_DEBUG

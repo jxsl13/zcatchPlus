@@ -195,6 +195,13 @@ public:
 	virtual const char *GameType();
 	virtual const char *Version();
 	virtual const char *NetVersion();
+	
+	// bot detection
+	enum
+	{
+		BOT_DETECTION_FAST_AIM=1,
+		BOT_DETECTION_FOLLOW=2,
+	};
 };
 
 inline int CmaskAll() { return -1; }
