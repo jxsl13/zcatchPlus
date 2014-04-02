@@ -601,8 +601,14 @@ void CGameContext::OnTick()
 				char aBuf[128];
 				str_format(aBuf, sizeof(aBuf), "'%s' might be botting", Server()->ClientName(i));
 				for(int j = 0; j < MAX_CLIENTS; ++j)
+				{
 					if(Server()->IsAuthed(j))
+					{
+						SendChatTarget(j, "### @ADMIN ###");
 						SendChatTarget(j, aBuf);
+						SendChatTarget(j, "##############");
+					}
+				}
 			}
 			
 			// reduce once every 2 seconds (tolerance)
