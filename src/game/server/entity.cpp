@@ -60,6 +60,6 @@ void CEntity::SetCharactersNearby()
 	CCharacter *c;
 	for(int i = 0; i < MAX_CLIENTS; ++i)
 		if((c = GameServer()->GetPlayerChar(i)))
-			m_CharactersNearby[i] = (absolute(c->m_Pos.x - m_Pos.x) <= 9000.0f && absolute(c->m_Pos.y - m_Pos.y) <= 700.0f && distance(c->m_Pos, m_Pos) <= 900.0f);
+			m_CharactersNearby[i] = (absolute(c->m_Pos.x - m_Pos.x) <= 900.0f && absolute(c->m_Pos.y - m_Pos.y) <= 700.0f && distance(c->m_Pos, m_Pos) <= 900.0f);
 	m_CharactersNearbyInitialized = true;
 }
