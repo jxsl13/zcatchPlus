@@ -52,6 +52,12 @@ CCharacter::CCharacter(CGameWorld *pWorld)
 	m_LastPositions = new LastPosition[m_LastPositionsSize]();
 }
 
+CCharacter::~CCharacter()
+{
+	// delete last positions
+	delete[] m_LastPositions;
+}
+
 void CCharacter::Reset()
 {
 	Destroy();
@@ -110,9 +116,6 @@ void CCharacter::Destroy()
 {
 	GameServer()->m_World.m_Core.m_apCharacters[m_pPlayer->GetCID()] = 0;
 	m_Alive = false;
-	
-	// delete last positions
-	delete[] m_LastPositions;
 }
 
 // checks whether the player has been at those coords recently (like a few ticks ago)
