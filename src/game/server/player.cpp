@@ -36,6 +36,11 @@ CPlayer::CPlayer(CGameContext *pGameServer, int ClientID, int Team)
 	m_ZCatchVictims = NULL;
 	m_zCatchNumVictims = 0;
 	m_zCatchNumKillsInARow = 0;
+	
+	// bot detection
+	m_IsBot = false;
+	m_AimBotIndex = 0;
+	m_AimBotLastDetection = 0;
 }
 
 CPlayer::~CPlayer()

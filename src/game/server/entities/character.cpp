@@ -46,6 +46,10 @@ CCharacter::CCharacter(CGameWorld *pWorld)
 	m_Health = 0;
 	m_Armor = 0;
 	m_FreezeTicks = 0;
+	
+	// last positions
+	m_LastPositionsSize = Server()->TickSpeed() / 4;
+	m_LastPositions = new LastPosition[m_LastPositionsSize]();
 }
 
 void CCharacter::Reset()
@@ -106,6 +110,52 @@ void CCharacter::Destroy()
 {
 	GameServer()->m_World.m_Core.m_apCharacters[m_pPlayer->GetCID()] = 0;
 	m_Alive = false;
+	
+	// delete last positions
+	delete[] m_LastPositions;
+}
+
+// checks whether the player has been at those coords recently (like a few ticks ago)
+bool CCharacter::HasBeenThereRecently(float x, float y, const LastPosition *&pos, int firstTick, int lastTick) const
+{
+	// start with the most recent position
+	float dx, dy, dxp = 0, dyp = 0;
+	for(; lastTick > firstTick; --lastTick)
+	{
+		int i = lastTick % m_LastPositionsSize;
+		dx = abs(m_LastPositions[i].x - x);
+		dy = abs(m_LastPositions[i].y - y);
+		if(dx <= 1.0 && dy <= 1.0)
+		{
+			pos = &m_LastPositions[i];
+			return true;
+		}
+		// abort if too far away or if distance getting bigger
+		if(dx > 100.0 || dy > 100.0 || (dxp > 0 && dx > dxp && dy > dyp)) return false;
+		// write previous vals
+		dxp = dx;
+		dyp = dy;
+	}
+	return false;
+}
+
+// checks whether the player has been aiming at another character recently (like a few ticks ago)
+bool CCharacter::AimedAtCharRecently(float aimX, float aimY, const CCharacter *c, const LastPosition *&pos, const LastPosition *&posVictim, int firstTick)
+{
+	// The last few positions of both characters are saved. Since you cannot tell (due to the network) _when_ the player aimed at the other player, or even where he was when he aimed, we need to check each position of the one player against each position of the other player in the time before.
+	// start with the most recent position
+	firstTick = max(firstTick, Server()->Tick() - m_LastPositionsSize);
+	for(int lastTick = Server()->Tick(); lastTick > firstTick; --lastTick)
+	{
+		int b = lastTick % m_LastPositionsSize;
+		// check if the other player has been where the player aimed
+		if(c->HasBeenThereRecently(m_LastPositions[b].x + aimX, m_LastPositions[b].y + aimY, posVictim, firstTick, lastTick))
+		{
+			pos = &m_LastPositions[b];
+			return true;
+		}
+	}
+	return false;
 }
 
 void CCharacter::SetWeapon(int W)
@@ -641,6 +691,11 @@ void CCharacter::Tick()
 
 	// Previnput
 	m_PrevInput = m_Input;
+	
+	// save position
+	m_LastPositions[Server()->Tick() % m_LastPositionsSize].x = m_Pos.x;
+	m_LastPositions[Server()->Tick() % m_LastPositionsSize].y = m_Pos.y;
+	
 	return;
 }
 

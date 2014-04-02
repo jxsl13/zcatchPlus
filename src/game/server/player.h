@@ -132,6 +132,13 @@ public:
 	bool HasZCatchVictims() { return (m_ZCatchVictims != NULL); }
 	int LastZCatchVictim() { return HasZCatchVictims() ? m_ZCatchVictims->ClientID : -1; }
 	
+	// bot detection
+	int m_IsBot;
+	int m_AimBotIndex;
+	int m_AimBotLastDetection;
+	CCharacter::LastPosition m_AimBotLastDetectionPos;
+	CCharacter::LastPosition m_AimBotLastDetectionPosVictim;
+	
 private:
 	CCharacter *m_pCharacter;
 	CGameContext *m_pGameServer;

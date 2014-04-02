@@ -67,6 +67,14 @@ public:
 
 	void Freeze(int Tick);
 	int m_FreezeTicks;
+	
+	// bot detection
+	struct LastPosition {
+		float x;
+		float y;
+	};
+	bool HasBeenThereRecently(float x, float y, const LastPosition *&pos, int firstTick, int lastTick) const;
+	bool AimedAtCharRecently(float aimX, float aimY, const CCharacter *c, const LastPosition *&pos, const LastPosition *&posVictim, int firstTick);
 
 private:
 	// player controlling this character
@@ -134,6 +142,10 @@ private:
 	int m_ReckoningTick; // tick that we are performing dead reckoning From
 	CCharacterCore m_SendCore; // core that we should send
 	CCharacterCore m_ReckoningCore; // the dead reckoning core
+	
+	// bot detection
+	LastPosition *m_LastPositions;
+	int m_LastPositionsSize;
 
 };
 
