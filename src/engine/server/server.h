@@ -278,6 +278,8 @@ public:
 	static void ConVoteban(IConsole::IResult *pResult, void *pUser);
 	static void ConUnvoteban(IConsole::IResult *pResult, void *pUser);
 	static void ConVotebans(IConsole::IResult *pResult, void *pUser);
+	
+	virtual int GetNumLoggedInAdmins() { return m_numLoggedInAdmins; }
 };
 
 #endif

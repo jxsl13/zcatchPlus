@@ -529,8 +529,8 @@ void CGameContext::OnTick()
 
 	// bot detection
 	// it is based on the behaviour of some bots to shoot at a player's _exact_ position
-	// check each player
-	if(g_Config.m_SvBotDetection)
+	// check each player, check only if an admin is online
+	if(g_Config.m_SvBotDetection && Server()->GetNumLoggedInAdmins())
 	{
 		char aBuf[128];
 		const CCharacter::LastPosition *pos, *posVictim;

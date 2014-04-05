@@ -70,6 +70,8 @@ public:
 	virtual bool DemoRecorder_IsRecording() = 0;
 	//zCatch
 	virtual void MapReload() = 0;
+	
+	virtual int GetNumLoggedInAdmins() = 0;
 };
 
 class IGameServer : public IInterface
