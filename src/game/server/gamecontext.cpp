@@ -532,10 +532,15 @@ void CGameContext::OnTick()
 	// check each player
 	if(g_Config.m_SvBotDetection)
 	{
+		char aBuf[128];
+		const CCharacter::LastPosition *pos, *posVictim;
+		float d, precision;
+		CCharacter *ci, *cj;
+		CPlayer *p;
+		
 		for(int i = 0; i < MAX_CLIENTS; ++i)
 		{
-			CCharacter *ci, *cj;
-			CPlayer *p;
+		
 			// abort if player is not ingame or already detected as a bot
 			if(!(p = m_apPlayers[i]) || p->m_IsAimBot || !(ci = GetPlayerChar(i)))
 				continue;
@@ -546,45 +551,53 @@ void CGameContext::OnTick()
 
 				if(j != i && (cj = GetPlayerChar(j)))
 				{
-					const CCharacter::LastPosition *pos, *posVictim;
+					int indexAdd = 0;
 					
 					// fast aiming bot detection
-					if(g_Config.m_SvBotDetection&BOT_DETECTION_FAST_AIM && p->m_AimBotTargetSpeed > 300.0 && !(p->m_AimBotLastDetectionPos.x == ci->m_Pos.x && p->m_AimBotLastDetectionPos.y == ci->m_Pos.y))
+					if(g_Config.m_SvBotDetection&BOT_DETECTION_FAST_AIM
+						&& p->m_AimBotTargetSpeed > 300.0 // only fast movements
+						&& (d = cj->HowCloseToXRecently(vec2(ci->m_Pos.x + p->m_LatestActivity.m_TargetX, ci->m_Pos.y + p->m_LatestActivity.m_TargetY), posVictim, p->m_AimBotLastDetection)) < 16.0
+						&& (precision = p->m_AimBotTargetSpeed * (256.0 - d * d)) >= 50000.0
+						&& !( // don't detect same constellation twice
+							ci->m_Pos.x == p->m_AimBotLastDetectionPos.x
+							&& ci->m_Pos.y == p->m_AimBotLastDetectionPos.y
+							&& posVictim->x == p->m_AimBotLastDetectionPosVictim.x
+							&& posVictim->y == p->m_AimBotLastDetectionPosVictim.y
+						)
+					)//if
 					{
-						vec2 t(ci->m_Pos.x + p->m_LatestActivity.m_TargetX, ci->m_Pos.y + p->m_LatestActivity.m_TargetY);
-						float hc = cj->HowCloseToXRecently(t, posVictim, p->m_AimBotLastDetection);
-						float precision = p->m_AimBotTargetSpeed * (256.0 - hc * hc);
-						// don't detect same position twice
-						if(precision > 0 && !(posVictim->x == p->m_AimBotLastDetectionPosVictim.x && posVictim->y == p->m_AimBotLastDetectionPosVictim.y))
-						{
-							if(precision >= 50000.0)
-							{
-								p->m_AimBotLastDetection = Server()->Tick();
-								p->m_AimBotLastDetectionPos.x = ci->m_Pos.x;
-								p->m_AimBotLastDetectionPos.y = ci->m_Pos.y;
-								p->m_AimBotLastDetectionPosVictim = *posVictim;
-								p->m_AimBotIndex += 2 * min(3, (int)(precision / 50000));
-								// write to console
-								char aBuf[128];
-								str_format(aBuf, sizeof(aBuf), "player=%d victim=%d a_index=%d precision=%d speed=%d distance=%d", i, j, p->m_AimBotIndex, (int)precision, (int)p->m_AimBotTargetSpeed, (int)hc);
-								Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "botdetect", aBuf);
-								// don't check other players
-								break;
-							}
-						}
+						indexAdd = min(3, (int)(precision / 50000));
+						p->m_AimBotLastDetectionPos.x = ci->m_Pos.x;
+						p->m_AimBotLastDetectionPos.y = ci->m_Pos.y;
+						// prepare console output
+						str_format(aBuf, sizeof(aBuf), "player=%d victim=%d a_index=%d precision=%d speed=%d distance=%d", i, j, p->m_AimBotIndex + indexAdd, (int)precision, (int)p->m_AimBotTargetSpeed, (int)d);
 					}
 					
 					// follow bot detection
-					// other placer needs to be ingame and in sight. don't detect the same position again
-					else if(g_Config.m_SvBotDetection&BOT_DETECTION_FOLLOW && cj->NetworkClipped(i) == 0 && ci->AimedAtCharRecently(p->m_LatestActivity.m_TargetX, p->m_LatestActivity.m_TargetY, cj, pos, posVictim, p->m_AimBotLastDetection) && !(pos->x == p->m_AimBotLastDetectionPos.x && pos->y == p->m_AimBotLastDetectionPos.y && posVictim->x == p->m_AimBotLastDetectionPosVictim.x && posVictim->y == p->m_AimBotLastDetectionPosVictim.y))
+					else if(g_Config.m_SvBotDetection&BOT_DETECTION_FOLLOW
+						&& cj->NetworkClipped(i) == 0 // needs to be in sight
+						&& ci->AimedAtCharRecently(p->m_LatestActivity.m_TargetX, p->m_LatestActivity.m_TargetY, cj, pos, posVictim, p->m_AimBotLastDetection)
+						&& !( // don't detect same constellation twice
+							pos->x == p->m_AimBotLastDetectionPos.x
+							&& pos->y == p->m_AimBotLastDetectionPos.y
+							&& posVictim->x == p->m_AimBotLastDetectionPosVictim.x
+							&& posVictim->y == p->m_AimBotLastDetectionPosVictim.y
+						)
+					)//if
+					{
+						indexAdd = 1;
+						p->m_AimBotLastDetectionPos = *pos;
+						// prepare console output
+						str_format(aBuf, sizeof(aBuf), "player=%d victim=%d a_index=%d", i, j, p->m_AimBotIndex + indexAdd);
+					}
+					
+					// detected
+					if(indexAdd > 0)
 					{
 						p->m_AimBotLastDetection = Server()->Tick();
-						p->m_AimBotLastDetectionPos = *pos;
 						p->m_AimBotLastDetectionPosVictim = *posVictim;
 						++p->m_AimBotIndex;
-						// write to console
-						char aBuf[128];
-						str_format(aBuf, sizeof(aBuf), "player=%d victim=%d a_index=%d", i, j, p->m_AimBotIndex);
+						// log to console
 						Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "botdetect", aBuf);
 						// don't check other players
 						break;
@@ -594,7 +607,7 @@ void CGameContext::OnTick()
 			}
 			
 			// check if threshold is exceeded
-			if(p->m_AimBotIndex >= 10)
+			if(p->m_AimBotIndex >= 5)
 			{
 				p->m_IsAimBot = Server()->Tick();
 				// alert the admins
