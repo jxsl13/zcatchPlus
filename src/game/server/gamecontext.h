@@ -202,6 +202,7 @@ public:
 		BOT_DETECTION_FAST_AIM=1,
 		BOT_DETECTION_FOLLOW=2,
 	};
+	virtual bool IsClientAimBot(int ClientID);
 };
 
 inline int CmaskAll() { return -1; }

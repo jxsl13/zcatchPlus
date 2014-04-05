@@ -1940,6 +1940,11 @@ bool CGameContext::IsClientPlayer(int ClientID)
 	return m_apPlayers[ClientID] && m_apPlayers[ClientID]->GetTeam() == TEAM_SPECTATORS ? false : true;
 }
 
+bool CGameContext::IsClientAimBot(int ClientID)
+{
+	return m_apPlayers[ClientID] && m_apPlayers[ClientID]->m_IsAimBot;
+}
+
 const char *CGameContext::GameType() { return m_pController && m_pController->m_pGameType ? m_pController->m_pGameType : ""; }
 const char *CGameContext::Version() { return GAME_VERSION; }
 const char *CGameContext::NetVersion() { return GAME_NETVERSION; }
