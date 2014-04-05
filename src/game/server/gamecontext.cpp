@@ -579,6 +579,11 @@ void CGameContext::OnTick()
 							*pos == p->m_AimBotLastDetectionPos
 							&& *posVictim == p->m_AimBotLastDetectionPosVictim
 						)
+						// don't detect horizontal dragging
+						&& !(
+							pos->y == p->m_AimBotLastDetectionPos.y
+							&& posVictim->y == p->m_AimBotLastDetectionPosVictim.y
+						)
 					)//if
 					{
 						indexAdd = 1;
@@ -614,8 +619,8 @@ void CGameContext::OnTick()
 						SendChatTarget(j, aBuf);
 			}
 			
-			// reduce once every 2 seconds (tolerance)
-			if(((Server()->Tick() % (Server()->TickSpeed() * 2)) == 0) && p->m_AimBotIndex)
+			// reduce once every seconds (tolerance)
+			if(((Server()->Tick() % Server()->TickSpeed()) == 0) && p->m_AimBotIndex)
 				--p->m_AimBotIndex;
 		}
 	}
