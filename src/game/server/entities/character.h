@@ -70,13 +70,9 @@ public:
 	int m_FreezeTicks;
 	
 	// bot detection
-	struct LastPosition {
-		float x;
-		float y;
-	};
-	bool HasBeenThereRecently(float x, float y, const LastPosition *&pos, int firstTick, int lastTick) const;
-	bool AimedAtCharRecently(float aimX, float aimY, const CCharacter *c, const LastPosition *&pos, const LastPosition *&posVictim, int firstTick);
-	float HowCloseToXRecently(vec2 x, const LastPosition *&pos, int firstTick);
+	bool HasBeenThereRecently(vec2 v, const vec2 *&pos, int firstTick, int lastTick) const;
+	bool AimedAtCharRecently(vec2 v, const CCharacter *c, const vec2 *&pos, const vec2 *&posVictim, int firstTick);
+	float HowCloseToXRecently(vec2 x, const vec2 *&pos, int firstTick);
 
 private:
 	// player controlling this character
@@ -146,7 +142,7 @@ private:
 	CCharacterCore m_ReckoningCore; // the dead reckoning core
 	
 	// bot detection
-	LastPosition *m_LastPositions;
+	vec2 *m_LastPositions;
 	int m_LastPositionsSize;
 
 };

@@ -49,7 +49,7 @@ CCharacter::CCharacter(CGameWorld *pWorld)
 	
 	// last positions
 	m_LastPositionsSize = Server()->TickSpeed() / 4;
-	m_LastPositions = new LastPosition[m_LastPositionsSize]();
+	m_LastPositions = new vec2[m_LastPositionsSize]();
 }
 
 CCharacter::~CCharacter()
@@ -119,31 +119,29 @@ void CCharacter::Destroy()
 }
 
 // checks whether the player has been at those coords recently (like a few ticks ago)
-bool CCharacter::HasBeenThereRecently(float x, float y, const LastPosition *&pos, int firstTick, int lastTick) const
+bool CCharacter::HasBeenThereRecently(vec2 v, const vec2 *&pos, int firstTick, int lastTick) const
 {
 	// start with the most recent position
-	float dx, dy, dxp = 0, dyp = 0;
+	vec2 d, dp(0,0);
 	for(; lastTick > firstTick; --lastTick)
 	{
 		int i = lastTick % m_LastPositionsSize;
-		dx = abs(m_LastPositions[i].x - x);
-		dy = abs(m_LastPositions[i].y - y);
-		if(dx <= 1.0 && dy <= 1.0)
+		d = m_LastPositions[i] - v;
+		d = vec2(absolute(d.x), absolute(d.y));
+		if(d.x <= 1.0 && d.y <= 1.0)
 		{
 			pos = &m_LastPositions[i];
 			return true;
 		}
 		// abort if too far away or if distance getting bigger
-		if(dx > 100.0 || dy > 100.0 || (dxp > 0 && dx > dxp && dy > dyp)) return false;
-		// write previous vals
-		dxp = dx;
-		dyp = dy;
+		if(d.x > 100.0 || d.y > 100.0 || (dp.x > 0 && d.x > dp.x && d.y > dp.x)) return false;
+		dp = d;
 	}
 	return false;
 }
 
 // checks whether the player has been aiming at another character recently (like a few ticks ago)
-bool CCharacter::AimedAtCharRecently(float aimX, float aimY, const CCharacter *c, const LastPosition *&pos, const LastPosition *&posVictim, int firstTick)
+bool CCharacter::AimedAtCharRecently(vec2 v, const CCharacter *c, const vec2 *&pos, const vec2 *&posVictim, int firstTick)
 {
 	// The last few positions of both characters are saved. Since you cannot tell (due to the network) _when_ the player aimed at the other player, or even where he was when he aimed, we need to check each position of the one player against each position of the other player in the time before.
 	// start with the most recent position
@@ -152,7 +150,7 @@ bool CCharacter::AimedAtCharRecently(float aimX, float aimY, const CCharacter *c
 	{
 		int b = lastTick % m_LastPositionsSize;
 		// check if the other player has been where the player aimed
-		if(c->HasBeenThereRecently(m_LastPositions[b].x + aimX, m_LastPositions[b].y + aimY, posVictim, firstTick, lastTick))
+		if(c->HasBeenThereRecently(v + m_LastPositions[b], posVictim, firstTick, lastTick))
 		{
 			pos = &m_LastPositions[b];
 			return true;
@@ -161,20 +159,21 @@ bool CCharacter::AimedAtCharRecently(float aimX, float aimY, const CCharacter *c
 	return false;
 }
 
-float CCharacter::HowCloseToXRecently(vec2 x, const LastPosition *&pos, int firstTick)
+float CCharacter::HowCloseToXRecently(vec2 x, const vec2 *&pos, int firstTick)
 {
-	float lowest = 1000.0;
+	float lowest = -1.0;
 	// start with the most recent position
 	firstTick = max(firstTick, Server()->Tick() - m_LastPositionsSize);
 	for(int lastTick = Server()->Tick(); lastTick > firstTick; --lastTick)
 	{
 		int i = lastTick % m_LastPositionsSize;
-		float d = distance(x, vec2(m_LastPositions[i].x, m_LastPositions[i].y));
-		if(d < lowest)
+		float d = distance(x, m_LastPositions[i]);
+		if(d < lowest || lowest < .0)
 		{
 			pos = &m_LastPositions[i];
 			lowest = d;
 		}
+		if(lowest == .0) break;
 	}
 	return lowest;
 }
@@ -714,8 +713,7 @@ void CCharacter::Tick()
 	m_PrevInput = m_Input;
 	
 	// save position
-	m_LastPositions[Server()->Tick() % m_LastPositionsSize].x = m_Pos.x;
-	m_LastPositions[Server()->Tick() % m_LastPositionsSize].y = m_Pos.y;
+	m_LastPositions[Server()->Tick() % m_LastPositionsSize] = m_Pos;
 	
 	return;
 }

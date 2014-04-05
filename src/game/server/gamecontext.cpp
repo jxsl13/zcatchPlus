@@ -533,7 +533,7 @@ void CGameContext::OnTick()
 	if(g_Config.m_SvBotDetection && Server()->GetNumLoggedInAdmins())
 	{
 		char aBuf[128];
-		const CCharacter::LastPosition *pos, *posVictim;
+		const vec2 *pos, *posVictim;
 		float d, precision;
 		CCharacter *ci, *cj;
 		CPlayer *p;
@@ -552,43 +552,39 @@ void CGameContext::OnTick()
 				if(j != i && (cj = GetPlayerChar(j)))
 				{
 					int indexAdd = 0;
+					vec2 target(p->m_LatestActivity.m_TargetX, p->m_LatestActivity.m_TargetY);
 					
 					// fast aiming bot detection
 					if(g_Config.m_SvBotDetection&BOT_DETECTION_FAST_AIM
 						&& p->m_AimBotTargetSpeed > 300.0 // only fast movements
-						&& (d = cj->HowCloseToXRecently(vec2(ci->m_Pos.x + p->m_LatestActivity.m_TargetX, ci->m_Pos.y + p->m_LatestActivity.m_TargetY), posVictim, p->m_AimBotLastDetection)) < 16.0
+						&& (d = cj->HowCloseToXRecently(ci->m_Pos + target, posVictim, p->m_AimBotLastDetection)) < 16.0
 						&& (precision = p->m_AimBotTargetSpeed * (256.0 - d * d)) >= 50000.0
 						&& !( // don't detect same constellation twice
-							ci->m_Pos.x == p->m_AimBotLastDetectionPos.x
-							&& ci->m_Pos.y == p->m_AimBotLastDetectionPos.y
-							&& posVictim->x == p->m_AimBotLastDetectionPosVictim.x
-							&& posVictim->y == p->m_AimBotLastDetectionPosVictim.y
+							ci->m_Pos == p->m_AimBotLastDetectionPos
+							&& *posVictim == p->m_AimBotLastDetectionPosVictim
 						)
 					)//if
 					{
 						indexAdd = min(3, (int)(precision / 50000));
-						p->m_AimBotLastDetectionPos.x = ci->m_Pos.x;
-						p->m_AimBotLastDetectionPos.y = ci->m_Pos.y;
+						p->m_AimBotLastDetectionPos = ci->m_Pos;
 						// prepare console output
-						str_format(aBuf, sizeof(aBuf), "player=%d victim=%d a_index=%d precision=%d speed=%d distance=%d", i, j, p->m_AimBotIndex + indexAdd, (int)precision, (int)p->m_AimBotTargetSpeed, (int)d);
+						str_format(aBuf, sizeof(aBuf), "player=%d victim=%d index=%d precision=%d speed=%d distance=%d", i, j, p->m_AimBotIndex + indexAdd, (int)precision, (int)p->m_AimBotTargetSpeed, (int)d);
 					}
 					
 					// follow bot detection
 					else if(g_Config.m_SvBotDetection&BOT_DETECTION_FOLLOW
 						&& cj->NetworkClipped(i) == 0 // needs to be in sight
-						&& ci->AimedAtCharRecently(p->m_LatestActivity.m_TargetX, p->m_LatestActivity.m_TargetY, cj, pos, posVictim, p->m_AimBotLastDetection)
+						&& ci->AimedAtCharRecently(target, cj, pos, posVictim, p->m_AimBotLastDetection)
 						&& !( // don't detect same constellation twice
-							pos->x == p->m_AimBotLastDetectionPos.x
-							&& pos->y == p->m_AimBotLastDetectionPos.y
-							&& posVictim->x == p->m_AimBotLastDetectionPosVictim.x
-							&& posVictim->y == p->m_AimBotLastDetectionPosVictim.y
+							*pos == p->m_AimBotLastDetectionPos
+							&& *posVictim == p->m_AimBotLastDetectionPosVictim
 						)
 					)//if
 					{
 						indexAdd = 1;
 						p->m_AimBotLastDetectionPos = *pos;
 						// prepare console output
-						str_format(aBuf, sizeof(aBuf), "player=%d victim=%d a_index=%d", i, j, p->m_AimBotIndex + indexAdd);
+						str_format(aBuf, sizeof(aBuf), "player=%d victim=%d index=%d", i, j, p->m_AimBotIndex + indexAdd);
 					}
 					
 					// detected

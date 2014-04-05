@@ -135,12 +135,12 @@ public:
 	// bot detection
 	int m_IsAimBot;
 	int m_AimBotIndex;
-	int m_AimBotLastDetection;
 	float m_AimBotTargetSpeed;
 	vec2 m_CurrentTarget;
 	vec2 m_LastTarget;
-	CCharacter::LastPosition m_AimBotLastDetectionPos;
-	CCharacter::LastPosition m_AimBotLastDetectionPosVictim;
+	int m_AimBotLastDetection;
+	vec2 m_AimBotLastDetectionPos;
+	vec2 m_AimBotLastDetectionPosVictim;
 	
 private:
 	CCharacter *m_pCharacter;
