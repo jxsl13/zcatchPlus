@@ -532,7 +532,7 @@ void CGameContext::OnTick()
 	// check each player, check only if an admin is online
 	if(g_Config.m_SvBotDetection && Server()->GetNumLoggedInAdmins())
 	{
-		char aBuf[128];
+		char aBuf[128], bBuf[64];
 		const vec2 *pos, *posVictim;
 		float d, precision;
 		CCharacter *ci, *cj;
@@ -568,7 +568,7 @@ void CGameContext::OnTick()
 						indexAdd = min(3, (int)(precision / 50000));
 						p->m_AimBotLastDetectionPos = ci->m_Pos;
 						// prepare console output
-						str_format(aBuf, sizeof(aBuf), "player=%d victim=%d index=%d precision=%d speed=%d distance=%d", i, j, p->m_AimBotIndex + indexAdd, (int)precision, (int)p->m_AimBotTargetSpeed, (int)d);
+						str_format(bBuf, sizeof(bBuf), "precision=%d speed=%d distance=%d", (int)precision, (int)p->m_AimBotTargetSpeed, (int)d);
 					}
 					
 					// follow bot detection
@@ -589,7 +589,7 @@ void CGameContext::OnTick()
 						indexAdd = 1;
 						p->m_AimBotLastDetectionPos = *pos;
 						// prepare console output
-						str_format(aBuf, sizeof(aBuf), "player=%d victim=%d index=%d", i, j, p->m_AimBotIndex + indexAdd);
+						bBuf[0] = 0;
 					}
 					
 					// detected
@@ -597,8 +597,10 @@ void CGameContext::OnTick()
 					{
 						p->m_AimBotLastDetection = Server()->Tick();
 						p->m_AimBotLastDetectionPosVictim = *posVictim;
-						++p->m_AimBotIndex;
+						p->m_AimBotIndex += indexAdd;
+						p->m_AimBotRange = max(p->m_AimBotRange, (int)length(target));
 						// log to console
+						str_format(aBuf, sizeof(aBuf), "player=%d victim=%d index=%d %s", i, j, p->m_AimBotIndex, bBuf);
 						Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "botdetect", aBuf);
 						// don't check other players
 						break;
@@ -613,7 +615,7 @@ void CGameContext::OnTick()
 				p->m_IsAimBot = Server()->Tick();
 				// alert the admins
 				char aBuf[128];
-				str_format(aBuf, sizeof(aBuf), "+++ '%s' (id=%d) might be botting +++", Server()->ClientName(i), i);
+				str_format(aBuf, sizeof(aBuf), "+++ '%s' (id=%d,range=%d) might be botting +++", Server()->ClientName(i), i, p->m_AimBotRange);
 				for(int j = 0; j < MAX_CLIENTS; ++j)
 					if(Server()->IsAuthed(j))
 						SendChatTarget(j, aBuf);
@@ -621,7 +623,12 @@ void CGameContext::OnTick()
 			
 			// reduce once every seconds (tolerance)
 			if(((Server()->Tick() % Server()->TickSpeed()) == 0) && p->m_AimBotIndex)
-				--p->m_AimBotIndex;
+			{
+				if(!(--p->m_AimBotIndex))
+				{
+					p->m_AimBotRange = 0;
+				}
+			}
 		}
 	}
 

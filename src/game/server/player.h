@@ -135,6 +135,7 @@ public:
 	// bot detection
 	int m_IsAimBot;
 	int m_AimBotIndex;
+	int m_AimBotRange;
 	float m_AimBotTargetSpeed;
 	vec2 m_CurrentTarget;
 	vec2 m_LastTarget;

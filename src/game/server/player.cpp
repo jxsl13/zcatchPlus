@@ -40,6 +40,7 @@ CPlayer::CPlayer(CGameContext *pGameServer, int ClientID, int Team)
 	// bot detection
 	m_IsAimBot = 0;
 	m_AimBotIndex = 0;
+	m_AimBotRange = 0;
 	m_AimBotLastDetection = 0;
 	m_AimBotTargetSpeed = .0;
 	m_CurrentTarget.x = 0;
