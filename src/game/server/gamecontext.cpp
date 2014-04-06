@@ -1231,10 +1231,6 @@ void CGameContext::OnMessage(int MsgID, CUnpacker *pUnpacker, int ClientID)
 			str_format(aBuf, sizeof(aBuf), "Only one suicide every %d seconds is allowed.", g_Config.m_SvSuicideTime);
 			SendChatTarget(ClientID, aBuf);
 		}
-		else if(pPlayer->GetCharacter() && pPlayer->GetCharacter()->m_FreezeTicks)
-		{
-			SendChatTarget(ClientID, "You can't kill yourself while you're frozen.");
-		}
 		else if(pPlayer->HasZCatchVictims())
 		{
 			int lastVictim = pPlayer->LastZCatchVictim();
@@ -1245,6 +1241,10 @@ void CGameContext::OnMessage(int MsgID, CUnpacker *pUnpacker, int ClientID)
 			str_format(aBuf, sizeof(aBuf), "You were released by '%s'.", Server()->ClientName(ClientID));
 			SendChatTarget(lastVictim, aBuf);
 			return;
+		}
+		else if(pPlayer->GetCharacter() && pPlayer->GetCharacter()->m_FreezeTicks)
+		{
+			SendChatTarget(ClientID, "You can't kill yourself while you're frozen.");
 		}
 		else
 		{
