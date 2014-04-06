@@ -50,6 +50,8 @@ CCharacter::CCharacter(CGameWorld *pWorld)
 	// last positions
 	m_LastPositionsSize = Server()->TickSpeed() / 4;
 	m_LastPositions = new vec2[m_LastPositionsSize]();
+	for(int i = 0; i < m_LastPositionsSize; ++i)
+		m_LastPositions[i] = vec2(-1000, -1000);
 }
 
 CCharacter::~CCharacter()
