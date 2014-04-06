@@ -51,7 +51,12 @@ CPlayer::CPlayer(CGameContext *pGameServer, int ClientID, int Team)
 
 CPlayer::~CPlayer()
 {
-	ReleaseZCatchVictim(ZCATCH_RELEASE_ALL);
+	while(m_ZCatchVictims != NULL)
+	{
+		CZCatchVictim *tmp = m_ZCatchVictims;
+		m_ZCatchVictims = tmp->prev;
+		delete tmp;
+	}
 	
 	delete m_pCharacter;
 	m_pCharacter = 0;
