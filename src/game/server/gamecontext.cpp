@@ -808,12 +808,14 @@ void CGameContext::OnMessage(int MsgID, CUnpacker *pUnpacker, int ClientID)
 		if(!str_comp("/info", pMsg->m_pMessage))
 		{
 			char aBuf[128];
-			str_format(aBuf, sizeof(aBuf), "zCatch version %s by erd and Teetime, modified by Teelevision.", ZCATCH_VERSION);
+			str_format(aBuf, sizeof(aBuf), "zCatch %s by erd and Teetime, modified by Teelevision.", ZCATCH_VERSION);
 			SendChatTarget(ClientID, aBuf);
-			SendChatTarget(ClientID, "The winner is the tee which is left over at the end.");
-			SendChatTarget(ClientID, "If you die, all players that you killed will respawn.");
-			SendChatTarget(ClientID, "So the only way to win is to kill every player without beeing killed.");
-			SendChatTarget(ClientID, "Have fun!");
+			SendChatTarget(ClientID, "You are caught when killed and released when your killer dies. Catch everyone to win the round.");
+			if(g_Config.m_SvLastStandingPlayers > 2)
+			{
+				str_format(aBuf, sizeof(aBuf), "If there are less than %d players, the round does not end and all players are released instead.", g_Config.m_SvLastStandingPlayers);
+				SendChatTarget(ClientID, aBuf);
+			}
 		}
 		else if(!str_comp_num("/", pMsg->m_pMessage, 1))
 			SendChatTarget(ClientID, "Unknown command, try /info");
@@ -825,7 +827,7 @@ void CGameContext::OnMessage(int MsgID, CUnpacker *pUnpacker, int ClientID)
 			{
 				char aBuf[128];
 				int Expires = (m_aMutes[Pos].m_Expires - Server()->Tick())/Server()->TickSpeed();
-				str_format(aBuf, sizeof(aBuf), "You are muted for %d minutes and %d seconds.", Expires/60, Expires%60);
+				str_format(aBuf, sizeof(aBuf), "You are muted for %d:%02d min.", Expires/60, Expires%60);
 				SendChatTarget(ClientID, aBuf);
 				return;
 			}
@@ -1280,7 +1282,7 @@ void CGameContext::AddMute(int ClientID, int Secs, bool Auto)
 	
 	char aBuf[128];
 	if(Secs > 0)
-		str_format(aBuf, sizeof(aBuf), "%s has been %smuted for %d min and %d sec.", Server()->ClientName(ClientID), Auto ? "auto-" : "", Secs/60, Secs%60);
+		str_format(aBuf, sizeof(aBuf), "%s has been %smuted for %d:%02d min.", Server()->ClientName(ClientID), Auto ? "auto-" : "", Secs/60, Secs%60);
 	else
 		str_format(aBuf, sizeof(aBuf), "%s has been unmuted.", Server()->ClientName(ClientID));
 	Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Server", aBuf);
@@ -1756,7 +1758,7 @@ void CGameContext::ConMutes(IConsole::IResult *pResult, void *pUserData)
 			continue;
 		
 		Sec = (pSelf->m_aMutes[i].m_Expires - pSelf->Server()->Tick())/pSelf->Server()->TickSpeed();
-		str_format(aBuf, sizeof(aBuf), "#%d: %s for %d minutes and %d sec", i, pSelf->m_aMutes[i].m_aIP, Sec/60, Sec%60);
+		str_format(aBuf, sizeof(aBuf), "#%d: %s for %d:%02d min", i, pSelf->m_aMutes[i].m_aIP, Sec/60, Sec%60);
 		pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Server", aBuf);
 		Count++;
 	}

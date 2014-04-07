@@ -63,7 +63,7 @@ void CGameController_zCatch::DoWincheck()
 				}
 			}
 			if(Players_Ingame < g_Config.m_SvLastStandingPlayers)
-				GameServer()->SendChatTarget(-1, "Too less players to end round. All players have been released.");
+				GameServer()->SendChatTarget(-1, "Too few players to end round. All players have been released.");
 			else
 				EndRound();
 		}
