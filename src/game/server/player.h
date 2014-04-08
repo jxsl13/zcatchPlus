@@ -117,17 +117,20 @@ public:
 	enum
 	{
 		ZCATCH_NOT_CAUGHT = -1,
-		ZCATCH_RELEASE_ALL = -1
+		ZCATCH_RELEASE_ALL = -1,
+		ZCATCH_CAUGHT_REASON_JOINING = 0,
+		ZCATCH_CAUGHT_REASON_KILLED,
 	};
 	struct CZCatchVictim
 	{
 		int ClientID;
+		int Reason;
 		CZCatchVictim *prev;
 	};
 	CZCatchVictim *m_ZCatchVictims;
 	int m_zCatchNumVictims;
 	int m_zCatchNumKillsInARow;
-	void AddZCatchVictim(int ClientID);
+	void AddZCatchVictim(int ClientID, int reason = ZCATCH_CAUGHT_REASON_JOINING);
 	void ReleaseZCatchVictim(int ClientID, int limit = 0);
 	bool HasZCatchVictims() { return (m_ZCatchVictims != NULL); }
 	int LastZCatchVictim() { return HasZCatchVictims() ? m_ZCatchVictims->ClientID : -1; }

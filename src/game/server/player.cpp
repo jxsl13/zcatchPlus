@@ -406,7 +406,7 @@ int CPlayer::Anticamper()
 }
 
 // catch another player
-void CPlayer::AddZCatchVictim(int ClientID)
+void CPlayer::AddZCatchVictim(int ClientID, int reason)
 {
 	CPlayer *victim = GameServer()->m_apPlayers[ClientID];
 	if(victim)
@@ -414,6 +414,7 @@ void CPlayer::AddZCatchVictim(int ClientID)
 		// add to list of victims
 		CZCatchVictim *v = new CZCatchVictim;
 		v->ClientID = ClientID;
+		v->Reason = reason;
 		v->prev = m_ZCatchVictims;
 		m_ZCatchVictims = v;
 		++m_zCatchNumVictims;

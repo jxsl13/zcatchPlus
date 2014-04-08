@@ -688,7 +688,7 @@ void CGameContext::OnClientEnter(int ClientID)
 			if(m_apPlayers[i] && ((leader && m_apPlayers[i]->m_zCatchNumKillsInARow > leader->m_zCatchNumKillsInARow) || (!leader && m_apPlayers[i]->m_zCatchNumKillsInARow)))
 				leader = m_apPlayers[i];
 		if(leader)
-			leader->AddZCatchVictim(ClientID);
+			leader->AddZCatchVictim(ClientID, CPlayer::ZCATCH_CAUGHT_REASON_JOINING);
 		else
 			p->m_SpecExplicit = false;
 	}
@@ -805,20 +805,58 @@ void CGameContext::OnMessage(int MsgID, CUnpacker *pUnpacker, int ClientID)
 		}
 
 		/* begin zCatch*/
-		if(!str_comp("/info", pMsg->m_pMessage))
+		if(!str_comp_num("/", pMsg->m_pMessage, 1))
 		{
-			char aBuf[128];
-			str_format(aBuf, sizeof(aBuf), "zCatch %s by erd and Teetime, modified by Teelevision.", ZCATCH_VERSION);
-			SendChatTarget(ClientID, aBuf);
-			SendChatTarget(ClientID, "You are caught when killed and released when your killer dies. Catch everyone to win the round.");
-			if(g_Config.m_SvLastStandingPlayers > 2)
+			if(!str_comp_nocase("info", pMsg->m_pMessage + 1))
 			{
-				str_format(aBuf, sizeof(aBuf), "If there are less than %d players, the round does not end and all players are released instead.", g_Config.m_SvLastStandingPlayers);
+				char aBuf[128];
+				str_format(aBuf, sizeof(aBuf), "zCatch %s by erd and Teetime, modified by Teelevision.", ZCATCH_VERSION);
 				SendChatTarget(ClientID, aBuf);
+				SendChatTarget(ClientID, "You are caught when killed and released when your killer dies. Catch everyone to win the round.");
+				if(g_Config.m_SvLastStandingPlayers > 2)
+				{
+					str_format(aBuf, sizeof(aBuf), "If there are less than %d players, the round does not end and all players are released instead.", g_Config.m_SvLastStandingPlayers);
+					SendChatTarget(ClientID, aBuf);
+				}
+			}
+			else if(!str_comp_nocase("victims", pMsg->m_pMessage + 1))
+			{
+				if(pPlayer->m_zCatchNumVictims)
+				{
+					char aBuf[256], bBuf[256];
+					CPlayer::CZCatchVictim *v = pPlayer->m_ZCatchVictims;
+					str_format(aBuf, sizeof(aBuf), "%d player(s) await your death: ", pPlayer->m_zCatchNumVictims);
+					while(v != NULL)
+					{
+						str_format(bBuf, sizeof(bBuf), (v == pPlayer->m_ZCatchVictims) ? "%s '%s'%s" : "%s, '%s'%s", aBuf, Server()->ClientName(v->ClientID), (v->Reason == CPlayer::ZCATCH_CAUGHT_REASON_JOINING) ? " (joined the game)" : "");
+						str_copy(aBuf, bBuf, sizeof(aBuf));
+						v = v->prev;
+					}
+					SendChatTarget(ClientID, aBuf);
+				}
+				else
+				{
+					SendChatTarget(ClientID, "Noone awaits your death.");
+				}
+			}
+			else if(!str_comp_nocase("kills", pMsg->m_pMessage + 1))
+			{
+				if(pPlayer->m_zCatchNumKillsInARow)
+				{
+					char aBuf[256];
+					str_format(aBuf, sizeof(aBuf), "You caught %d player(s) since your last death.", pPlayer->m_zCatchNumKillsInARow);
+					SendChatTarget(ClientID, aBuf);
+				}
+				else
+				{
+					SendChatTarget(ClientID, "You caught noone since your last death.");
+				}
+			}
+			else
+			{
+				SendChatTarget(ClientID, "Unknown command, try /info");
 			}
 		}
-		else if(!str_comp_num("/", pMsg->m_pMessage, 1))
-			SendChatTarget(ClientID, "Unknown command, try /info");
 		else
 		{
 			//Check if muted
