@@ -130,6 +130,7 @@ public:
 	CZCatchVictim *m_ZCatchVictims;
 	int m_zCatchNumVictims;
 	int m_zCatchNumKillsInARow;
+	bool m_zCatchJoinSpecWhenReleased;
 	void AddZCatchVictim(int ClientID, int reason = ZCATCH_CAUGHT_REASON_JOINING);
 	void ReleaseZCatchVictim(int ClientID, int limit = 0);
 	bool HasZCatchVictims() { return (m_ZCatchVictims != NULL); }

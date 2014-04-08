@@ -421,6 +421,7 @@ void CPlayer::AddZCatchVictim(int ClientID, int reason)
 		// set victim's status
 		victim->m_CaughtBy = m_ClientID;
 		victim->m_SpecExplicit = false;
+		victim->m_zCatchJoinSpecWhenReleased = false;
 		victim->SetTeamDirect(TEAM_SPECTATORS);
 		victim->m_SpectatorID = m_ClientID;
 	}
@@ -443,6 +444,9 @@ void CPlayer::ReleaseZCatchVictim(int ClientID, int limit)
 				victim->m_CaughtBy = ZCATCH_NOT_CAUGHT;
 				victim->SetTeamDirect(GameServer()->m_pController->ClampTeam(1));
 				victim->m_SpectatorID = SPEC_FREEVIEW;
+				// SetTeam after SetTeamDirect, otherwise it would skip the message for joining the spectators
+				if(victim->m_zCatchJoinSpecWhenReleased)
+					victim->SetTeam(GameServer()->m_pController->ClampTeam(TEAM_SPECTATORS));
 			}
 			// delete from list
 			tmp = (*v)->prev;

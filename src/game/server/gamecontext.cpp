@@ -1093,8 +1093,9 @@ void CGameContext::OnMessage(int MsgID, CUnpacker *pUnpacker, int ClientID)
 			}
 			else
 			{
-				char aBuf[256];
-				str_format(aBuf, sizeof(aBuf), "You will join automatically when \"%s\" dies.", Server()->ClientName(pPlayer->m_CaughtBy));
+				char aBuf[128];
+				pPlayer->m_zCatchJoinSpecWhenReleased = !pPlayer->m_zCatchJoinSpecWhenReleased;
+				str_format(aBuf, sizeof(aBuf), "You will join the %s when '%s' dies.", m_pController->GetTeamName(pPlayer->m_zCatchJoinSpecWhenReleased ? TEAM_SPECTATORS : TEAM_RED), Server()->ClientName(pPlayer->m_CaughtBy));
 				SendChatTarget(ClientID, aBuf);
 				return;
 			}
