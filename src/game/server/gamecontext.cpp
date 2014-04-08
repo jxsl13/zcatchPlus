@@ -836,7 +836,7 @@ void CGameContext::OnMessage(int MsgID, CUnpacker *pUnpacker, int ClientID)
 				}
 				else
 				{
-					SendChatTarget(ClientID, "Noone awaits your death.");
+					SendChatTarget(ClientID, "No one awaits your death.");
 				}
 			}
 			else if(!str_comp_nocase("kills", pMsg->m_pMessage + 1))
@@ -849,7 +849,7 @@ void CGameContext::OnMessage(int MsgID, CUnpacker *pUnpacker, int ClientID)
 				}
 				else
 				{
-					SendChatTarget(ClientID, "You caught noone since your last death.");
+					SendChatTarget(ClientID, "You caught no one since your last death.");
 				}
 			}
 			else
