@@ -258,10 +258,40 @@ int CServerBan::BanRange(const CNetRange *pRange, int Seconds, const char *pReas
 void CServerBan::ConBanExt(IConsole::IResult *pResult, void *pUser)
 {
 	CServerBan *pThis = static_cast<CServerBan *>(pUser);
+	const int defaultMinutes = 30;
 
 	const char *pStr = pResult->GetString(0);
-	int Minutes = pResult->NumArguments()>1 ? clamp(pResult->GetInteger(1), 0, 44640) : 30;
+	int Minutes = pResult->NumArguments()>1 ? clamp(pResult->GetInteger(1), 0, 44640) : defaultMinutes;
 	const char *pReason = pResult->NumArguments()>2 ? pResult->GetString(2) : "No reason given";
+	
+	// check if time was given or a reason instead
+	const char *time;
+	if(pResult->NumArguments() > 1)
+	{
+		// check if number given
+		time = pResult->GetString(1);
+		int i = str_length(time) - 1;
+		for(; i >= 0; --i)
+			if(time[i] < '0' || '9' < time[i])
+				break;
+		// in case that no number was given
+		if(!(str_length(time) && i < 0))
+		{
+			Minutes = defaultMinutes;
+			if(pResult->NumArguments() > 2)
+			{ // add to reason
+				char *newReason = (char*)malloc(sizeof(char) * (str_length(time) + str_length(pReason) + 2));
+				mem_copy(newReason, time, sizeof(char) * str_length(time));
+				newReason[str_length(time)] = ' ';
+				mem_copy(newReason + str_length(time) + 1, pReason, sizeof(char) * (str_length(pReason) + 1));
+				pReason = newReason;
+			}
+			else
+			{ // the time is the actual reason
+				pReason = time;
+			}
+		}
+	}
 
 	int CID = -1;
 	if(StrAllnum(pStr))
