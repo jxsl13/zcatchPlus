@@ -765,6 +765,28 @@ void CGameContext::OnClientDrop(int ClientID, const char *pReason)
 	}
 }
 
+// returns whether the player is allowed to chat, informs the player and mutes him if needed
+bool CGameContext::MuteValidation(CPlayer *player)
+{
+	int i, ClientID = player->GetCID();
+	if((i = Muted(ClientID)) > -1)
+	{
+		char aBuf[48];
+		int Expires = (m_aMutes[i].m_Expires - Server()->Tick())/Server()->TickSpeed();
+		str_format(aBuf, sizeof(aBuf), "You are muted for %d:%02d min.", Expires/60, Expires%60);
+		SendChatTarget(ClientID, aBuf);
+		return false;
+	}
+	//mute the player if he's spamming
+	else if(g_Config.m_SvMuteDuration && ((player->m_ChatTicks += g_Config.m_SvChatValue) > g_Config.m_SvChatThreshold))
+	{
+		AddMute(ClientID, g_Config.m_SvMuteDuration, true);
+		player->m_ChatTicks = 0;
+		return false;
+	}
+	return true;
+}
+
 void CGameContext::OnMessage(int MsgID, CUnpacker *pUnpacker, int ClientID)
 {
 	void *pRawMsg = m_NetObjHandler.SecureUnpackMsg(MsgID, pUnpacker);
@@ -852,6 +874,82 @@ void CGameContext::OnMessage(int MsgID, CUnpacker *pUnpacker, int ClientID)
 					SendChatTarget(ClientID, "You caught no one since your last death.");
 				}
 			}
+			// tell / PM someone privately
+			else if(!str_comp_nocase_num("t ", pMsg->m_pMessage + 1, 2) || !str_comp_nocase_num("ti ", pMsg->m_pMessage + 1, 3))
+			{
+				const char *recipientStart, *msgStart;
+				int recipient = -1;
+				
+				// by name
+				if(!str_comp_nocase_num("t ", pMsg->m_pMessage + 1, 2))
+				{
+					int recipientNameLength;
+					const char *recipientName;
+					recipientStart = str_skip_whitespaces((char*)pMsg->m_pMessage + 3);
+					// check _all_ players (there might be partly identical names)
+					for(int i = 0; i < MAX_CLIENTS; ++i)
+					{
+						if(m_apPlayers[i]
+							&& (recipientName = Server()->ClientName(i))
+							&& (recipientNameLength = str_length(recipientName))
+							&& !str_comp_num(recipientName, recipientStart, recipientNameLength)
+							&& recipientStart[recipientNameLength] == ' '
+						)
+						{
+							if(recipient >= 0)
+							{
+								SendChatTarget(ClientID, "Could not deliver private message. More than one player could be addressed.");
+								return;
+							}
+							msgStart = recipientStart + recipientNameLength + 1;
+							recipient = i;
+						}
+					}
+				}
+				
+				// by id
+				else if(!str_comp_nocase_num("ti ", pMsg->m_pMessage + 1, 3))
+				{
+					recipientStart = str_skip_whitespaces((char*)pMsg->m_pMessage + 4);
+					// check if int given
+					for(const char *c = recipientStart; *c != ' '; ++c)
+					{
+						if(*c < '0' || '9' < *c)
+						{
+							SendChatTarget(ClientID, "No id given, syntax is: /ti id message.");
+							return;
+						}
+					}
+					int i = str_toint(recipientStart);
+					if(m_apPlayers[i])
+					{
+						recipient = i;
+						msgStart = str_skip_whitespaces(str_skip_to_whitespace((char*)recipientStart));
+					}
+				}
+				
+				if(recipient >= 0)
+				{
+					if(MuteValidation(pPlayer))
+					{
+						// send to recipient
+						const char *msgForm = "[PM <- '%s'] %s",
+							*msgFormSender = "[PM -> '%s'] %s";
+						int len = 32 + MAX_NAME_LENGTH + str_length(msgStart);
+						char *msg = (char*)malloc(len * sizeof(char));
+						str_format(msg, len * sizeof(char), msgForm, Server()->ClientName(ClientID), msgStart);
+						SendChatTarget(recipient, msg);
+						// send to sender
+						str_format(msg, len * sizeof(char), msgFormSender, Server()->ClientName(recipient), msgStart);
+						SendChatTarget(ClientID, msg);
+						delete[] msg;
+					}
+				}
+				else
+				{
+					SendChatTarget(ClientID, "Could not deliver private message. Player not found.");
+				}
+			}
 			else
 			{
 				SendChatTarget(ClientID, "Unknown command, try /info");
@@ -859,25 +957,9 @@ void CGameContext::OnMessage(int MsgID, CUnpacker *pUnpacker, int ClientID)
 		}
 		else
 		{
-			//Check if muted
-			int Pos;
-			if((Pos = Muted(ClientID)) > -1)
-			{
-				char aBuf[128];
-				int Expires = (m_aMutes[Pos].m_Expires - Server()->Tick())/Server()->TickSpeed();
-				str_format(aBuf, sizeof(aBuf), "You are muted for %d:%02d min.", Expires/60, Expires%60);
-				SendChatTarget(ClientID, aBuf);
-				return;
-			}
-			//mute the player if he's spamming
-			else if(g_Config.m_SvMuteDuration && ((pPlayer->m_ChatTicks += g_Config.m_SvChatValue) > g_Config.m_SvChatThreshold))
-			{
-				AddMute(ClientID, g_Config.m_SvMuteDuration, true);
-				pPlayer->m_ChatTicks = 0;
-				return;
-			}
-
-			SendChat(ClientID, Team, pMsg->m_pMessage);
+			// send to chat
+			if(MuteValidation(pPlayer))
+				SendChat(ClientID, Team, pMsg->m_pMessage);
 		}
 		/* end zCatch */
 	}
