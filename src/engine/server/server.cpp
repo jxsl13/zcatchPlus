@@ -1561,7 +1561,7 @@ void CServer::AddVoteban(int ClientID, int time)
 }
 
 // removes a voteban from a client's address
-void CServer::RemoveVoteban(int ClientID)
+void CServer::RemoveVotebanClient(int ClientID)
 {
 	RemoveVotebanAddr(m_NetServer.ClientAddr(ClientID));
 }
@@ -1570,12 +1570,16 @@ void CServer::RemoveVoteban(int ClientID)
 void CServer::RemoveVotebanAddr(const NETADDR *addr)
 {
 	CVoteban **v = IsVotebannedAddr(addr);
-	if(*v != NULL)
-	{
-		CVoteban *next = (*v)->m_Next;
-		delete *v;
-		*v = next;
-	}
+	if(v != NULL)
+		RemoveVoteban(v);
+}
+
+// removes a voteban
+void CServer::RemoveVoteban(CVoteban **v)
+{
+	CVoteban *next = (*v)->m_Next;
+	delete *v;
+	*v = next;
 }
 
 // returns the voteban with the given address if it exists
@@ -1630,16 +1634,46 @@ void CServer::ConVoteban(IConsole::IResult *pResult, void *pUser)
 void CServer::ConUnvoteban(IConsole::IResult *pResult, void *pUser)
 {
 	CServer* pThis = static_cast<CServer *>(pUser);
+	
+	// index to unvoteban
+	int index = pResult->GetInteger(0);
+	
+	CVoteban **v = &pThis->m_Votebans;
+	for(int c = 0; *v != NULL; ++c)
+	{
+		// index found
+		if(index == c)
+		{
+			char aBuf[128], aAddrStr[NETADDR_MAXSTRSIZE];
+			// print to console
+			net_addr_str(&(*v)->m_Addr, aAddrStr, sizeof(aAddrStr), false);
+			str_format(aBuf, sizeof(aBuf), "%s has been un-votebanned.", aAddrStr);
+			pThis->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Server", aBuf);
+			// remove ban
+			pThis->RemoveVoteban(v);
+			// don't look any further
+			return;
+		}
+		v = &(*v)->m_Next;
+	}
+	
+	// not found
+	pThis->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Server", "index was not found, please use 'votebans' to obtain an index");
+}
+
+void CServer::ConUnvotebanClient(IConsole::IResult *pResult, void *pUser)
+{
+	CServer* pThis = static_cast<CServer *>(pUser);
 	int ClientID = pResult->GetInteger(0);
 	if(ClientID < 0 || ClientID >= MAX_CLIENTS || pThis->m_aClients[ClientID].m_State == CServer::CClient::STATE_EMPTY)
 	{
 		pThis->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Server", "Invalid ClientID");
 		return;
 	}
-	pThis->RemoveVoteban(ClientID);
+	pThis->RemoveVotebanClient(ClientID);
 	// message to console
 	char aBuf[128];
-	str_format(aBuf, sizeof(aBuf), "%s has been un-votebanned.", pThis->ClientName(ClientID));
+	str_format(aBuf, sizeof(aBuf), "'%s' has been un-votebanned.", pThis->ClientName(ClientID));
 	pThis->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Server", aBuf);
 }
 
@@ -1660,9 +1694,8 @@ void CServer::ConVotebans(IConsole::IResult *pResult, void *pUser)
 		mem_copy(addr.ip, v->m_Addr.ip, sizeof(unsigned char[16]));
 		net_addr_str(&addr, aAddrStr, sizeof(aAddrStr), false);
 		time = (v->m_Expire - pThis->Tick()) / pThis->TickSpeed();
-		str_format(aBuf, sizeof(aBuf), "addr=%s time=%d:%02d min", aAddrStr, time/60, time%60);
+		str_format(aBuf, sizeof(aBuf), "#%d addr=%s time=%d:%02d min", count++, aAddrStr, time/60, time%60);
 		pThis->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Server", aBuf);
-		count++;
 		v = v->m_Next;
 	}
 	
@@ -1871,7 +1904,8 @@ void CServer::RegisterCommands()
 	Console()->Chain("console_output_level", ConchainConsoleOutputLevelUpdate, this);
 	
 	Console()->Register("voteban", "i?i", CFGFLAG_SERVER, ConVoteban, this, "Voteban a player by id");
-	Console()->Register("unvoteban", "i", CFGFLAG_SERVER, ConUnvoteban, this, "Remove voteban on player by id");
+	Console()->Register("unvoteban", "i", CFGFLAG_SERVER, ConUnvoteban, this, "Remove voteban by index in list votebans");
+	Console()->Register("unvoteban_client", "i", CFGFLAG_SERVER, ConUnvotebanClient, this, "Remove voteban by player id");
 	Console()->Register("votebans", "", CFGFLAG_SERVER, ConVotebans, this, "Show all votebans");
 
 	// register console commands in sub parts

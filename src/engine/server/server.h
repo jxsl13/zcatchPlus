@@ -271,12 +271,14 @@ public:
 	void AdjustVotebanTime(int offset);
 	void AddVotebanAddr(const NETADDR *addr, int expire);
 	void AddVoteban(int ClientID, int time);
-	void RemoveVoteban(int ClientID);
+	void RemoveVoteban(CVoteban **v);
 	void RemoveVotebanAddr(const NETADDR *addr);
+	void RemoveVotebanClient(int ClientID);
 	CVoteban **IsVotebannedAddr(const NETADDR *addr);
 	void CleanVotebans();
 	static void ConVoteban(IConsole::IResult *pResult, void *pUser);
 	static void ConUnvoteban(IConsole::IResult *pResult, void *pUser);
+	static void ConUnvotebanClient(IConsole::IResult *pResult, void *pUser);
 	static void ConVotebans(IConsole::IResult *pResult, void *pUser);
 	
 	virtual int GetNumLoggedInAdmins() { return m_numLoggedInAdmins; }
