@@ -949,7 +949,7 @@ void CGameContext::OnMessage(int MsgID, CUnpacker *pUnpacker, int ClientID)
 						// send to sender
 						str_format(msg, len * sizeof(char), msgFormSender, Server()->ClientName(recipient), msgStart);
 						SendChatTarget(ClientID, msg);
-						delete[] msg;
+						free(msg);
 					}
 				}
 				else
