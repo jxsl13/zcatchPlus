@@ -104,6 +104,8 @@ public:
 	virtual const char *NetVersion() = 0;
 
 	virtual bool IsClientAimBot(int ClientID) = 0;
+	
+	virtual void InformPlayers(const char *pText) = 0;
 };
 
 extern IGameServer *CreateGameServer();

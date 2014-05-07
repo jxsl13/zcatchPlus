@@ -166,7 +166,7 @@ public:
 	void SendEmoticon(int ClientID, int Emoticon);
 	void SendWeaponPickup(int ClientID, int Weapon);
 	void SendBroadcast(const char *pText, int ClientID);
-
+	virtual void InformPlayers(const char *pText) { SendChatTarget(-1, pText); }
 
 	//
 	void CheckPureTuning();

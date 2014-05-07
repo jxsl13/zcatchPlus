@@ -1626,9 +1626,9 @@ void CServer::ConVoteban(IConsole::IResult *pResult, void *pUser)
 	pThis->AddVoteban(ClientID, time);
 	// message to console and chat
 	char aBuf[128];
-	str_format(aBuf, sizeof(aBuf), "%s has been votebanned for %d:%02d min.", pThis->ClientName(ClientID), time/60, time%60);
+	str_format(aBuf, sizeof(aBuf), "'%s' has been banned from voting for %d:%02d min.", pThis->ClientName(ClientID), time/60, time%60);
 	pThis->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Server", aBuf);
-	// pSelf->SendChatTarget(-1, aBuf);
+	pThis->GameServer()->InformPlayers(aBuf);
 }
 
 void CServer::ConUnvoteban(IConsole::IResult *pResult, void *pUser)
