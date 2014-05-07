@@ -832,7 +832,7 @@ void CGameContext::OnMessage(int MsgID, CUnpacker *pUnpacker, int ClientID)
 			if(!str_comp_nocase("info", pMsg->m_pMessage + 1))
 			{
 				char aBuf[128];
-				str_format(aBuf, sizeof(aBuf), "zCatch %s by erd and Teetime, modified by Teelevision.", ZCATCH_VERSION);
+				str_format(aBuf, sizeof(aBuf), "zCatch %s by erd and Teetime, modified by Teelevision. See /help.", ZCATCH_VERSION);
 				SendChatTarget(ClientID, aBuf);
 				SendChatTarget(ClientID, "You are caught when killed and released when your killer dies. Catch everyone to win the round.");
 				if(g_Config.m_SvLastStandingPlayers > 2)
@@ -840,6 +840,13 @@ void CGameContext::OnMessage(int MsgID, CUnpacker *pUnpacker, int ClientID)
 					str_format(aBuf, sizeof(aBuf), "If there are less than %d players, the round does not end and all players are released instead.", g_Config.m_SvLastStandingPlayers);
 					SendChatTarget(ClientID, aBuf);
 				}
+			}
+			else if(!str_comp_nocase("help", pMsg->m_pMessage + 1))
+			{
+				SendChatTarget(ClientID, "/victims: who is waiting for your death");
+				SendChatTarget(ClientID, "/kills: list of players you killed");
+				SendChatTarget(ClientID, "/t <name> <msg>: write PM to <name>");
+				SendChatTarget(ClientID, "/ti <id> <msg>: write PM via ID");
 			}
 			else if(!str_comp_nocase("victims", pMsg->m_pMessage + 1))
 			{
