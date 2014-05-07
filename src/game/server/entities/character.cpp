@@ -489,7 +489,9 @@ void CCharacter::FireWeapon()
 			CNetObj_Projectile p;
 			pProj->FillInfo(&p);
 			
-			pProj->SetCharactersNearby();
+			pProj->InitAffectedCharacters();
+			if(m_Core.m_HookedPlayer >= 0)
+				pProj->SetAffectedCharacter(m_Core.m_HookedPlayer);
 
 			CMsgPacker Msg(NETMSGTYPE_SV_EXTRAPROJECTILE);
 			Msg.AddInt(1);

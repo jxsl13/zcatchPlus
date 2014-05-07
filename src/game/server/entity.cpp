@@ -55,11 +55,11 @@ bool CEntity::GameLayerClipped(vec2 CheckPos)
 			round(CheckPos.y)/32 < -200 || round(CheckPos.y)/32 > GameServer()->Collision()->GetHeight()+200 ? true : false;
 }
 
-void CEntity::SetCharactersNearby()
+void CEntity::InitAffectedCharacters()
 {
 	CCharacter *c;
 	for(int i = 0; i < MAX_CLIENTS; ++i)
 		if((c = GameServer()->GetPlayerChar(i)))
-			m_CharactersNearby[i] = (absolute(c->m_Pos.x - m_Pos.x) <= 900.0f && absolute(c->m_Pos.y - m_Pos.y) <= 700.0f && distance(c->m_Pos, m_Pos) <= 900.0f);
-	m_CharactersNearbyInitialized = true;
+			m_AffectedCharacters[i] = (absolute(c->m_Pos.x - m_Pos.x) <= 900.0f && absolute(c->m_Pos.y - m_Pos.y) <= 700.0f && distance(c->m_Pos, m_Pos) <= 900.0f);
+	m_AffectedCharactersInitialized = true;
 }

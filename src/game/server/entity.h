@@ -156,9 +156,10 @@ public:
 	vec2 m_Pos;
 	
 	// nearby characters
-	bool m_CharactersNearbyInitialized;
-	bool m_CharactersNearby[MAX_CLIENTS];
-	void SetCharactersNearby();
+	bool m_AffectedCharactersInitialized;
+	bool m_AffectedCharacters[MAX_CLIENTS];
+	void InitAffectedCharacters();
+	void SetAffectedCharacter(int i) { m_AffectedCharacters[i] = true; }
 };
 
 #endif

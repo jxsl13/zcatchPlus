@@ -73,7 +73,7 @@ void CProjectile::Tick()
 			GameServer()->CreateSound(CurPos, m_SoundImpact);
 
 		if(m_Explosive)
-			GameServer()->CreateExplosion(CurPos, m_Owner, m_Weapon, false, m_CharactersNearbyInitialized, m_CharactersNearby);
+			GameServer()->CreateExplosion(CurPos, m_Owner, m_Weapon, false, m_AffectedCharactersInitialized, m_AffectedCharacters);
 
 		else if(TargetChr)
 			TargetChr->TakeDamage(m_Direction * max(0.001f, m_Force), m_Damage, m_Owner, m_Weapon);
