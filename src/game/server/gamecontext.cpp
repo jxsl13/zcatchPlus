@@ -1917,6 +1917,27 @@ void CGameContext::ConUnmuteIP(IConsole::IResult *pResult, void *pUserData)
 	}
 }
 
+void CGameContext::ConKill(IConsole::IResult *pResult, void *pUserData)
+{
+	CGameContext *pSelf = (CGameContext *)pUserData;
+	int CID = pResult->GetInteger(0);
+	if(CID < 0 || CID >= MAX_CLIENTS || !pSelf->m_apPlayers[CID])
+	{
+		pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Server", "Invalid ClientID");
+		return;
+	}
+	if(pSelf->m_apPlayers[CID]->GetCharacter() == 0)
+	{
+		pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Server", "Player is already dead");
+		return;
+	}
+	pSelf->m_apPlayers[CID]->KillCharacter();
+	// message to console and chat
+	char aBuf[128];
+	str_format(aBuf, sizeof(aBuf), "'%s' has been killed by admin.", pSelf->Server()->ClientName(CID));
+	pSelf->SendChatTarget(-1, aBuf);
+}
+
 void CGameContext::OnConsoleInit()
 {
 	m_pServer = Kernel()->RequestInterface<IServer>();
@@ -1948,6 +1969,8 @@ void CGameContext::OnConsoleInit()
 	Console()->Register("unmuteid", "i", CFGFLAG_SERVER, ConUnmuteID, this, "Unmutes a player by its client id");
 	Console()->Register("unmuteip", "i", CFGFLAG_SERVER, ConUnmuteIP, this, "Removes a mute by its index");
 	Console()->Register("mutes", "", CFGFLAG_SERVER, ConMutes, this, "Show all mutes");
+	
+	Console()->Register("kill", "i", CFGFLAG_SERVER, ConKill, this, "Kill a player by id");
 		
 	Console()->Chain("sv_motd", ConchainSpecialMotdupdate, this);
 }

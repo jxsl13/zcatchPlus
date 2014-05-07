@@ -72,6 +72,8 @@ class CGameContext : public IGameServer
 	static void ConUnmuteID(IConsole::IResult *pResult, void *pUserData);
 	static void ConUnmuteIP(IConsole::IResult *pResult, void *pUserData);
 	static void ConMutes(IConsole::IResult *pResult, void *pUserData);
+	
+	static void ConKill(IConsole::IResult *pResult, void *pUserData);
 
 	CGameContext(int Resetting);
 	void Construct(int Resetting);
