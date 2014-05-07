@@ -306,6 +306,10 @@ release_settings.config_ext = ""
 release_settings.debug = 0
 release_settings.optimize = 1
 release_settings.cc.defines:Add("CONF_RELEASE")
+if ScriptArgs.arch == "m32" then
+	release_settings.cc.flags:Add("-m32")
+	release_settings.link.flags:Add("-m32")
+end
 
 if platform == "macosx" then
 	debug_settings_ppc = debug_settings:Copy()
