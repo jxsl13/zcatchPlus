@@ -939,16 +939,23 @@ void CGameContext::OnMessage(int MsgID, CUnpacker *pUnpacker, int ClientID)
 				{
 					if(MuteValidation(pPlayer))
 					{
-						// send to recipient
-						const char *msgForm = "[PM <- '%s'] %s",
-							*msgFormSender = "[PM -> '%s'] %s";
+						// prepare message
+						const char *msgForm = "/PM/ %s",
+							*msgFormSender = "/PM -> %s / %s";
 						int len = 32 + MAX_NAME_LENGTH + str_length(msgStart);
 						char *msg = (char*)malloc(len * sizeof(char));
-						str_format(msg, len * sizeof(char), msgForm, Server()->ClientName(ClientID), msgStart);
-						SendChatTarget(recipient, msg);
+						CNetMsg_Sv_Chat M;
+						M.m_Team = 0;
+						M.m_ClientID = ClientID;
 						// send to sender
 						str_format(msg, len * sizeof(char), msgFormSender, Server()->ClientName(recipient), msgStart);
-						SendChatTarget(ClientID, msg);
+						M.m_pMessage = msg;
+						Server()->SendPackMsg(&M, MSGFLAG_VITAL, ClientID);
+						// send to recipient
+						str_format(msg, len * sizeof(char), msgForm, msgStart);
+						M.m_pMessage = msg;
+						Server()->SendPackMsg(&M, MSGFLAG_VITAL, recipient);
+						// tidy up
 						free(msg);
 					}
 				}
