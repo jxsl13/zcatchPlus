@@ -1358,17 +1358,7 @@ void CGameContext::OnMessage(int MsgID, CUnpacker *pUnpacker, int ClientID)
 				(pPlayer->m_LastKillTry+Server()->TickSpeed()*3 > Server()->Tick()))
 			return;
 
-		if(g_Config.m_SvSuicideTime == 0)
-		{
-			SendChatTarget(ClientID, "Suicide is not allowed.");
-		}
-		else if(pPlayer->m_LastKill && pPlayer->m_LastKill+Server()->TickSpeed()*g_Config.m_SvSuicideTime > Server()->Tick())
-		{
-			char aBuf[128];
-			str_format(aBuf, sizeof(aBuf), "Only one suicide every %d seconds is allowed.", g_Config.m_SvSuicideTime);
-			SendChatTarget(ClientID, aBuf);
-		}
-		else if(pPlayer->HasZCatchVictims())
+		if(pPlayer->HasZCatchVictims())
 		{
 			int lastVictim = pPlayer->LastZCatchVictim();
 			pPlayer->ReleaseZCatchVictim(CPlayer::ZCATCH_RELEASE_ALL, 1);
@@ -1378,6 +1368,16 @@ void CGameContext::OnMessage(int MsgID, CUnpacker *pUnpacker, int ClientID)
 			str_format(aBuf, sizeof(aBuf), "You were released by '%s'.", Server()->ClientName(ClientID));
 			SendChatTarget(lastVictim, aBuf);
 			return;
+		}
+		else if(g_Config.m_SvSuicideTime == 0)
+		{
+			SendChatTarget(ClientID, "Suicide is not allowed.");
+		}
+		else if(pPlayer->m_LastKill && pPlayer->m_LastKill+Server()->TickSpeed()*g_Config.m_SvSuicideTime > Server()->Tick())
+		{
+			char aBuf[128];
+			str_format(aBuf, sizeof(aBuf), "Only one suicide every %d seconds is allowed.", g_Config.m_SvSuicideTime);
+			SendChatTarget(ClientID, aBuf);
 		}
 		else if(pPlayer->GetCharacter() && pPlayer->GetCharacter()->m_FreezeTicks)
 		{
