@@ -6,6 +6,9 @@
 
 #include <engine/server.h>
 
+#include <string>
+#include <map>
+
 
 class CSnapIDPool
 {
@@ -84,6 +87,7 @@ public:
 	{
 		AUTHED_NO=0,
 		AUTHED_MOD,
+		AUTHED_SUBADMIN,
 		AUTHED_ADMIN,
 
 		MAX_RCONCMD_SEND=16,
@@ -132,6 +136,7 @@ public:
 		int m_Score;
 		int m_Authed;
 		int m_AuthTries;
+		std::string m_SubAdminAuthName;
 
 		const IConsole::CCommandInfo *m_pRconCmdToSend;
 
@@ -280,8 +285,14 @@ public:
 	static void ConUnvoteban(IConsole::IResult *pResult, void *pUser);
 	static void ConUnvotebanClient(IConsole::IResult *pResult, void *pUser);
 	static void ConVotebans(IConsole::IResult *pResult, void *pUser);
+	static void ConAddLogin(IConsole::IResult *pResult, void *pUser);
+	static void ConRemoveLogin(IConsole::IResult *pResult, void *pUser);
 	
 	virtual int GetNumLoggedInAdmins() { return m_numLoggedInAdmins; }
+	
+	// logins
+	typedef std::map<std::string,std::string>::iterator loginiterator;
+	std::map<std::string,std::string> logins;
 };
 
 #endif

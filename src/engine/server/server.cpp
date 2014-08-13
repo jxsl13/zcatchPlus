@@ -31,6 +31,10 @@
 #include "register.h"
 #include "server.h"
 
+#include <string.h>
+#include <string>
+#include <map>
+
 #if defined(CONF_FAMILY_WINDOWS)
 	#define _WIN32_WINNT 0x0501
 	#define WIN32_LEAN_AND_MEAN
@@ -869,7 +873,7 @@ void CServer::UpdateClientRconCommands()
 
 	if(m_aClients[ClientID].m_State != CClient::STATE_EMPTY && m_aClients[ClientID].m_Authed)
 	{
-		int ConsoleAccessLevel = m_aClients[ClientID].m_Authed == AUTHED_ADMIN ? IConsole::ACCESS_LEVEL_ADMIN : IConsole::ACCESS_LEVEL_MOD;
+		int ConsoleAccessLevel = m_aClients[ClientID].m_Authed == AUTHED_ADMIN ? IConsole::ACCESS_LEVEL_ADMIN : (AUTHED_SUBADMIN ? IConsole::ACCESS_LEVEL_SUBADMIN : IConsole::ACCESS_LEVEL_MOD);
 		for(int i = 0; i < MAX_RCONCMD_SEND && m_aClients[ClientID].m_pRconCmdToSend; ++i)
 		{
 			SendRconCmdAdd(m_aClients[ClientID].m_pRconCmdToSend, ClientID);
@@ -1050,7 +1054,7 @@ void CServer::ProcessClientPacket(CNetChunk *pPacket)
 				Console()->Print(IConsole::OUTPUT_LEVEL_ADDINFO, "server", aBuf);
 				m_RconClientID = ClientID;
 				m_RconAuthLevel = m_aClients[ClientID].m_Authed;
-				Console()->SetAccessLevel(m_aClients[ClientID].m_Authed == AUTHED_ADMIN ? IConsole::ACCESS_LEVEL_ADMIN : IConsole::ACCESS_LEVEL_MOD);
+				Console()->SetAccessLevel(m_aClients[ClientID].m_Authed == AUTHED_ADMIN ? IConsole::ACCESS_LEVEL_ADMIN : (m_aClients[ClientID].m_Authed == AUTHED_SUBADMIN ? IConsole::ACCESS_LEVEL_SUBADMIN : IConsole::ACCESS_LEVEL_MOD));
 				Console()->ExecuteLineFlag(pCmd, CFGFLAG_SERVER);
 				Console()->SetAccessLevel(IConsole::ACCESS_LEVEL_ADMIN);
 				m_RconClientID = IServer::RCON_CID_SERV;
@@ -1062,12 +1066,23 @@ void CServer::ProcessClientPacket(CNetChunk *pPacket)
 			const char *pPw;
 			Unpacker.GetString(); // login name, not used
 			pPw = Unpacker.GetString(CUnpacker::SANITIZE_CC);
-
+			
+			// try matching username:password login
+			const char *delimiter = strchr(pPw, ':');
+			std::string username, password;
+			loginiterator loginit;
+			bool loginWithUsername = (delimiter != NULL);
+			if(loginWithUsername)
+			{
+				username.assign(pPw, delimiter - pPw);
+				password.assign(delimiter + 1);
+			}
+			
 			if(Unpacker.Error() == 0)
 			{
-				if(g_Config.m_SvRconPassword[0] == 0 && g_Config.m_SvRconModPassword[0] == 0)
+				if(g_Config.m_SvRconPassword[0] == 0 && g_Config.m_SvRconModPassword[0] == 0 && logins.empty())
 				{
-					SendRconLine(ClientID, "No rcon password set on server. Set sv_rcon_password and/or sv_rcon_mod_password to enable the remote console.");
+					SendRconLine(ClientID, "No rcon password set on server. Set sv_rcon_password and/or sv_rcon_mod_password or add logins using add_login to enable the remote console.");
 				}
 				else if(g_Config.m_SvRconPassword[0] && str_comp(pPw, g_Config.m_SvRconPassword) == 0)
 				{
@@ -1075,7 +1090,7 @@ void CServer::ProcessClientPacket(CNetChunk *pPacket)
 					Msg.AddInt(1);	//authed
 					Msg.AddInt(1);	//cmdlist
 					SendMsgEx(&Msg, MSGFLAG_VITAL, ClientID, true);
-
+					
 					m_aClients[ClientID].m_Authed = AUTHED_ADMIN;
 					int SendRconCmds = Unpacker.GetInt();
 					if(Unpacker.Error() == 0 && SendRconCmds)
@@ -1101,6 +1116,28 @@ void CServer::ProcessClientPacket(CNetChunk *pPacket)
 					char aBuf[256];
 					str_format(aBuf, sizeof(aBuf), "ClientID=%d authed (moderator)", ClientID);
 					Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "server", aBuf);
+				}
+				else if(loginWithUsername
+					&& !logins.empty()
+					&& (loginit = logins.find(username)) != logins.end()
+					&& loginit->second == password)
+				{
+					CMsgPacker Msg(NETMSG_RCON_AUTH_STATUS);
+					Msg.AddInt(1);	//authed
+					Msg.AddInt(1);	//cmdlist
+					SendMsgEx(&Msg, MSGFLAG_VITAL, ClientID, true);
+					
+					m_aClients[ClientID].m_Authed = AUTHED_SUBADMIN;
+					m_aClients[ClientID].m_SubAdminAuthName = loginit->first;
+					
+					int SendRconCmds = Unpacker.GetInt();
+					if(Unpacker.Error() == 0 && SendRconCmds)
+						m_aClients[ClientID].m_pRconCmdToSend = Console()->FirstCommandInfo(IConsole::ACCESS_LEVEL_SUBADMIN, CFGFLAG_SERVER);
+					SendRconLine(ClientID, "Subadmin authentication successful. Limited remote console access granted.");
+					char aBuf[256];
+					str_format(aBuf, sizeof(aBuf), "ClientID=%d authed (subadmin:%s)", ClientID, loginit->first.c_str());
+					Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "server", aBuf);
+					IncreaseLoggedInAdmins();
 				}
 				else if(g_Config.m_SvRconMaxTries)
 				{
@@ -1703,6 +1740,70 @@ void CServer::ConVotebans(IConsole::IResult *pResult, void *pUser)
 	pThis->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Server", aBuf);
 }
 
+void CServer::ConAddLogin(IConsole::IResult *pResult, void *pUser)
+{
+	CServer* pThis = static_cast<CServer *>(pUser);
+	char aBuf[128];
+	std::string username(pResult->GetString(0)),
+		password(pResult->GetString(1));
+	
+	// insert if doesn't exist
+	if(pThis->logins.find(username) == pThis->logins.end())
+	{
+		pThis->logins[username] = password;
+		
+		str_format(aBuf, sizeof(aBuf), "Added login for '%s'.", username.c_str());
+		pThis->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Server", aBuf);
+	}
+	else
+	{
+		pThis->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Server", "Did not overwrite existing login.");
+	}
+}
+
+void CServer::ConRemoveLogin(IConsole::IResult *pResult, void *pUser)
+{
+	CServer* pThis = static_cast<CServer *>(pUser);
+	char aBuf[128];
+	loginiterator loginit;
+	std::string username(pResult->GetString(0));
+	
+	// delete if exists
+	if((loginit = pThis->logins.find(username)) != pThis->logins.end())
+	{
+		// check if someone is logged in with this login
+		for(int i = 0; i < MAX_CLIENTS; i++)
+		{
+			if(pThis->m_aClients[i].m_State != CClient::STATE_EMPTY && pThis->m_aClients[i].m_Authed == CServer::AUTHED_SUBADMIN && pThis->m_aClients[i].m_SubAdminAuthName == loginit->first)
+			{
+				CMsgPacker Msg(NETMSG_RCON_AUTH_STATUS);
+				Msg.AddInt(0);
+				Msg.AddInt(0);
+				pThis->SendMsgEx(&Msg, MSGFLAG_VITAL, i, true);
+
+				pThis->m_aClients[i].m_Authed = AUTHED_NO;
+				pThis->m_aClients[i].m_AuthTries = 0;
+				pThis->m_aClients[i].m_pRconCmdToSend = 0;
+				pThis->SendRconLine(i, "You were logged out.");
+				char aBuf[32];
+				str_format(aBuf, sizeof(aBuf), "ClientID=%d logged out", i);
+				pThis->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "server", aBuf);
+				pThis->DecreaseLoggedInAdmins();
+			}
+		}
+		
+		// finally delete
+		pThis->logins.erase(loginit);
+		
+		str_format(aBuf, sizeof(aBuf), "Removed login '%s'.", username.c_str());
+		pThis->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Server", aBuf);
+	}
+	else
+	{
+		pThis->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Server", "No login with that username.");
+	}
+}
+
 void CServer::ConKick(IConsole::IResult *pResult, void *pUser)
 {
 	if(pResult->NumArguments() > 1)
@@ -1728,7 +1829,10 @@ void CServer::ConStatus(IConsole::IResult *pResult, void *pUser)
 			net_addr_str(pThis->m_NetServer.ClientAddr(i), aAddrStr, sizeof(aAddrStr), true);
 			if(pThis->m_aClients[i].m_State == CClient::STATE_INGAME)
 			{
+				char bBuf[32];
+				str_format(bBuf, sizeof(bBuf), "(Subadmin:%s)", pThis->m_aClients[i].m_SubAdminAuthName.c_str());
 				const char *pAuthStr = pThis->m_aClients[i].m_Authed == CServer::AUTHED_ADMIN ? "(Admin)" :
+										pThis->m_aClients[i].m_Authed == CServer::AUTHED_SUBADMIN ? bBuf :
 										pThis->m_aClients[i].m_Authed == CServer::AUTHED_MOD ? "(Mod)" : "";
 				const char *pAimBotStr = pThis->GameServer()->IsClientAimBot(i) ? "[aimbot]" : "";
 				str_format(aBuf, sizeof(aBuf), "id=%d addr=%s name='%s' score=%d %s %s", i, aAddrStr,
@@ -1907,6 +2011,9 @@ void CServer::RegisterCommands()
 	Console()->Register("unvoteban", "i", CFGFLAG_SERVER, ConUnvoteban, this, "Remove voteban by index in list votebans");
 	Console()->Register("unvoteban_client", "i", CFGFLAG_SERVER, ConUnvotebanClient, this, "Remove voteban by player id");
 	Console()->Register("votebans", "", CFGFLAG_SERVER, ConVotebans, this, "Show all votebans");
+	
+	Console()->Register("add_login", "ss", CFGFLAG_SERVER, ConAddLogin, this, "Add a subadmin login. The rcon password will be user:pass with no additional spaces.", IConsole::ACCESS_LEVEL_ADMIN);
+	Console()->Register("remove_login", "s", CFGFLAG_SERVER, ConRemoveLogin, this, "Remove a subadmin login", IConsole::ACCESS_LEVEL_ADMIN);
 
 	// register console commands in sub parts
 	m_ServerBan.InitServerBan(Console(), Storage(), this);

@@ -738,7 +738,7 @@ void CConsole::AddCommandSorted(CCommand *pCommand)
 }
 
 void CConsole::Register(const char *pName, const char *pParams,
-	int Flags, FCommandCallback pfnFunc, void *pUser, const char *pHelp)
+	int Flags, FCommandCallback pfnFunc, void *pUser, const char *pHelp, int accessLevel)
 {
 	CCommand *pCommand = FindCommand(pName, Flags);
 	bool DoAdd = false;
@@ -756,6 +756,8 @@ void CConsole::Register(const char *pName, const char *pParams,
 
 	pCommand->m_Flags = Flags;
 	pCommand->m_Temp = false;
+	
+	pCommand->SetAccessLevel(accessLevel);
 
 	if(DoAdd)
 		AddCommandSorted(pCommand);

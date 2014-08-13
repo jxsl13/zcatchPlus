@@ -163,7 +163,7 @@ public:
 	virtual void PossibleCommands(const char *pStr, int FlagMask, bool Temp, FPossibleCallback pfnCallback, void *pUser);
 
 	virtual void ParseArguments(int NumArgs, const char **ppArguments);
-	virtual void Register(const char *pName, const char *pParams, int Flags, FCommandCallback pfnFunc, void *pUser, const char *pHelp);
+	virtual void Register(const char *pName, const char *pParams, int Flags, FCommandCallback pfnFunc, void *pUser, const char *pHelp, int accessLevel = ACCESS_LEVEL_SUBADMIN);
 	virtual void RegisterTemp(const char *pName, const char *pParams, int Flags, const char *pHelp);
 	virtual void DeregisterTemp(const char *pName);
 	virtual void DeregisterTempAll();
