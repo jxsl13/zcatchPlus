@@ -80,7 +80,13 @@ int CGameController_zCatch::OnCharacterDeath(class CCharacter *pVictim, class CP
 	CPlayer *victim = pVictim->GetPlayer();
 	if(pKiller != victim)
 	{
-		pKiller->m_Score += victim->m_zCatchNumKillsInARow + 1;
+		/* count players playing */
+		int numPlayers = 0;
+		for(int i = 0; i < MAX_CLIENTS; i++)
+			if(GameServer()->m_apPlayers[i] && !GameServer()->m_apPlayers[i]->m_SpecExplicit)
+				++numPlayers;
+		/* you can at max get that many points as there are players playing */
+		pKiller->m_Score += min(victim->m_zCatchNumKillsInARow + 1, numPlayers);
 		++pKiller->m_Kills;
 		++victim->m_Deaths;
 		/* Check if the killer is already killed and in spectator (victim may died through wallshot) */

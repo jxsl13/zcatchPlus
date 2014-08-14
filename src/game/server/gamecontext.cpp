@@ -1362,8 +1362,10 @@ void CGameContext::OnMessage(int MsgID, CUnpacker *pUnpacker, int ClientID)
 		{
 			int lastVictim = pPlayer->LastZCatchVictim();
 			pPlayer->ReleaseZCatchVictim(CPlayer::ZCATCH_RELEASE_ALL, 1);
-			char aBuf[128];
-			str_format(aBuf, sizeof(aBuf), "You released '%s'. (%d left)", Server()->ClientName(lastVictim), pPlayer->m_zCatchNumVictims);
+			int nextToRelease = pPlayer->LastZCatchVictim();
+			char aBuf[128], bBuf[128];
+			str_format(bBuf, sizeof(bBuf), ", next: %s", Server()->ClientName(nextToRelease));
+			str_format(aBuf, sizeof(aBuf), "You released '%s'. (%d left%s)", Server()->ClientName(lastVictim), pPlayer->m_zCatchNumVictims, pPlayer->m_zCatchNumVictims > 0 ? bBuf : "");
 			SendChatTarget(ClientID, aBuf);
 			str_format(aBuf, sizeof(aBuf), "You were released by '%s'.", Server()->ClientName(ClientID));
 			SendChatTarget(lastVictim, aBuf);
