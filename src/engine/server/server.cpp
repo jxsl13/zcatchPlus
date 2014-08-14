@@ -796,7 +796,7 @@ int CServer::DelClientCallback(int ClientID, const char *pReason, void *pUser)
 		pThis->GameServer()->OnClientDrop(ClientID, pReason);
 	
 	// check if dropped player is admin
-	if (pThis->m_aClients[ClientID].m_Authed == AUTHED_ADMIN) {
+	if (pThis->IsAuthed(ClientID)) {
 		pThis->DecreaseLoggedInAdmins();
 	}
 
