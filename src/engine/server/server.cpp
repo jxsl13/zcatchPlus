@@ -355,7 +355,7 @@ CServer::CServer() : m_DemoRecorder(&m_SnapshotDelta)
 	m_MapReload = 0;
 
 	m_RconClientID = IServer::RCON_CID_SERV;
-	m_RconAuthLevel = AUTHED_ADMIN;
+	m_RconAuthLevel = AUTHED_SUBADMIN;
 	
 	// when starting there are no admins
 	m_numLoggedInAdmins = 0;
@@ -1058,7 +1058,7 @@ void CServer::ProcessClientPacket(CNetChunk *pPacket)
 				Console()->ExecuteLineFlag(pCmd, CFGFLAG_SERVER);
 				Console()->SetAccessLevel(IConsole::ACCESS_LEVEL_ADMIN);
 				m_RconClientID = IServer::RCON_CID_SERV;
-				m_RconAuthLevel = AUTHED_ADMIN;
+				m_RconAuthLevel = AUTHED_SUBADMIN;
 			}
 		}
 		else if(Msg == NETMSG_RCON_AUTH)
