@@ -683,10 +683,24 @@ CConsole::CConsole(int FlagMask)
 		Register(#ScriptName, "?r", Flags, StrVariableCommand, &Data, Desc); \
 	}
 
+	#define MACRO_CONFIG_INT_ACCESSLEVEL(Name,ScriptName,Def,Min,Max,Flags,Desc,accessLevel) \
+	{ \
+		static CIntVariableData Data = { this, &g_Config.m_##Name, Min, Max }; \
+		Register(#ScriptName, "?i", Flags, IntVariableCommand, &Data, Desc, ACCESS_LEVEL_ADMIN); \
+	}
+
+	#define MACRO_CONFIG_STR_ACCESSLEVEL(Name,ScriptName,Len,Def,Flags,Desc,accessLevel) \
+	{ \
+		static CStrVariableData Data = { this, g_Config.m_##Name, Len }; \
+		Register(#ScriptName, "?r", Flags, StrVariableCommand, &Data, Desc, ACCESS_LEVEL_ADMIN); \
+	}
+
 	#include "config_variables.h"
 
 	#undef MACRO_CONFIG_INT
 	#undef MACRO_CONFIG_STR
+	#undef MACRO_CONFIG_INT_ACCESSLEVEL
+	#undef MACRO_CONFIG_STR_ACCESSLEVEL
 }
 
 void CConsole::ParseArguments(int NumArgs, const char **ppArguments)

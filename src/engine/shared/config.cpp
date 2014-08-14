@@ -54,22 +54,30 @@ public:
 	{
 		#define MACRO_CONFIG_INT(Name,ScriptName,def,min,max,flags,desc) g_Config.m_##Name = def;
 		#define MACRO_CONFIG_STR(Name,ScriptName,len,def,flags,desc) str_copy(g_Config.m_##Name, def, len);
+		#define MACRO_CONFIG_INT_ACCESSLEVEL(Name,ScriptName,def,min,max,flags,desc,accessLevel) g_Config.m_##Name = def;
+		#define MACRO_CONFIG_STR_ACCESSLEVEL(Name,ScriptName,len,def,flags,desc,accessLevel) str_copy(g_Config.m_##Name, def, len);
 
 		#include "config_variables.h"
 
 		#undef MACRO_CONFIG_INT
 		#undef MACRO_CONFIG_STR
+		#undef MACRO_CONFIG_INT_ACCESSLEVEL
+		#undef MACRO_CONFIG_STR_ACCESSLEVEL
 	}
 
 	virtual void RestoreStrings()
 	{
 		#define MACRO_CONFIG_INT(Name,ScriptName,def,min,max,flags,desc)	// nop
 		#define MACRO_CONFIG_STR(Name,ScriptName,len,def,flags,desc) if(!g_Config.m_##Name[0] && def[0]) str_copy(g_Config.m_##Name, def, len);
+		#define MACRO_CONFIG_INT_ACCESSLEVEL(Name,ScriptName,def,min,max,flags,desc,accessLevel)	// nop
+		#define MACRO_CONFIG_STR_ACCESSLEVEL(Name,ScriptName,len,def,flags,desc,accessLevel) if(!g_Config.m_##Name[0] && def[0]) str_copy(g_Config.m_##Name, def, len);
 
 		#include "config_variables.h"
 
 		#undef MACRO_CONFIG_INT
 		#undef MACRO_CONFIG_STR
+		#undef MACRO_CONFIG_INT_ACCESSLEVEL
+		#undef MACRO_CONFIG_STR_ACCESSLEVEL
 	}
 
 	virtual void Save()
@@ -86,11 +94,15 @@ public:
 
 		#define MACRO_CONFIG_INT(Name,ScriptName,def,min,max,flags,desc) if((flags)&CFGFLAG_SAVE){ str_format(aLineBuf, sizeof(aLineBuf), "%s %i", #ScriptName, g_Config.m_##Name); WriteLine(aLineBuf); }
 		#define MACRO_CONFIG_STR(Name,ScriptName,len,def,flags,desc) if((flags)&CFGFLAG_SAVE){ EscapeParam(aEscapeBuf, g_Config.m_##Name, sizeof(aEscapeBuf)); str_format(aLineBuf, sizeof(aLineBuf), "%s \"%s\"", #ScriptName, aEscapeBuf); WriteLine(aLineBuf); }
+		#define MACRO_CONFIG_INT_ACCESSLEVEL(Name,ScriptName,def,min,max,flags,desc,accessLevel) if((flags)&CFGFLAG_SAVE){ str_format(aLineBuf, sizeof(aLineBuf), "%s %i", #ScriptName, g_Config.m_##Name); WriteLine(aLineBuf); }
+		#define MACRO_CONFIG_STR_ACCESSLEVEL(Name,ScriptName,len,def,flags,desc,accessLevel) if((flags)&CFGFLAG_SAVE){ EscapeParam(aEscapeBuf, g_Config.m_##Name, sizeof(aEscapeBuf)); str_format(aLineBuf, sizeof(aLineBuf), "%s \"%s\"", #ScriptName, aEscapeBuf); WriteLine(aLineBuf); }
 
 		#include "config_variables.h"
 
 		#undef MACRO_CONFIG_INT
 		#undef MACRO_CONFIG_STR
+		#undef MACRO_CONFIG_INT_ACCESSLEVEL
+		#undef MACRO_CONFIG_STR_ACCESSLEVEL
 
 		for(int i = 0; i < m_NumCallbacks; i++)
 			m_aCallbacks[i].m_pfnFunc(this, m_aCallbacks[i].m_pUserData);
