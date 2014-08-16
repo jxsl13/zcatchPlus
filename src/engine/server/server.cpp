@@ -1049,16 +1049,42 @@ void CServer::ProcessClientPacket(CNetChunk *pPacket)
 
 			if(Unpacker.Error() == 0 && m_aClients[ClientID].m_Authed)
 			{
-				char aBuf[256];
-				str_format(aBuf, sizeof(aBuf), "ClientID=%d rcon='%s'", ClientID, pCmd);
-				Console()->Print(IConsole::OUTPUT_LEVEL_ADDINFO, "server", aBuf);
-				m_RconClientID = ClientID;
-				m_RconAuthLevel = m_aClients[ClientID].m_Authed;
-				Console()->SetAccessLevel(m_aClients[ClientID].m_Authed == AUTHED_ADMIN ? IConsole::ACCESS_LEVEL_ADMIN : (m_aClients[ClientID].m_Authed == AUTHED_SUBADMIN ? IConsole::ACCESS_LEVEL_SUBADMIN : IConsole::ACCESS_LEVEL_MOD));
-				Console()->ExecuteLineFlag(pCmd, CFGFLAG_SERVER);
-				Console()->SetAccessLevel(IConsole::ACCESS_LEVEL_ADMIN);
-				m_RconClientID = IServer::RCON_CID_SERV;
-				m_RconAuthLevel = AUTHED_SUBADMIN;
+				
+				// try to find first space
+				const char *delimiter = strchr(pCmd, ' ');
+				
+				if(m_aClients[ClientID].m_Authed != AUTHED_SUBADMIN
+					|| (
+						m_aClients[ClientID].m_Authed == AUTHED_SUBADMIN
+						&& delimiter != NULL
+						&& m_aClients[ClientID].m_SubAdminAuthPass == std::string(pCmd, delimiter - pCmd)
+						&& (pCmd = delimiter + 1) != NULL)
+					)
+				{
+					char aBuf[256];
+					str_format(aBuf, sizeof(aBuf), "ClientID=%d rcon='%s'", ClientID, pCmd);
+					Console()->Print(IConsole::OUTPUT_LEVEL_ADDINFO, "server", aBuf);
+					m_RconClientID = ClientID;
+					m_RconAuthLevel = m_aClients[ClientID].m_Authed;
+					Console()->SetAccessLevel(m_aClients[ClientID].m_Authed == AUTHED_ADMIN ? IConsole::ACCESS_LEVEL_ADMIN : (m_aClients[ClientID].m_Authed == AUTHED_SUBADMIN ? IConsole::ACCESS_LEVEL_SUBADMIN : IConsole::ACCESS_LEVEL_MOD));
+					Console()->ExecuteLineFlag(pCmd, CFGFLAG_SERVER);
+					Console()->SetAccessLevel(IConsole::ACCESS_LEVEL_ADMIN);
+					m_RconClientID = IServer::RCON_CID_SERV;
+					m_RconAuthLevel = AUTHED_SUBADMIN;
+				}
+				else if(m_aClients[ClientID].m_Authed == AUTHED_SUBADMIN)
+				{
+					if(m_aClients[ClientID].m_SubAdminCommandPassFails >= 3)
+					{
+						// logout
+						rconLogClientOut(ClientID, "Too many wrong passwords. You were logged out.");
+					}
+					else
+					{
+						++m_aClients[ClientID].m_SubAdminCommandPassFails;
+						SendRconLine(ClientID, "Wrong password.");
+					}
+				}
 			}
 		}
 		else if(Msg == NETMSG_RCON_AUTH)
@@ -1129,6 +1155,8 @@ void CServer::ProcessClientPacket(CNetChunk *pPacket)
 					
 					m_aClients[ClientID].m_Authed = AUTHED_SUBADMIN;
 					m_aClients[ClientID].m_SubAdminAuthName = loginit->first;
+					m_aClients[ClientID].m_SubAdminAuthPass = loginit->second;
+					m_aClients[ClientID].m_SubAdminCommandPassFails = 0;
 					
 					int SendRconCmds = Unpacker.GetInt();
 					if(Unpacker.Error() == 0 && SendRconCmds)
@@ -1776,19 +1804,7 @@ void CServer::ConRemoveLogin(IConsole::IResult *pResult, void *pUser)
 		{
 			if(pThis->m_aClients[i].m_State != CClient::STATE_EMPTY && pThis->m_aClients[i].m_Authed == CServer::AUTHED_SUBADMIN && pThis->m_aClients[i].m_SubAdminAuthName == loginit->first)
 			{
-				CMsgPacker Msg(NETMSG_RCON_AUTH_STATUS);
-				Msg.AddInt(0);
-				Msg.AddInt(0);
-				pThis->SendMsgEx(&Msg, MSGFLAG_VITAL, i, true);
-
-				pThis->m_aClients[i].m_Authed = AUTHED_NO;
-				pThis->m_aClients[i].m_AuthTries = 0;
-				pThis->m_aClients[i].m_pRconCmdToSend = 0;
-				pThis->SendRconLine(i, "You were logged out.");
-				char aBuf[32];
-				str_format(aBuf, sizeof(aBuf), "ClientID=%d logged out", i);
-				pThis->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "server", aBuf);
-				pThis->DecreaseLoggedInAdmins();
+				pThis->rconLogClientOut(i, "You were logged out.");
 			}
 		}
 		
@@ -1908,23 +1924,26 @@ void CServer::ConMapReload(IConsole::IResult *pResult, void *pUser)
 void CServer::ConLogout(IConsole::IResult *pResult, void *pUser)
 {
 	CServer *pServer = (CServer *)pUser;
+	pServer->rconLogClientOut(pServer->m_RconClientID);
+}
 
-	if(pServer->m_RconClientID >= 0 && pServer->m_RconClientID < MAX_CLIENTS &&
-		pServer->m_aClients[pServer->m_RconClientID].m_State != CServer::CClient::STATE_EMPTY)
+void CServer::rconLogClientOut(int ClientID, const char *msg)
+{
+	if(ClientID >= 0 && ClientID < MAX_CLIENTS && m_aClients[ClientID].m_State != CServer::CClient::STATE_EMPTY && IsAuthed(ClientID))
 	{
 		CMsgPacker Msg(NETMSG_RCON_AUTH_STATUS);
 		Msg.AddInt(0);	//authed
 		Msg.AddInt(0);	//cmdlist
-		pServer->SendMsgEx(&Msg, MSGFLAG_VITAL, pServer->m_RconClientID, true);
+		SendMsgEx(&Msg, MSGFLAG_VITAL, ClientID, true);
 
-		pServer->m_aClients[pServer->m_RconClientID].m_Authed = AUTHED_NO;
-		pServer->m_aClients[pServer->m_RconClientID].m_AuthTries = 0;
-		pServer->m_aClients[pServer->m_RconClientID].m_pRconCmdToSend = 0;
-		pServer->SendRconLine(pServer->m_RconClientID, "Logout successful.");
+		m_aClients[ClientID].m_Authed = AUTHED_NO;
+		m_aClients[ClientID].m_AuthTries = 0;
+		m_aClients[ClientID].m_pRconCmdToSend = 0;
+		SendRconLine(ClientID, msg);
 		char aBuf[32];
-		str_format(aBuf, sizeof(aBuf), "ClientID=%d logged out", pServer->m_RconClientID);
-		pServer->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "server", aBuf);
-		pServer->DecreaseLoggedInAdmins();
+		str_format(aBuf, sizeof(aBuf), "ClientID=%d logged out", ClientID);
+		Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "server", aBuf);
+		DecreaseLoggedInAdmins();
 	}
 }
 

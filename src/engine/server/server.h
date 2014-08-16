@@ -137,6 +137,8 @@ public:
 		int m_Authed;
 		int m_AuthTries;
 		std::string m_SubAdminAuthName;
+		std::string m_SubAdminAuthPass;
+		int m_SubAdminCommandPassFails;
 
 		const IConsole::CCommandInfo *m_pRconCmdToSend;
 
@@ -293,6 +295,9 @@ public:
 	// logins
 	typedef std::map<std::string,std::string>::iterator loginiterator;
 	std::map<std::string,std::string> logins;
+	
+	// log some client out of the rcon
+	void rconLogClientOut(int ClientID, const char *msg = "Logout successful.");
 };
 
 #endif
