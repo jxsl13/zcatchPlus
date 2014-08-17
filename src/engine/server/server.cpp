@@ -1859,6 +1859,7 @@ void CServer::ConStatus(IConsole::IResult *pResult, void *pUser)
 			pThis->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Server", aBuf);
 		}
 	}
+	pThis->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Server", "Quick help: kick <id> <reason=''> | ban <id> <min=5> <reason=''> | voteban <id> <sec=300> | kill <id>");
 }
 
 void CServer::ConShutdown(IConsole::IResult *pResult, void *pUser)
