@@ -361,6 +361,7 @@ CServer::CServer() : m_DemoRecorder(&m_SnapshotDelta)
 	m_numLoggedInAdmins = 0;
 	
 	m_Votebans = NULL;
+	m_InfoTexts = NULL;
 	
 	Init();
 }
@@ -373,6 +374,14 @@ CServer::~CServer()
 		CVoteban *tmp = m_Votebans->m_Next;
 		delete m_Votebans;
 		m_Votebans = tmp;
+	}
+	
+	// delte info texts
+	while(m_InfoTexts != NULL)
+	{
+		CInfoText *tmp = m_InfoTexts->m_Next;
+		delete m_InfoTexts;
+		m_InfoTexts = tmp;
 	}
 }
 
@@ -1820,6 +1829,76 @@ void CServer::ConRemoveLogin(IConsole::IResult *pResult, void *pUser)
 	}
 }
 
+void CServer::ConAddInfo(IConsole::IResult *pResult, void *pUser)
+{
+	CServer* pThis = static_cast<CServer *>(pUser);
+	int interval = pResult->GetInteger(0);
+	if(interval < 1 || interval > 1440)
+	{
+		pThis->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Server", "Interval must be between 1 and 1440.");
+		return;
+	}
+	
+	// add info text
+	CInfoText *t = new CInfoText;
+	t->m_Interval = interval;
+	t->m_Text = std::string(pResult->GetString(1));
+	// insert front
+	t->m_Next = pThis->m_InfoTexts;
+	pThis->m_InfoTexts = t;
+	
+	// message to console
+	char aBuf[128];
+	str_format(aBuf, sizeof(aBuf), "Added the following info text: %s", t->m_Text.c_str());
+	pThis->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Server", aBuf);
+}
+
+void CServer::ConRemoveInfo(IConsole::IResult *pResult, void *pUser)
+{
+	CServer* pThis = static_cast<CServer *>(pUser);
+	int i = pResult->GetInteger(0);
+	int count = 0;
+	bool removed = false;
+	
+	CInfoText **t = &(pThis->m_InfoTexts);
+	while(*t != NULL)
+	{
+		if(count++ == i)
+		{
+			// remove
+			CInfoText *next = (*t)->m_Next;
+			delete *t;
+			*t = next;
+			removed = true;
+			break;
+		}
+		t = &((*t)->m_Next);
+	}
+	
+	if(removed)
+		pThis->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Server", "Info text removed");
+	else
+		pThis->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Server", "Info text not found");
+}
+
+void CServer::ConListInfo(IConsole::IResult *pResult, void *pUser)
+{
+	CServer* pThis = static_cast<CServer *>(pUser);
+	char aBuf[128];
+	int count = 0;
+	
+	CInfoText *t = pThis->m_InfoTexts;
+	while(t != NULL)
+	{
+		str_format(aBuf, sizeof(aBuf), "#%d interval=%d min text='%s'", count++, t->m_Interval, t->m_Text.c_str());
+		pThis->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Server", aBuf);
+		t = t->m_Next;
+	}
+	
+	str_format(aBuf, sizeof(aBuf), "%d info text(s)", count);
+	pThis->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Server", aBuf);
+}
+
 void CServer::ConKick(IConsole::IResult *pResult, void *pUser)
 {
 	if(pResult->NumArguments() > 1)
@@ -2033,6 +2112,10 @@ void CServer::RegisterCommands()
 	
 	Console()->Register("add_login", "ss", CFGFLAG_SERVER, ConAddLogin, this, "Add a subadmin login. The rcon password will be user:pass with no additional spaces.", IConsole::ACCESS_LEVEL_ADMIN);
 	Console()->Register("remove_login", "s", CFGFLAG_SERVER, ConRemoveLogin, this, "Remove a subadmin login", IConsole::ACCESS_LEVEL_ADMIN);
+	
+	Console()->Register("add_info", "is", CFGFLAG_SERVER, ConAddInfo, this, "Add a info text that is printed in the chat repeatedly in the given interval of minutes.");
+	Console()->Register("remove_info", "i", CFGFLAG_SERVER, ConRemoveInfo, this, "Remove a info text");
+	Console()->Register("list_info", "", CFGFLAG_SERVER, ConListInfo, this, "Show all info texts");
 
 	// register console commands in sub parts
 	m_ServerBan.InitServerBan(Console(), Storage(), this);

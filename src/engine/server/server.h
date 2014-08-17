@@ -290,6 +290,18 @@ public:
 	static void ConAddLogin(IConsole::IResult *pResult, void *pUser);
 	static void ConRemoveLogin(IConsole::IResult *pResult, void *pUser);
 	
+	// info messages
+	static void ConAddInfo(IConsole::IResult *pResult, void *pUser);
+	static void ConRemoveInfo(IConsole::IResult *pResult, void *pUser);
+	static void ConListInfo(IConsole::IResult *pResult, void *pUser);
+	struct CInfoText
+	{
+		int m_Interval;
+		std::string m_Text;
+		CInfoText *m_Next;
+	};
+	CInfoText *m_InfoTexts;
+	
 	virtual int GetNumLoggedInAdmins() { return m_numLoggedInAdmins; }
 	
 	// logins
