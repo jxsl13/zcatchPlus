@@ -78,6 +78,21 @@ class CServer : public IServer
 		if (++m_numLoggedInAdmins) UpdateServerInfo();
 	}
 	
+	// info messages
+	void UpdateInfoTexts();
+	struct CInfoText
+	{
+		int m_Interval;
+		int m_IntervalTicks;
+		int m_NextTick;
+		std::string m_Text;
+		CInfoText *m_Next;
+	};
+	CInfoText *m_InfoTexts;
+	int m_InfoTextInterval;
+	int m_InfoTextMsgInterval;
+	int m_InfoTextIntervalPause;
+	
 public:
 	class IGameServer *GameServer() { return m_pGameServer; }
 	class IConsole *Console() { return m_pConsole; }
@@ -294,13 +309,10 @@ public:
 	static void ConAddInfo(IConsole::IResult *pResult, void *pUser);
 	static void ConRemoveInfo(IConsole::IResult *pResult, void *pUser);
 	static void ConListInfo(IConsole::IResult *pResult, void *pUser);
-	struct CInfoText
-	{
-		int m_Interval;
-		std::string m_Text;
-		CInfoText *m_Next;
-	};
-	CInfoText *m_InfoTexts;
+	int GetInfoTextIntervalPause() { return m_InfoTextIntervalPause; }
+	int GetInfoTextMsgInterval() { return m_InfoTextMsgInterval; }
+	int GetInfoTextInterval() { return m_InfoTextInterval; }
+	std::string GetNextInfoText();
 	
 	virtual int GetNumLoggedInAdmins() { return m_numLoggedInAdmins; }
 	

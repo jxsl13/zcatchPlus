@@ -6,6 +6,8 @@
 #include "kernel.h"
 #include "message.h"
 
+#include <string>
+
 class IServer : public IInterface
 {
 	MACRO_INTERFACE("server", 0)
@@ -70,6 +72,11 @@ public:
 	virtual bool DemoRecorder_IsRecording() = 0;
 	//zCatch
 	virtual void MapReload() = 0;
+	
+	virtual int GetInfoTextIntervalPause() = 0;
+	virtual int GetInfoTextMsgInterval() = 0;
+	virtual int GetInfoTextInterval() = 0;
+	virtual std::string GetNextInfoText() = 0;
 	
 	virtual int GetNumLoggedInAdmins() = 0;
 };

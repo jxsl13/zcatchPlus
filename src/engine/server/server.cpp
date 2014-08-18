@@ -362,6 +362,7 @@ CServer::CServer() : m_DemoRecorder(&m_SnapshotDelta)
 	
 	m_Votebans = NULL;
 	m_InfoTexts = NULL;
+	m_InfoTextInterval = -1;
 	
 	Init();
 }
@@ -1847,6 +1848,8 @@ void CServer::ConAddInfo(IConsole::IResult *pResult, void *pUser)
 	t->m_Next = pThis->m_InfoTexts;
 	pThis->m_InfoTexts = t;
 	
+	pThis->UpdateInfoTexts();
+	
 	// message to console
 	char aBuf[128];
 	str_format(aBuf, sizeof(aBuf), "Added the following info text: %s", t->m_Text.c_str());
@@ -1875,6 +1878,8 @@ void CServer::ConRemoveInfo(IConsole::IResult *pResult, void *pUser)
 		t = &((*t)->m_Next);
 	}
 	
+	pThis->UpdateInfoTexts();
+	
 	if(removed)
 		pThis->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Server", "Info text removed");
 	else
@@ -1897,6 +1902,71 @@ void CServer::ConListInfo(IConsole::IResult *pResult, void *pUser)
 	
 	str_format(aBuf, sizeof(aBuf), "%d info text(s)", count);
 	pThis->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Server", aBuf);
+}
+
+void CServer::UpdateInfoTexts()
+{
+	// in case that there are no info texts
+	if(m_InfoTexts == NULL)
+	{
+		m_InfoTextInterval = -1; // no interval
+		return;
+	}
+	
+	// need some random numbers later
+	init_rand();
+	
+	// update interval, set it to LCM(all text intervals)
+	m_InfoTextInterval = 1; // lowest possible interval
+	CInfoText *t = m_InfoTexts;
+	while(t != NULL)
+	{
+		m_InfoTextInterval = lcm(m_InfoTextInterval, t->m_Interval);
+		t->m_IntervalTicks = TickSpeed() * 60 * t->m_Interval; // min to ticks
+		t->m_NextTick = rand() % t->m_IntervalTicks; // variance
+		t = t->m_Next;
+	}
+	m_InfoTextInterval *= TickSpeed() * 60; // min to ticks
+	
+	// count total number of messages per interval
+	int numMsg = 0;
+	t = m_InfoTexts;
+	while(t != NULL)
+	{
+		numMsg += m_InfoTextInterval / t->m_IntervalTicks;
+		t = t->m_Next;
+	}
+	
+	// interval between messages
+	m_InfoTextMsgInterval = m_InfoTextInterval / numMsg;
+	// additional pause to sync interval and msg interval
+	m_InfoTextIntervalPause = m_InfoTextInterval % numMsg;
+}
+
+std::string CServer::GetNextInfoText()
+{
+	CInfoText *selectedText = NULL,
+		*t = m_InfoTexts;
+	// the counter r keeps track of how many equally due texts there are and actually helps so that every text has the same chance even though there are r-1 random decisions
+	int r = 1;
+	while(t != NULL)
+	{
+		// use this text if none is selected or this one is more due than the previously selected
+		// in the case that both are equally due, select one random
+		if(selectedText == NULL
+			|| t->m_NextTick < selectedText->m_NextTick
+			|| (t->m_NextTick == selectedText->m_NextTick && (rand() % ++r) == 0))
+			selectedText = t;
+		t = t->m_Next;
+	}
+	
+	// return empty string if no text applies
+	if(selectedText == NULL)
+		return std::string();
+	
+	// update tick and return string
+	selectedText->m_NextTick += selectedText->m_IntervalTicks;
+	return selectedText->m_Text;
 }
 
 void CServer::ConKick(IConsole::IResult *pResult, void *pUser)

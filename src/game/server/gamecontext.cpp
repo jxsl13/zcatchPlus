@@ -526,6 +526,14 @@ void CGameContext::OnTick()
 			}
 		}
 	}
+	
+	// info messages
+	// execute if interval is given and message interval is due, respecting the pause
+	if(Server()->GetInfoTextInterval() > 0
+		&& ((Server()->Tick() % Server()->GetInfoTextInterval()) - Server()->GetInfoTextIntervalPause()) % Server()->GetInfoTextMsgInterval() == 0)
+	{
+		SendChat(-1, CGameContext::CHAT_ALL, Server()->GetNextInfoText().c_str());
+	}
 
 	// bot detection
 	// it is based on the behaviour of some bots to shoot at a player's _exact_ position
