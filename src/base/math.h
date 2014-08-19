@@ -67,4 +67,11 @@ template <typename T> inline T min(T a, T b) { return a<b?a:b; }
 template <typename T> inline T max(T a, T b) { return a>b?a:b; }
 template <typename T> inline T absolute(T a) { return a<T(0)?-a:a; }
 
+inline int lcm(int a, int b)
+{
+	if(a == 0 || b == 0)
+		return -1;
+	return absolute(a * (b / gcd(a, b)));
+}
+
 #endif // BASE_MATH_H
