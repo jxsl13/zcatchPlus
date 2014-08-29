@@ -387,6 +387,23 @@ CServer::~CServer()
 }
 
 
+void CServer::UpdateLoggedInAdmins()
+{
+	bool gotAny = (m_numLoggedInAdmins > 0);
+	m_numLoggedInAdmins = 0;
+	for(int i = 0; i < MAX_CLIENTS; ++i)
+	{
+		if(m_aClients[i].m_State == CClient::STATE_INGAME && m_aClients[i].m_Authed >= AUTHED_SUBADMIN)
+		{
+			++m_numLoggedInAdmins;
+		}
+	}
+	if(gotAny != (m_numLoggedInAdmins > 0))
+	{
+		UpdateServerInfo();
+	}
+}
+
 int CServer::TrySetClientName(int ClientID, const char *pName)
 {
 	char aTrimmedName[64];
@@ -804,11 +821,6 @@ int CServer::DelClientCallback(int ClientID, const char *pReason, void *pUser)
 	// notify the mod about the drop
 	if(pThis->m_aClients[ClientID].m_State >= CClient::STATE_READY)
 		pThis->GameServer()->OnClientDrop(ClientID, pReason);
-	
-	// check if dropped player is admin
-	if (pThis->IsAuthed(ClientID)) {
-		pThis->DecreaseLoggedInAdmins();
-	}
 
 	pThis->m_aClients[ClientID].m_State = CClient::STATE_EMPTY;
 	pThis->m_aClients[ClientID].m_aName[0] = 0;
@@ -818,6 +830,10 @@ int CServer::DelClientCallback(int ClientID, const char *pReason, void *pUser)
 	pThis->m_aClients[ClientID].m_AuthTries = 0;
 	pThis->m_aClients[ClientID].m_pRconCmdToSend = 0;
 	pThis->m_aClients[ClientID].m_Snapshots.PurgeAll();
+	
+	// could have been an admin
+	pThis->UpdateLoggedInAdmins();
+	
 	return 0;
 }
 
@@ -1135,7 +1151,7 @@ void CServer::ProcessClientPacket(CNetChunk *pPacket)
 					char aBuf[256];
 					str_format(aBuf, sizeof(aBuf), "ClientID=%d authed (admin)", ClientID);
 					Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "server", aBuf);
-					IncreaseLoggedInAdmins();
+					UpdateLoggedInAdmins();
 				}
 				else if(g_Config.m_SvRconModPassword[0] && str_comp(pPw, g_Config.m_SvRconModPassword) == 0)
 				{
@@ -1175,7 +1191,7 @@ void CServer::ProcessClientPacket(CNetChunk *pPacket)
 					char aBuf[256];
 					str_format(aBuf, sizeof(aBuf), "ClientID=%d authed (subadmin:%s)", ClientID, loginit->first.c_str());
 					Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "server", aBuf);
-					IncreaseLoggedInAdmins();
+					UpdateLoggedInAdmins();
 				}
 				else if(g_Config.m_SvRconMaxTries)
 				{
@@ -2093,7 +2109,7 @@ void CServer::rconLogClientOut(int ClientID, const char *msg)
 		char aBuf[32];
 		str_format(aBuf, sizeof(aBuf), "ClientID=%d logged out", ClientID);
 		Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "server", aBuf);
-		DecreaseLoggedInAdmins();
+		UpdateLoggedInAdmins();
 	}
 }
 

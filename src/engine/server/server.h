@@ -71,12 +71,7 @@ class CServer : public IServer
 	
 	// keep track of how many admins are logged in
 	int m_numLoggedInAdmins;
-	void DecreaseLoggedInAdmins() {
-		if (!--m_numLoggedInAdmins) UpdateServerInfo();
-	}
-	void IncreaseLoggedInAdmins() {
-		if (++m_numLoggedInAdmins) UpdateServerInfo();
-	}
+	void UpdateLoggedInAdmins();
 	
 	// info messages
 	void UpdateInfoTexts();
