@@ -1375,7 +1375,7 @@ void CGameContext::OnMessage(int MsgID, CUnpacker *pUnpacker, int ClientID)
 			SendChatTarget(lastVictim, aBuf);
 			
 			// console release log
-			str_format(aBuf, sizeof(aBuf), "release killer='%d:%s' victim= '%d:%s'" , ClientID, Server()->ClientName(ClientID), lastVictim, Server()->ClientName(lastVictim));
+			str_format(aBuf, sizeof(aBuf), "release killer='%d:%s' victim='%d:%s'" , ClientID, Server()->ClientName(ClientID), lastVictim, Server()->ClientName(lastVictim));
 			Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "game", aBuf);
 
 			// Send release information to the same killer's victims
