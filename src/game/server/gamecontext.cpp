@@ -1380,18 +1380,16 @@ void CGameContext::OnMessage(int MsgID, CUnpacker *pUnpacker, int ClientID)
 
 			// Send release information to the same killer's victims
 			// Message flood risk on first killed players!
-			/*
-			if(pPlayer->m_zCatchNumVictims > 0)
-			{
-				CPlayer::CZCatchVictim *v = pPlayer->m_ZCatchVictims;
-				str_format(aBuf, sizeof(aBuf), "'%s' released '%s'", Server()->ClientName(ClientID), Server()->ClientName(lastVictim));
-				while(v != NULL)
-				{
-					SendChatTarget(v->ClientID, aBuf);
-					v = v->prev;
-				}
-			}
-			*/
+				//if(pPlayer->m_zCatchNumVictims > 0)
+				//{
+				//	CPlayer::CZCatchVictim *v = pPlayer->m_ZCatchVictims;
+				//	str_format(aBuf, sizeof(aBuf), "'%s' released '%s'", Server()->ClientName(ClientID), Server()->ClientName(lastVictim));
+				//	while(v != NULL)
+				//	{
+				//		SendChatTarget(v->ClientID, aBuf);
+				//		v = v->prev;
+				//	}
+				//}
 			
 
 			return;
