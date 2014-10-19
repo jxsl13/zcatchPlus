@@ -936,6 +936,11 @@ void CGameContext::OnMessage(int MsgID, CUnpacker *pUnpacker, int ClientID)
 						}
 					}
 					int i = str_toint(recipientStart);
+					if(i >= MAX_CLIENTS)
+					{
+						SendChatTarget(ClientID, "Invalid id, syntax is: /ti id message.");
+						return;
+					}
 					if(m_apPlayers[i])
 					{
 						recipient = i;
