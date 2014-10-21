@@ -90,7 +90,7 @@ int CGameController_zCatch::OnCharacterDeath(class CCharacter *pVictim, class CP
 		++pKiller->m_Kills;
 		++victim->m_Deaths;
 		/* Check if the killer is already killed and in spectator (victim may died through wallshot) */
-		if(pKiller->GetTeam() != TEAM_SPECTATORS)
+		if(pKiller->GetTeam() != TEAM_SPECTATORS && (!pVictim->m_KillerLastDieTickBeforceFiring || pVictim->m_KillerLastDieTickBeforceFiring == pKiller->m_DieTick))
 		{
 			++pKiller->m_zCatchNumKillsInARow;
 			pKiller->AddZCatchVictim(victim->GetCID(), CPlayer::ZCATCH_CAUGHT_REASON_KILLED);

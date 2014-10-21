@@ -121,7 +121,7 @@ void CGameContext::CreateHammerHit(vec2 Pos)
 }
 
 
-void CGameContext::CreateExplosion(vec2 Pos, int Owner, int Weapon, bool NoDamage, bool limitVictims, const bool *victims)
+void CGameContext::CreateExplosion(vec2 Pos, int Owner, int Weapon, bool NoDamage, bool limitVictims, const bool *victims, int ownerLastDieTickBeforceFiring)
 {
 	// create the event
 	CNetEvent_Explosion *pEvent = (CNetEvent_Explosion *)m_Events.Create(NETEVENTTYPE_EXPLOSION, sizeof(CNetEvent_Explosion));
@@ -152,6 +152,7 @@ void CGameContext::CreateExplosion(vec2 Pos, int Owner, int Weapon, bool NoDamag
 				float Dmg = 6 * l;
 				if((int)Dmg)
 				{
+					apEnts[i]->m_KillerLastDieTickBeforceFiring = ownerLastDieTickBeforceFiring;
 					apEnts[i]->TakeDamage(ForceDir*Dmg*2, (int)Dmg, Owner, Weapon);
 					someoneWasHit = true;
 				}

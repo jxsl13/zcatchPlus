@@ -73,6 +73,9 @@ public:
 	bool HasBeenThereRecently(vec2 v, const vec2 *&pos, int firstTick, int lastTick) const;
 	bool AimedAtCharRecently(vec2 v, const CCharacter *c, const vec2 *&pos, const vec2 *&posVictim, int firstTick);
 	float HowCloseToXRecently(vec2 x, const vec2 *&pos, int firstTick);
+	
+	// zCatch
+	int m_KillerLastDieTickBeforceFiring;
 
 private:
 	// player controlling this character

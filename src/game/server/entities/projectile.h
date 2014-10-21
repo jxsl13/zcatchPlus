@@ -16,6 +16,9 @@ public:
 	virtual void Tick();
 	virtual void TickPaused();
 	virtual void Snap(int SnappingClient);
+	
+	// zCatch
+	int m_OwnerLastDieTick;
 
 private:
 	vec2 m_Direction;

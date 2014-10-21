@@ -47,6 +47,8 @@ CCharacter::CCharacter(CGameWorld *pWorld)
 	m_Armor = 0;
 	m_FreezeTicks = 0;
 	
+	m_KillerLastDieTickBeforceFiring = 0;
+	
 	// last positions
 	m_LastPositionsSize = Server()->TickSpeed() / 4;
 	m_LastPositions = new vec2[m_LastPositionsSize]();
@@ -492,6 +494,8 @@ void CCharacter::FireWeapon()
 			pProj->InitAffectedCharacters();
 			if(m_Core.m_HookedPlayer >= 0)
 				pProj->SetAffectedCharacter(m_Core.m_HookedPlayer);
+			
+			pProj->m_OwnerLastDieTick = GetPlayer()->m_DieTick;
 
 			CMsgPacker Msg(NETMSGTYPE_SV_EXTRAPROJECTILE);
 			Msg.AddInt(1);
