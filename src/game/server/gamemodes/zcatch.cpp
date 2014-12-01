@@ -79,7 +79,7 @@ int CGameController_zCatch::OnCharacterDeath(class CCharacter *pVictim, class CP
 
 		pKiller->m_Score++;
 
-		/* Check if the killer is already killed and in spectator (victim may died through wallshot) */
+		/* Check if the killer has been already killed and is in spectator (victim may died through wallshot) */
 		if(pKiller->GetTeam() != TEAM_SPECTATORS)
 		{
 			pVictim->GetPlayer()->m_CaughtBy = pKiller->GetCID();
@@ -114,7 +114,7 @@ int CGameController_zCatch::OnCharacterDeath(class CCharacter *pVictim, class CP
 		}
 	}
 
-	// Update colors
+	// Update colours
 	OnPlayerInfoChange(pVictim->GetPlayer());
 
 	return 0;
@@ -182,7 +182,7 @@ void CGameController_zCatch::OnCharacterSpawn(class CCharacter *pChr)
 		break;
 	}
 
-	//Update color of spawning tees
+	//Update colour of spawning tees
 	OnPlayerInfoChange(pChr->GetPlayer());
 }
 

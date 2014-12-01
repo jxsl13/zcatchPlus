@@ -751,7 +751,7 @@ void CGameContext::OnMessage(int MsgID, CUnpacker *pUnpacker, int ClientID)
 			{
 				SendChatTarget(ClientID, "The winner is the tee which is left over at the end.");
 				SendChatTarget(ClientID, "If you die, all players that you killed will respawn.");
-				SendChatTarget(ClientID, "So the only way to win is to kill every player without beeing killed.");
+				SendChatTarget(ClientID, "So the only way to win is to kill every player without being killed.");
 				SendChatTarget(ClientID, "Have fun!");
 			}
 			else if(!str_comp_num("/", pMsg->m_pMessage, 1))
@@ -787,7 +787,7 @@ void CGameContext::OnMessage(int MsgID, CUnpacker *pUnpacker, int ClientID)
 
 			int64 Now = Server()->Tick();
 			pPlayer->m_LastVoteTry = Now;
-			// zCatch - Only People who are explicit in Spectators can't vote!
+			// zCatch - Only people which are explicit in spectators can't vote!
 			if(pPlayer->m_SpecExplicit == 1) //zCatch
 			{
 				SendChatTarget(ClientID, "Spectators aren't allowed to start a vote.");
@@ -856,7 +856,7 @@ void CGameContext::OnMessage(int MsgID, CUnpacker *pUnpacker, int ClientID)
 				{
 					int PlayerNum = 0;
 					for(int i = 0; i < MAX_CLIENTS; ++i)
-						if(m_apPlayers[i] && m_apPlayers[i]->m_SpecExplicit != 1) // zCatch - Count all Players who are not explicit in spectator
+						if(m_apPlayers[i] && m_apPlayers[i]->m_SpecExplicit != 1) // zCatch - Count all players which are not explicit in spectator
 							++PlayerNum;
 
 					if(PlayerNum < g_Config.m_SvVoteKickMin)
