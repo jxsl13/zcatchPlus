@@ -740,18 +740,15 @@ void CGameContext::OnMessage(int MsgID, CUnpacker *pUnpacker, int ClientID)
 			{
 				char aBuf[128];
 				str_format(aBuf, sizeof(aBuf), "zCatch version %s by erd and Teetime. Type /cmdlist for all commands.", ZCATCH_VERSION);
-				SendChatTarget(ClientID, " ");
 				SendChatTarget(ClientID, aBuf);
 			}
 			else if(!str_comp("/cmdlist", pMsg->m_pMessage))
 			{
-				SendChatTarget(ClientID, " ");
 				SendChatTarget(ClientID, "/info or /about - see information about author.");
 				SendChatTarget(ClientID, "/help - learn how to play.");
 			}
 			else if(!str_comp("/help", pMsg->m_pMessage))
 			{
-				SendChatTarget(ClientID, " ");
 				SendChatTarget(ClientID, "The winner is the tee which is left over at the end.");
 				SendChatTarget(ClientID, "If you die, all players that you killed will respawn.");
 				SendChatTarget(ClientID, "So the only way to win is to kill every player without beeing killed.");
