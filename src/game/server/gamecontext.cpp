@@ -701,7 +701,7 @@ void CGameContext::OnMessage(int MsgID, CUnpacker *pUnpacker, int ClientID)
 			CNetMsg_Cl_Say *pMsg = (CNetMsg_Cl_Say *)pRawMsg;
 			int Team = pMsg->m_Team ? pPlayer->GetTeam() : CGameContext::CHAT_ALL;
 			
-			// trim right and set maximum length to 128 utf8-characters
+			// trim right and set maximum length to 256 utf8-characters
 			int Length = 0;
 			const char *p = pMsg->m_pMessage;
 			const char *pEnd = 0;
@@ -720,7 +720,7 @@ void CGameContext::OnMessage(int MsgID, CUnpacker *pUnpacker, int ClientID)
 				else if(pEnd == 0)
 					pEnd = pStrOld;
 
-				if(++Length >= 127)
+				if(++Length >= 255)
 				{
 					*(const_cast<char *>(p)) = 0;
 					break;
