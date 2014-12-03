@@ -994,7 +994,7 @@ void CGameContext::OnMessage(int MsgID, CUnpacker *pUnpacker, int ClientID)
 
 		int64 Now = Server()->Tick();
 		pPlayer->m_LastVoteTry = Now;
-		// zCatch - Only People who are explicit in Spectators can't vote!
+		// zCatch - Only people which are explicit in spectators can't vote!
 		if(pPlayer->m_SpecExplicit) //zCatch
 		{
 			SendChatTarget(ClientID, "Spectators aren't allowed to start a vote.");
@@ -1072,7 +1072,7 @@ void CGameContext::OnMessage(int MsgID, CUnpacker *pUnpacker, int ClientID)
 			{
 				int PlayerNum = 0;
 				for(int i = 0; i < MAX_CLIENTS; ++i)
-					if(m_apPlayers[i] && !m_apPlayers[i]->m_SpecExplicit) // zCatch - Count all Players who are not explicit in spectator
+					if(m_apPlayers[i] && !m_apPlayers[i]->m_SpecExplicit) // zCatch - Count all players which are not explicit in spectator
 						++PlayerNum;
 
 				if(PlayerNum < g_Config.m_SvVoteKickMin)
