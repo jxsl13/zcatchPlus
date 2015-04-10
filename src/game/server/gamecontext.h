@@ -15,6 +15,9 @@
 #include "gameworld.h"
 #include "player.h"
 
+/* ranking system */
+#include <engine/external/sqlite/sqlite3.h>
+
 #define MAX_MUTES 35
 #define ZCATCH_VERSION "0.4.8"
 
@@ -81,6 +84,10 @@ class CGameContext : public IGameServer
 	bool m_Resetting;
 	
 	bool MuteValidation(CPlayer *player);
+	
+	/* ranking system: sqlite connection */
+	sqlite3 *rankingDb;
+	
 public:
 	IServer *Server() const { return m_pServer; }
 	class IConsole *Console() { return m_pConsole; }
@@ -207,6 +214,9 @@ public:
 		BOT_DETECTION_FOLLOW=2,
 	};
 	virtual bool IsClientAimBot(int ClientID);
+	
+	/* ranking system */
+	sqlite3* GetRankingDb() { return rankingDb; };
 };
 
 inline int CmaskAll() { return -1; }

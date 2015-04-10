@@ -142,7 +142,7 @@ function build(settings)
 	
 	--settings.objdir = Path("objs")
 	settings.cc.Output = Intermediate_Output
-
+	
 	if config.compiler.driver == "cl" then
 		settings.cc.flags:Add("/wd4244")
 	else
@@ -238,6 +238,10 @@ function build(settings)
 
 	engine = Compile(engine_settings, Collect("src/engine/shared/*.cpp", "src/base/*.c"))
 	client = Compile(client_settings, Collect("src/engine/client/*.cpp"))
+
+	-- we need threads in the server
+	-- threads need c++11
+	settings.cc.flags:Add("-std=c++11")
 	server = Compile(server_settings, Collect("src/engine/server/*.cpp"))
 
 	versionserver = Compile(settings, Collect("src/versionsrv/*.cpp"))

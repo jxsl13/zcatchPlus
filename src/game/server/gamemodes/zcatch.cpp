@@ -15,6 +15,16 @@ CGameController_zCatch::CGameController_zCatch(class CGameContext *pGameServer) 
 {
 	m_pGameType = "zCatch/TeeVi";
 	m_OldMode = g_Config.m_SvMode;
+	
+	/* ranking system: create zcatch score table */
+	char *zErrMsg = 0;
+	int rc = sqlite3_exec(GameServer()->GetRankingDb(), "CREATE TABLE IF NOT EXISTS zCatchScore(username TEXT PRIMARY KEY, score INTEGER DEFAULT 0);", NULL, 0, &zErrMsg);
+	if (rc != SQLITE_OK) {
+		fprintf(stderr, "SQL error (#%d): %s\n", rc, zErrMsg);
+		sqlite3_free(zErrMsg);
+		exit(1);
+	}
+	
 }
 
 void CGameController_zCatch::Tick()
@@ -235,4 +245,36 @@ bool CGameController_zCatch::OnEntity(int Index, vec2 Pos)
 		m_aaSpawnPoints[2][m_aNumSpawnPoints[2]++] = Pos;
 
 	return false;
+}
+
+/* when a player typed /top into the chat */
+void CGameController_zCatch::OnChatCommandTop(CPlayer *pPlayer)
+{
+	// char aBuf[256];
+	// str_format(aBuf, sizeof(aBuf), "You are caught until '%s' dies.", Server()->ClientName(pKiller->GetCID()));
+	// GameServer()->SendChatTarget(victim->GetCID(), aBuf);
+	//GameServer()->SendChatTarget(pPlayer->GetCID(), "Muhaha");
+	
+	struct ChatCommandTopContainer container = { GameServer(), pPlayer };
+	
+	char *zErrMsg = 0;
+	int rc = sqlite3_exec(GameServer()->GetRankingDb(), "SELECT username, score FROM zCatchScore ORDER BY score DESC LIMIT 5;", ChatCommandTopPrint, &container, &zErrMsg);
+	if (rc != SQLITE_OK) {
+		fprintf(stderr, "SQL error (#%d): %s\n", rc, zErrMsg);
+		sqlite3_free(zErrMsg);
+	}
+	
+}
+
+/* print the /top list to the user */
+int CGameController_zCatch::ChatCommandTopPrint(void *data, int argc, char **argv, char **azColName)
+{
+	
+	ChatCommandTopContainer *container = (ChatCommandTopContainer*)data;
+	
+	char aBuf[64];
+	str_format(aBuf, sizeof(aBuf), "[%s] %s", argv[1], argv[0]);
+	container->GameServer->SendChatTarget(container->Player->GetCID(), aBuf);
+	
+	return 0;
 }

@@ -142,6 +142,9 @@ public:
 	int ClampTeam(int Team);
 
 	virtual void PostReset();
+	
+	/* ranking system */
+	virtual void OnChatCommandTop(CPlayer *pPlayer) = 0;
 };
 
 #endif

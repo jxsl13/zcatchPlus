@@ -42,6 +42,15 @@ void CGameContext::Construct(int Resetting)
 	
 	for(int i = 0; i < MAX_MUTES; i++)
 		m_aMutes[i].m_aIP[0] = 0;
+	
+	/* open ranking system db */
+	int rc = sqlite3_open("ranks.db", &rankingDb);
+	if (rc){
+		fprintf(stderr, "Can't open database (#%d): %s\n", rc, sqlite3_errmsg(rankingDb));
+		sqlite3_close(rankingDb);
+		exit(1);
+	}
+	
 }
 
 CGameContext::CGameContext(int Resetting)
@@ -60,6 +69,9 @@ CGameContext::~CGameContext()
 		delete m_apPlayers[i];
 	if(!m_Resetting)
 		delete m_pVoteOptionHeap;
+	
+	/* close ranking db */
+	sqlite3_close(rankingDb);
 }
 
 void CGameContext::Clear()
@@ -974,6 +986,13 @@ void CGameContext::OnMessage(int MsgID, CUnpacker *pUnpacker, int ClientID)
 					SendChatTarget(ClientID, "Could not deliver private message. Player not found.");
 				}
 			}
+			
+			/* ranking system */
+			else if(!str_comp_nocase("top", pMsg->m_pMessage + 1))
+			{
+				m_pController->OnChatCommandTop(pPlayer);
+			}
+			
 			else
 			{
 				SendChatTarget(ClientID, "Unknown command, try /info");

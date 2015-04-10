@@ -10,6 +10,13 @@
 class CGameController_zCatch: public IGameController
 {
 	int m_OldMode;
+	
+	/* ranking system */
+	struct ChatCommandTopContainer {
+		CGameContext *GameServer;
+		CPlayer *Player;
+	};
+	static int ChatCommandTopPrint(void *data, int argc, char **argv, char **azColName);
 
 public:
 	CGameController_zCatch(class CGameContext *pGameServer);
@@ -23,6 +30,9 @@ public:
 	virtual bool OnEntity(int Index, vec2 Pos);
 	virtual bool CanChangeTeam(CPlayer *pPlayer, int JoinTeam);
 	virtual void EndRound();
+	
+	/* ranking system */
+	virtual void OnChatCommandTop(CPlayer *pPlayer);
 };
 
 #endif
