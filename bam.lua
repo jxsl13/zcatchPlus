@@ -172,6 +172,7 @@ function build(settings)
 			settings.link.frameworks:Add("AppKit")
 		else
 			settings.link.libs:Add("pthread")
+			settings.link.libs:Add("dl") -- for sqlite
 		end
 		
 		if platform == "solaris" then
@@ -201,6 +202,9 @@ function build(settings)
 	-- build the small libraries
 	wavpack = Compile(settings, Collect("src/engine/external/wavpack/*.c"))
 	pnglite = Compile(settings, Collect("src/engine/external/pnglite/*.c"))
+
+	-- build sqlite
+	sqlite = Compile(settings, Collect("src/engine/external/sqlite/sqlite3.c"))
 
 	-- build game components
 	engine_settings = settings:Copy()
@@ -265,7 +269,7 @@ function build(settings)
 		client_link_other, client_osxlaunch)
 
 	server_exe = Link(server_settings, "zcatch_srv", engine, server,
-		game_shared, game_server, zlib, server_link_other)
+		game_shared, game_server, zlib, sqlite, server_link_other)
 
 	serverlaunch = {}
 	if platform == "macosx" then
