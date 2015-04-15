@@ -988,7 +988,7 @@ void CGameContext::OnMessage(int MsgID, CUnpacker *pUnpacker, int ClientID)
 			}
 			
 			/* ranking system */
-			else if(!str_comp_nocase("top", pMsg->m_pMessage + 1))
+			else if(!str_comp_nocase("top", pMsg->m_pMessage + 1) || !str_comp_nocase("top5", pMsg->m_pMessage + 1))
 			{
 				m_pController->OnChatCommandTop(pPlayer);
 			}
