@@ -30,7 +30,7 @@ CGameController_zCatch::CGameController_zCatch(class CGameContext *pGameServer) 
 
 CGameController_zCatch::~CGameController_zCatch() {
 	/* wait for all threads */
-	for (auto &thread: saveScoreThreads)
+	for (auto &thread: rankingThreads)
 		thread.join();
 }
 
@@ -289,7 +289,7 @@ void CGameController_zCatch::RewardWinner(int winnerId, int numEnemies) {
 	GameServer()->SendChatTarget(-1, aBuf);
 	
 	/* give the points */
-	saveScoreThreads.push_back(std::thread(&CGameController_zCatch::SaveScore, this, name, points));
+	rankingThreads.push_back(std::thread(&CGameController_zCatch::SaveScore, this, name, points));
 	
 }
 
@@ -325,7 +325,13 @@ void CGameController_zCatch::SaveScore(const char *name, int score) {
 /* when a player typed /top into the chat */
 void CGameController_zCatch::OnChatCommandTop(CPlayer *pPlayer)
 {
-	struct ChatCommandTopContainer container = { GameServer(), pPlayer->GetCID() };
+	rankingThreads.push_back(std::thread(&CGameController_zCatch::ChatCommandTopFetchData, this, pPlayer->GetCID()));
+}
+
+/* get the top players */
+void CGameController_zCatch::ChatCommandTopFetchData(int clientId)
+{
+	struct ChatCommandTopContainer container = { GameServer(), clientId };
 	
 	char *zErrMsg = 0;
 	int rc = sqlite3_exec(GameServer()->GetRankingDb(), "SELECT username, score FROM zCatchScore ORDER BY score DESC LIMIT 5;", ChatCommandTopPrint, &container, &zErrMsg);
@@ -344,6 +350,9 @@ int CGameController_zCatch::ChatCommandTopPrint(void *data, int argc, char **arg
 	
 	char aBuf[64];
 	str_format(aBuf, sizeof(aBuf), "[%s] %s", argv[1], argv[0]);
+	/* if the player left and the client id is unused, nothing will happen */
+	/* if another player joined, there is no big harm that he receives it */
+	/* maybe later i have a good idea how to prevent this */
 	container->gameServer->SendChatTarget(container->clientId, aBuf);
 	
 	return 0;

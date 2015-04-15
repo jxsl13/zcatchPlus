@@ -16,12 +16,13 @@ class CGameController_zCatch: public IGameController
 	void RewardWinner(int winnerId, int numEnemies);
 	
 	/* ranking system */
+	std::vector<std::thread> rankingThreads;
 	struct ChatCommandTopContainer {
 		CGameContext *gameServer;
 		int clientId;
 	};
+	void ChatCommandTopFetchData(int clientId);
 	static int ChatCommandTopPrint(void *data, int argc, char **argv, char **azColName);
-	std::vector<std::thread> saveScoreThreads;
 	void SaveScore(const char *name, int score);
 
 public:
