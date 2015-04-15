@@ -1002,7 +1002,8 @@ void CGameContext::OnMessage(int MsgID, CUnpacker *pUnpacker, int ClientID)
 				int length = str_length(name);
 				/* trim right */
 				while (length > 0 && str_skip_whitespaces(name + length - 1) >= (name + length)) {
-					++length;
+					--length;
+					name[length] = 0;
 				}
 				m_pController->OnChatCommandRank(pPlayer, name);
 			}

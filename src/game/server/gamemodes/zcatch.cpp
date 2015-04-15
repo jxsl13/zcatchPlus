@@ -325,37 +325,50 @@ void CGameController_zCatch::SaveScore(const char *name, int score) {
 /* when a player typed /top into the chat */
 void CGameController_zCatch::OnChatCommandTop(CPlayer *pPlayer)
 {
-	rankingThreads.push_back(std::thread(&CGameController_zCatch::ChatCommandTopFetchData, this, pPlayer->GetCID()));
+	rankingThreads.push_back(std::thread(&CGameController_zCatch::ChatCommandTopFetchDataAndPrint, this, pPlayer->GetCID()));
 }
 
 /* get the top players */
-void CGameController_zCatch::ChatCommandTopFetchData(int clientId)
+void CGameController_zCatch::ChatCommandTopFetchDataAndPrint(int clientId)
 {
-	struct ChatCommandTopContainer container = { GameServer(), clientId };
 	
-	char *zErrMsg = 0;
-	int rc = sqlite3_exec(GameServer()->GetRankingDb(), "SELECT username, score/100.0 FROM zCatchScore ORDER BY score DESC LIMIT 5;", ChatCommandTopPrint, &container, &zErrMsg);
-	if (rc != SQLITE_OK) {
-		fprintf(stderr, "SQL error (#%d): %s\n", rc, zErrMsg);
-		sqlite3_free(zErrMsg);
+	/* prepare */
+	const char *zTail;
+	const char *zSql = "SELECT username, score FROM zCatchScore ORDER BY score DESC LIMIT 5;";
+	sqlite3_stmt *pStmt;
+	int rc = sqlite3_prepare_v2(GameServer()->GetRankingDb(), zSql, strlen(zSql), &pStmt, &zTail);
+	
+	if (rc == SQLITE_OK)
+	{
+		/* fetch from database */
+		int numRows = 0;
+		while (sqlite3_step(pStmt) == SQLITE_ROW)
+		{
+			const unsigned char* name = sqlite3_column_text(pStmt, 0);
+			int score = sqlite3_column_int(pStmt, 1);
+			char aBuf[64];
+			str_format(aBuf, sizeof(aBuf), "[%.2f] %s", score/100.0, name);
+			/* if the player left and the client id is unused, nothing will happen */
+			/* if another player joined, there is no big harm that he receives it */
+			/* maybe later i have a good idea how to prevent this */
+			GameServer()->SendChatTarget(clientId, aBuf);
+			++numRows;
+		}
+		
+		if (numRows == 0)
+		{
+			GameServer()->SendChatTarget(clientId, "There are no ranks");
+		}
+		
+		sqlite3_finalize(pStmt);
 	}
-	
-}
-
-/* print the /top list to the user */
-int CGameController_zCatch::ChatCommandTopPrint(void *data, int argc, char **argv, char **azColName)
-{
-	
-	ChatCommandTopContainer *container = (ChatCommandTopContainer*)data;
-	
-	char aBuf[64];
-	str_format(aBuf, sizeof(aBuf), "[%s] %s", argv[1], argv[0]);
-	/* if the player left and the client id is unused, nothing will happen */
-	/* if another player joined, there is no big harm that he receives it */
-	/* maybe later i have a good idea how to prevent this */
-	container->gameServer->SendChatTarget(container->clientId, aBuf);
-	
-	return 0;
+	else
+	{
+		/* print error */
+		char aBuf[512];
+		str_format(aBuf, sizeof(aBuf), "SQL error (#%d): %s", rc, sqlite3_errmsg(GameServer()->GetRankingDb()));
+		GameServer()->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "ranking", aBuf);
+	}
 }
 
 /* when a player typed /top into the chat */
@@ -400,6 +413,7 @@ void CGameController_zCatch::ChatCommandRankFetchDataAndPrint(int clientId, cons
 			str_format(aBuf, sizeof(aBuf), "'%s' has no score", name);
 			GameServer()->SendChatTarget(clientId, aBuf);
 		}
+		
 		sqlite3_finalize(pStmt);
 	}
 	else
