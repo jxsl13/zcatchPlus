@@ -6,10 +6,14 @@
 #define GAME_SERVER_GAMEMODES_ZCATCH_H
 
 #include <game/server/gamecontroller.h>
+#include <thread>
+#include <vector>
 
 class CGameController_zCatch: public IGameController
 {
 	int m_OldMode;
+	
+	void RewardWinner(int winnerId, int numEnemies);
 	
 	/* ranking system */
 	struct ChatCommandTopContainer {
@@ -17,9 +21,12 @@ class CGameController_zCatch: public IGameController
 		CPlayer *Player;
 	};
 	static int ChatCommandTopPrint(void *data, int argc, char **argv, char **azColName);
+	std::vector<std::thread> saveScoreThreads;
+	void SaveScore(const char *name, int score);
 
 public:
 	CGameController_zCatch(class CGameContext *pGameServer);
+	~CGameController_zCatch();
 	virtual void Tick();
 	virtual void DoWincheck();
 

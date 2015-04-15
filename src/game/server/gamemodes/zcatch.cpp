@@ -9,6 +9,7 @@
 #include <game/server/entities/character.h>
 #include <game/server/player.h>
 #include "zcatch.h"
+#include <string.h>
 
 CGameController_zCatch::CGameController_zCatch(class CGameContext *pGameServer) :
 		IGameController(pGameServer)
@@ -27,6 +28,12 @@ CGameController_zCatch::CGameController_zCatch(class CGameContext *pGameServer) 
 	
 }
 
+CGameController_zCatch::~CGameController_zCatch() {
+	/* wait for all threads */
+	for (auto &thread: saveScoreThreads)
+		thread.join();
+}
+
 void CGameController_zCatch::Tick()
 {
 	IGameController::Tick();
@@ -43,6 +50,7 @@ void CGameController_zCatch::DoWincheck()
 	if(m_GameOverTick == -1)
 	{
 		int Players = 0, Players_Spec = 0, Players_SpecExplicit = 0;
+		int winnerId = -1;
 
 		for(int i = 0; i < MAX_CLIENTS; i++)
 		{
@@ -51,6 +59,8 @@ void CGameController_zCatch::DoWincheck()
 				Players++;
 				if(GameServer()->m_apPlayers[i]->GetTeam() == TEAM_SPECTATORS)
 					Players_Spec++;
+				else
+					winnerId = i;
 				if(GameServer()->m_apPlayers[i]->m_SpecExplicit)
 					Players_SpecExplicit++;
 			}
@@ -73,9 +83,20 @@ void CGameController_zCatch::DoWincheck()
 				}
 			}
 			if(Players_Ingame < g_Config.m_SvLastStandingPlayers)
+			{
 				GameServer()->SendChatTarget(-1, "Too few players to end round. All players have been released.");
+			}
 			else
+			{
+				
+				// give the winner points
+				if (winnerId > -1)
+				{
+					RewardWinner(winnerId, Players_Ingame - 1);
+				}
+				
 				EndRound();
+			}
 		}
 
 		IGameController::DoWincheck(); //do also usual wincheck
@@ -245,6 +266,60 @@ bool CGameController_zCatch::OnEntity(int Index, vec2 Pos)
 		m_aaSpawnPoints[2][m_aNumSpawnPoints[2]++] = Pos;
 
 	return false;
+}
+
+/* celebration and scoring */
+void CGameController_zCatch::RewardWinner(int winnerId, int numEnemies) {
+	
+	/* calculate points (multiplied with 100) */
+	int points = 100 * numEnemies * numEnemies * numEnemies / 225 + 1;
+	
+	/* abort if no points */
+	if (points == 0)
+	{
+		return;
+	}
+
+	/* the winners name */
+	const char *name = GameServer()->Server()->ClientName(winnerId);
+	
+	/* announce in chat */
+	char aBuf[96];
+	str_format(aBuf, sizeof(aBuf), "Winner '%s' gets %.2f points.", name, points/100.0);
+	GameServer()->SendChatTarget(-1, aBuf);
+	
+	/* give the points */
+	saveScoreThreads.push_back(std::thread(&CGameController_zCatch::SaveScore, this, name, points));
+	
+}
+
+/* adds the score to the player */
+void CGameController_zCatch::SaveScore(const char *name, int score) {
+
+	/* prepare */
+	const char *zTail;
+	const char *zSql = "INSERT OR REPLACE INTO zCatchScore (username, score) VALUES (?1, COALESCE((SELECT score FROM zCatchScore WHERE username = ?1) + ?2, ?2));";
+	sqlite3_stmt *pStmt;
+	int rc = sqlite3_prepare_v2(GameServer()->GetRankingDb(), zSql, strlen(zSql), &pStmt, &zTail);
+	
+	if (rc == SQLITE_OK)
+	{
+		/* bind parameters in query */
+		sqlite3_bind_text(pStmt, 1, name, strlen(name), 0);
+		sqlite3_bind_int(pStmt, 2, score);
+		
+		/* save to database */
+		sqlite3_step(pStmt);
+		sqlite3_finalize(pStmt);
+	}
+	else
+	{
+		/* print error */
+		char aBuf[512];
+		str_format(aBuf, sizeof(aBuf), "SQL error (#%d): %s", rc, sqlite3_errmsg(GameServer()->GetRankingDb()));
+		GameServer()->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "ranking", aBuf);
+	}
+	
 }
 
 /* when a player typed /top into the chat */
