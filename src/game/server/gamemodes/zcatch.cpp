@@ -334,7 +334,7 @@ void CGameController_zCatch::ChatCommandTopFetchData(int clientId)
 	struct ChatCommandTopContainer container = { GameServer(), clientId };
 	
 	char *zErrMsg = 0;
-	int rc = sqlite3_exec(GameServer()->GetRankingDb(), "SELECT username, score FROM zCatchScore ORDER BY score DESC LIMIT 5;", ChatCommandTopPrint, &container, &zErrMsg);
+	int rc = sqlite3_exec(GameServer()->GetRankingDb(), "SELECT username, score/100.0 FROM zCatchScore ORDER BY score DESC LIMIT 5;", ChatCommandTopPrint, &container, &zErrMsg);
 	if (rc != SQLITE_OK) {
 		fprintf(stderr, "SQL error (#%d): %s\n", rc, zErrMsg);
 		sqlite3_free(zErrMsg);
