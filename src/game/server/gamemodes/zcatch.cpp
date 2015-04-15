@@ -389,7 +389,7 @@ void CGameController_zCatch::ChatCommandRankFetchDataAndPrint(int clientId, cons
 	
 	/* prepare */
 	const char *zTail;
-	const char *zSql = "SELECT score FROM zCatchScore WHERE username = ?1;";
+	const char *zSql = "SELECT a.score, (SELECT COUNT(*) FROM zCatchScore b WHERE b.score > a.score) + 1 FROM zCatchScore a WHERE username = ?1;";
 	sqlite3_stmt *pStmt;
 	int rc = sqlite3_prepare_v2(GameServer()->GetRankingDb(), zSql, strlen(zSql), &pStmt, &zTail);
 	
@@ -403,8 +403,9 @@ void CGameController_zCatch::ChatCommandRankFetchDataAndPrint(int clientId, cons
 		if (row == SQLITE_ROW)
 		{
 			int score = sqlite3_column_int(pStmt, 0);
+			int rank = sqlite3_column_int(pStmt, 0);
 			char aBuf[64];
-			str_format(aBuf, sizeof(aBuf), "'%s' has a score of %.2f", name, score/100.0);
+			str_format(aBuf, sizeof(aBuf), "'%s' is rank %d with a score of %.2f", name, rank, score/100.0);
 			GameServer()->SendChatTarget(clientId, aBuf);
 		}
 		else if (row == SQLITE_DONE)
