@@ -23,6 +23,7 @@ class CGameController_zCatch: public IGameController
 	};
 	void ChatCommandTopFetchData(int clientId);
 	static int ChatCommandTopPrint(void *data, int argc, char **argv, char **azColName);
+	void ChatCommandRankFetchDataAndPrint(int clientId, const char *name);
 	void SaveScore(const char *name, int score);
 
 public:
@@ -41,6 +42,8 @@ public:
 	
 	/* ranking system */
 	virtual void OnChatCommandTop(CPlayer *pPlayer);
+	virtual void OnChatCommandOwnRank(CPlayer *pPlayer);
+	virtual void OnChatCommandRank(CPlayer *pPlayer, const char *name);
 };
 
 #endif

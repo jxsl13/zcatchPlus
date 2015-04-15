@@ -145,6 +145,8 @@ public:
 	
 	/* ranking system */
 	virtual void OnChatCommandTop(CPlayer *pPlayer) = 0;
+	virtual void OnChatCommandOwnRank(CPlayer *pPlayer) = 0;
+	virtual void OnChatCommandRank(CPlayer *pPlayer, const char *name) = 0;
 };
 
 #endif

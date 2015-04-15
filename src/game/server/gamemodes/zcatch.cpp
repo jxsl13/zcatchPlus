@@ -357,3 +357,57 @@ int CGameController_zCatch::ChatCommandTopPrint(void *data, int argc, char **arg
 	
 	return 0;
 }
+
+/* when a player typed /top into the chat */
+void CGameController_zCatch::OnChatCommandRank(CPlayer *pPlayer, const char *name)
+{
+	GameServer()->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "ranking", name);
+	rankingThreads.push_back(std::thread(&CGameController_zCatch::ChatCommandRankFetchDataAndPrint, this, pPlayer->GetCID(), name));
+}
+
+/* when a player typed /top into the chat */
+void CGameController_zCatch::OnChatCommandOwnRank(CPlayer *pPlayer)
+{
+	OnChatCommandRank(pPlayer, GameServer()->Server()->ClientName(pPlayer->GetCID()));
+}
+
+/* get the top players */
+void CGameController_zCatch::ChatCommandRankFetchDataAndPrint(int clientId, const char *name)
+{
+	
+	/* prepare */
+	const char *zTail;
+	const char *zSql = "SELECT score FROM zCatchScore WHERE username = ?1;";
+	sqlite3_stmt *pStmt;
+	int rc = sqlite3_prepare_v2(GameServer()->GetRankingDb(), zSql, strlen(zSql), &pStmt, &zTail);
+	
+	if (rc == SQLITE_OK)
+	{
+		/* bind parameters in query */
+		sqlite3_bind_text(pStmt, 1, name, strlen(name), 0);
+		
+		/* save to database */
+		int row = sqlite3_step(pStmt);
+		if (row == SQLITE_ROW)
+		{
+			int score = sqlite3_column_int(pStmt, 0);
+			char aBuf[64];
+			str_format(aBuf, sizeof(aBuf), "'%s' has a score of %.2f", name, score/100.0);
+			GameServer()->SendChatTarget(clientId, aBuf);
+		}
+		else if (row == SQLITE_DONE)
+		{
+			char aBuf[64];
+			str_format(aBuf, sizeof(aBuf), "'%s' has no score", name);
+			GameServer()->SendChatTarget(clientId, aBuf);
+		}
+		sqlite3_finalize(pStmt);
+	}
+	else
+	{
+		/* print error */
+		char aBuf[512];
+		str_format(aBuf, sizeof(aBuf), "SQL error (#%d): %s", rc, sqlite3_errmsg(GameServer()->GetRankingDb()));
+		GameServer()->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "ranking", aBuf);
+	}
+}
