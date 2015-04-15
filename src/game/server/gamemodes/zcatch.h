@@ -17,8 +17,8 @@ class CGameController_zCatch: public IGameController
 	
 	/* ranking system */
 	struct ChatCommandTopContainer {
-		CGameContext *GameServer;
-		CPlayer *Player;
+		CGameContext *gameServer;
+		int clientId;
 	};
 	static int ChatCommandTopPrint(void *data, int argc, char **argv, char **azColName);
 	std::vector<std::thread> saveScoreThreads;

@@ -325,12 +325,7 @@ void CGameController_zCatch::SaveScore(const char *name, int score) {
 /* when a player typed /top into the chat */
 void CGameController_zCatch::OnChatCommandTop(CPlayer *pPlayer)
 {
-	// char aBuf[256];
-	// str_format(aBuf, sizeof(aBuf), "You are caught until '%s' dies.", Server()->ClientName(pKiller->GetCID()));
-	// GameServer()->SendChatTarget(victim->GetCID(), aBuf);
-	//GameServer()->SendChatTarget(pPlayer->GetCID(), "Muhaha");
-	
-	struct ChatCommandTopContainer container = { GameServer(), pPlayer };
+	struct ChatCommandTopContainer container = { GameServer(), pPlayer->GetCID() };
 	
 	char *zErrMsg = 0;
 	int rc = sqlite3_exec(GameServer()->GetRankingDb(), "SELECT username, score FROM zCatchScore ORDER BY score DESC LIMIT 5;", ChatCommandTopPrint, &container, &zErrMsg);
@@ -349,7 +344,7 @@ int CGameController_zCatch::ChatCommandTopPrint(void *data, int argc, char **arg
 	
 	char aBuf[64];
 	str_format(aBuf, sizeof(aBuf), "[%s] %s", argv[1], argv[0]);
-	container->GameServer->SendChatTarget(container->Player->GetCID(), aBuf);
+	container->gameServer->SendChatTarget(container->clientId, aBuf);
 	
 	return 0;
 }
