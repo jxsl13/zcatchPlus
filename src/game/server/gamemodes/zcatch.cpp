@@ -359,16 +359,15 @@ int CGameController_zCatch::ChatCommandTopPrint(void *data, int argc, char **arg
 }
 
 /* when a player typed /top into the chat */
-void CGameController_zCatch::OnChatCommandRank(CPlayer *pPlayer, const char *name)
-{
-	GameServer()->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "ranking", name);
-	rankingThreads.push_back(std::thread(&CGameController_zCatch::ChatCommandRankFetchDataAndPrint, this, pPlayer->GetCID(), name));
-}
-
-/* when a player typed /top into the chat */
 void CGameController_zCatch::OnChatCommandOwnRank(CPlayer *pPlayer)
 {
 	OnChatCommandRank(pPlayer, GameServer()->Server()->ClientName(pPlayer->GetCID()));
+}
+
+/* when a player typed /top into the chat */
+void CGameController_zCatch::OnChatCommandRank(CPlayer *pPlayer, const char *name)
+{
+	rankingThreads.push_back(std::thread(&CGameController_zCatch::ChatCommandRankFetchDataAndPrint, this, pPlayer->GetCID(), name));
 }
 
 /* get the top players */
@@ -386,7 +385,7 @@ void CGameController_zCatch::ChatCommandRankFetchDataAndPrint(int clientId, cons
 		/* bind parameters in query */
 		sqlite3_bind_text(pStmt, 1, name, strlen(name), 0);
 		
-		/* save to database */
+		/* fetch from database */
 		int row = sqlite3_step(pStmt);
 		if (row == SQLITE_ROW)
 		{

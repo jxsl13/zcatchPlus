@@ -20,6 +20,7 @@ class CGameController_zCatch: public IGameController
 	struct ChatCommandTopContainer {
 		CGameContext *gameServer;
 		int clientId;
+		sqlite3_stmt *statement;
 	};
 	void ChatCommandTopFetchData(int clientId);
 	static int ChatCommandTopPrint(void *data, int argc, char **argv, char **azColName);
