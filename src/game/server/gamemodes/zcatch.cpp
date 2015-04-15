@@ -347,7 +347,7 @@ void CGameController_zCatch::ChatCommandTopFetchDataAndPrint(int clientId)
 			const unsigned char* name = sqlite3_column_text(pStmt, 0);
 			int score = sqlite3_column_int(pStmt, 1);
 			char aBuf[64];
-			str_format(aBuf, sizeof(aBuf), "[%.2f] %s", score/100.0, name);
+			str_format(aBuf, sizeof(aBuf), "[%.*f] %s", score % 100 ? 2 : 0, score/100.0, name);
 			/* if the player left and the client id is unused, nothing will happen */
 			/* if another player joined, there is no big harm that he receives it */
 			/* maybe later i have a good idea how to prevent this */
@@ -403,15 +403,15 @@ void CGameController_zCatch::ChatCommandRankFetchDataAndPrint(int clientId, cons
 		if (row == SQLITE_ROW)
 		{
 			int score = sqlite3_column_int(pStmt, 0);
-			int rank = sqlite3_column_int(pStmt, 0);
+			int rank = sqlite3_column_int(pStmt, 1);
 			char aBuf[64];
-			str_format(aBuf, sizeof(aBuf), "'%s' is rank %d with a score of %.2f", name, rank, score/100.0);
+			str_format(aBuf, sizeof(aBuf), "'%s' is rank %d with a score of %.*f", name, rank, score % 100 ? 2 : 0, score/100.0);
 			GameServer()->SendChatTarget(clientId, aBuf);
 		}
 		else if (row == SQLITE_DONE)
 		{
 			char aBuf[64];
-			str_format(aBuf, sizeof(aBuf), "'%s' has no score", name);
+			str_format(aBuf, sizeof(aBuf), "'%s' has no rank", name);
 			GameServer()->SendChatTarget(clientId, aBuf);
 		}
 		
