@@ -37,6 +37,16 @@ CPlayer::CPlayer(CGameContext *pGameServer, int ClientID, int Team)
 	m_zCatchNumVictims = 0;
 	m_zCatchNumKillsInARow = 0;
 	
+	// ranking system
+	m_RankCache.m_Points = 0;
+	m_RankCache.m_NumWins = 0;
+	m_RankCache.m_NumKills = 0;
+	m_RankCache.m_NumDeaths = 0;
+	m_RankCache.m_NumShots = 0;
+	m_RankCache.m_TimePlayed = 0;
+	m_RankCache.m_TimeStartedPlaying = -1;
+	RankCacheStartPlaying(); // start immediately
+	
 	// bot detection
 	m_IsAimBot = 0;
 	m_AimBotIndex = 0;
@@ -51,6 +61,10 @@ CPlayer::CPlayer(CGameContext *pGameServer, int ClientID, int Team)
 
 CPlayer::~CPlayer()
 {
+	
+	// save ranking stats
+	GameServer()->m_pController->SaveRanking(this);
+	
 	while(m_ZCatchVictims != NULL)
 	{
 		CZCatchVictim *tmp = m_ZCatchVictims;
@@ -333,9 +347,13 @@ void CPlayer::SetTeam(int Team, bool DoChatMsg)
 				GameServer()->m_apPlayers[i]->m_SpectatorID = SPEC_FREEVIEW;
 		}
 		m_SpecExplicit = true;
+		RankCacheStopPlaying();
 	}
 	else
+	{
 		m_SpecExplicit = false;
+		RankCacheStartPlaying();
+	}
 }
 
 void CPlayer::SetTeamDirect(int Team)
@@ -458,5 +476,20 @@ void CPlayer::ReleaseZCatchVictim(int ClientID, int limit)
 		}
 		else
 			v = &(*v)->prev;
+	}
+}
+
+// start counter for playing time
+void CPlayer::RankCacheStartPlaying() {
+	if (m_RankCache.m_TimeStartedPlaying == -1) {
+		m_RankCache.m_TimeStartedPlaying = Server()->Tick();
+	}
+}
+
+// stop counter for playing time
+void CPlayer::RankCacheStopPlaying() {
+	if (m_RankCache.m_TimeStartedPlaying > -1) {
+		m_RankCache.m_TimePlayed += Server()->Tick() - m_RankCache.m_TimeStartedPlaying;
+		m_RankCache.m_TimeStartedPlaying = -1;
 	}
 }

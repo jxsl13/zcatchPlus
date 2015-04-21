@@ -145,6 +145,7 @@ public:
 	virtual void PostReset();
 	
 	/* ranking system */
+	virtual void SaveRanking(CPlayer *player) {}
 	virtual void OnInitRanking(sqlite3 *rankingDb) {}
 	virtual void OnChatCommandTop(CPlayer *pPlayer) {}
 	virtual void OnChatCommandOwnRank(CPlayer *pPlayer) {}

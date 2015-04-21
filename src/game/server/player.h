@@ -136,6 +136,19 @@ public:
 	bool HasZCatchVictims() { return (m_ZCatchVictims != NULL); }
 	int LastZCatchVictim() { return HasZCatchVictims() ? m_ZCatchVictims->ClientID : -1; }
 	
+	/* ranking system */
+	struct {
+		int m_Points;
+		int m_NumWins;
+		int m_NumKills;
+		int m_NumDeaths;
+		int m_NumShots;
+		int m_TimePlayed; // ticks
+		int m_TimeStartedPlaying; // tick
+	} m_RankCache;
+	void RankCacheStartPlaying();
+	void RankCacheStopPlaying();
+	
 	// bot detection
 	int m_IsAimBot;
 	int m_AimBotIndex;

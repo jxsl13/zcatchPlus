@@ -27,7 +27,21 @@ CGameController_zCatch::~CGameController_zCatch() {
 /* ranking system: create zcatch score table */
 void CGameController_zCatch::OnInitRanking(sqlite3 *rankingDb) {
 	char *zErrMsg = 0;
-	int rc = sqlite3_exec(GameServer()->GetRankingDb(), "CREATE TABLE IF NOT EXISTS zCatchScore(username TEXT PRIMARY KEY, score INTEGER DEFAULT 0);", NULL, 0, &zErrMsg);
+	int rc = sqlite3_exec(GameServer()->GetRankingDb(), "\
+			BEGIN; \
+			CREATE TABLE IF NOT EXISTS zCatchScore( \
+				username TEXT PRIMARY KEY, \
+				score UNSIGNED INTEGER DEFAULT 0, \
+				numWins UNSIGNED INTEGER DEFAULT 0, \
+				numKills UNSIGNED INTEGER DEFAULT 0, \
+				numDeaths UNSIGNED INTEGER DEFAULT 0, \
+				numShots UNSIGNED INTEGER DEFAULT 0, \
+				highestSpree UNSIGNED INTEGER DEFAULT 0, \
+				timePlayed UNSIGNED INTEGER DEFAULT 0 \
+			); \
+			CREATE INDEX IF NOT EXISTS zCatchScore_score_index ON zCatchScore (score); \
+			COMMIT; \
+		", NULL, 0, &zErrMsg);
 	if (rc != SQLITE_OK) {
 		char aBuf[512];
 		str_format(aBuf, sizeof(aBuf), "SQL error (#%d): %s\n", rc, zErrMsg);
@@ -46,6 +60,19 @@ void CGameController_zCatch::Tick()
 		Server()->MapReload();
 		m_OldMode = g_Config.m_SvMode;
 	}
+	
+	// save rankings every minute
+	if (Server()->Tick() % (Server()->TickSpeed() * 60) == 0)
+	{
+		for(int i = 0; i < MAX_CLIENTS; i++)
+		{
+			if(GameServer()->m_apPlayers[i])
+			{
+				SaveRanking(GameServer()->m_apPlayers[i]);
+			}
+		}
+	}
+	
 }
 
 void CGameController_zCatch::DoWincheck()
@@ -150,6 +177,10 @@ int CGameController_zCatch::OnCharacterDeath(class CCharacter *pVictim, class CP
 	// Update colours
 	OnPlayerInfoChange(victim);
 	OnPlayerInfoChange(pKiller);
+	
+	// ranking
+	++victim->m_RankCache.m_NumDeaths;
+	++pKiller->m_RankCache.m_NumKills;
 
 	return 0;
 }
@@ -222,6 +253,9 @@ void CGameController_zCatch::EndRound()
 	{
 		if(GameServer()->m_apPlayers[i])
 		{
+			
+			// save ranking stats
+			SaveRanking(GameServer()->m_apPlayers[i]);
 
 			if(!GameServer()->m_apPlayers[i]->m_SpecExplicit)
 			{
@@ -274,8 +308,15 @@ bool CGameController_zCatch::OnEntity(int Index, vec2 Pos)
 /* celebration and scoring */
 void CGameController_zCatch::RewardWinner(int winnerId, int numEnemies) {
 	
+	CPlayer *winner = GameServer()->m_apPlayers[winnerId];
+	
 	/* calculate points (multiplied with 100) */
 	int points = 100 * numEnemies * numEnemies * numEnemies / 225;
+	
+	/* set winner's ranking stats */
+	winner->m_RankCache.m_Points += points;
+	++winner->m_RankCache.m_NumWins;
+	/* saving is done in EndRound() */
 	
 	/* abort if no points */
 	if (points == 0)
@@ -283,7 +324,7 @@ void CGameController_zCatch::RewardWinner(int winnerId, int numEnemies) {
 		return;
 	}
 
-	/* the winners name */
+	/* the winner's name */
 	const char *name = GameServer()->Server()->ClientName(winnerId);
 	
 	/* announce in chat */
@@ -291,17 +332,62 @@ void CGameController_zCatch::RewardWinner(int winnerId, int numEnemies) {
 	str_format(aBuf, sizeof(aBuf), "Winner '%s' gets %.2f points.", name, points/100.0);
 	GameServer()->SendChatTarget(-1, aBuf);
 	
+}
+
+/* save a player's ranking stats */
+void CGameController_zCatch::SaveRanking(CPlayer *player) {
+	
+	/* prepare */
+	player->RankCacheStopPlaying(); // so that m_RankCache.m_TimePlayed is updated
+	
 	/* give the points */
-	rankingThreads.push_back(std::thread(&CGameController_zCatch::SaveScore, this, name, points));
+	rankingThreads.push_back(std::thread(&CGameController_zCatch::SaveScore, this,
+		GameServer()->Server()->ClientName(player->GetCID()), // username
+		player->m_RankCache.m_Points, // score
+		player->m_RankCache.m_NumWins, // numWins
+		player->m_RankCache.m_NumKills, // numKills
+		player->m_RankCache.m_NumDeaths, // numDeaths
+		player->m_RankCache.m_NumShots, // numShots
+		player->m_zCatchNumKillsInARow, // highestSpree
+		player->m_RankCache.m_TimePlayed / Server()->TickSpeed() // timePlayed
+	));
+	
+	/* clean rank cache */
+	player->m_RankCache.m_Points = 0;
+	player->m_RankCache.m_NumWins = 0;
+	player->m_RankCache.m_NumKills = 0;
+	player->m_RankCache.m_NumDeaths = 0;
+	player->m_RankCache.m_NumShots = 0;
+	player->m_RankCache.m_TimePlayed = 0;
+	player->RankCacheStartPlaying();
 	
 }
 
 /* adds the score to the player */
-void CGameController_zCatch::SaveScore(const char *name, int score) {
+void CGameController_zCatch::SaveScore(const char *name, int score, int numWins, int numKills, int numDeaths, int numShots, int highestSpree, int timePlayed) {
 
 	/* prepare */
 	const char *zTail;
-	const char *zSql = "INSERT OR REPLACE INTO zCatchScore (username, score) VALUES (?1, COALESCE((SELECT score FROM zCatchScore WHERE username = ?1) + ?2, ?2));";
+	const char *zSql = "\
+		INSERT OR REPLACE INTO zCatchScore ( \
+			username, \
+			score, \
+			numWins, \
+			numKills, \
+			numDeaths, \
+			numShots, \
+			highestSpree, \
+			timePlayed \
+		) VALUES ( \
+			?1, \
+			COALESCE((SELECT score FROM zCatchScore WHERE username = ?1), 0) + ?2, \
+			COALESCE((SELECT numWins FROM zCatchScore WHERE username = ?1), 0) + ?3, \
+			COALESCE((SELECT numKills FROM zCatchScore WHERE username = ?1), 0) + ?4, \
+			COALESCE((SELECT numDeaths FROM zCatchScore WHERE username = ?1), 0) + ?5, \
+			COALESCE((SELECT numShots FROM zCatchScore WHERE username = ?1), 0) + ?6, \
+			MAX(COALESCE((SELECT highestSpree FROM zCatchScore WHERE username = ?1), 0), ?7), \
+			COALESCE((SELECT timePlayed FROM zCatchScore WHERE username = ?1), 0) + ?8 \
+		);";
 	sqlite3_stmt *pStmt;
 	int rc = sqlite3_prepare_v2(GameServer()->GetRankingDb(), zSql, strlen(zSql), &pStmt, &zTail);
 	
@@ -310,6 +396,12 @@ void CGameController_zCatch::SaveScore(const char *name, int score) {
 		/* bind parameters in query */
 		sqlite3_bind_text(pStmt, 1, name, strlen(name), 0);
 		sqlite3_bind_int(pStmt, 2, score);
+		sqlite3_bind_int(pStmt, 3, numWins);
+		sqlite3_bind_int(pStmt, 4, numKills);
+		sqlite3_bind_int(pStmt, 5, numDeaths);
+		sqlite3_bind_int(pStmt, 6, numShots);
+		sqlite3_bind_int(pStmt, 7, highestSpree);
+		sqlite3_bind_int(pStmt, 8, timePlayed);
 		
 		/* save to database */
 		sqlite3_step(pStmt);
@@ -392,7 +484,20 @@ void CGameController_zCatch::ChatCommandRankFetchDataAndPrint(int clientId, cons
 	
 	/* prepare */
 	const char *zTail;
-	const char *zSql = "SELECT a.score, (SELECT COUNT(*) FROM zCatchScore b WHERE b.score > a.score) + 1 FROM zCatchScore a WHERE username = ?1;";
+	const char *zSql = "\
+		SELECT \
+			a.score, \
+			a.numWins, \
+			a.numKills, \
+			a.numDeaths, \
+			a.numShots, \
+			a.highestSpree, \
+			a.timePlayed, \
+			(SELECT COUNT(*) FROM zCatchScore b WHERE b.score > a.score) + 1, \
+			MAX(0, (SELECT MIN(b.score) FROM zCatchScore b WHERE b.score > a.score) - a.score) \
+		FROM zCatchScore a \
+		WHERE username = ?1\
+		;";
 	sqlite3_stmt *pStmt;
 	int rc = sqlite3_prepare_v2(GameServer()->GetRankingDb(), zSql, strlen(zSql), &pStmt, &zTail);
 	
@@ -405,10 +510,19 @@ void CGameController_zCatch::ChatCommandRankFetchDataAndPrint(int clientId, cons
 		int row = sqlite3_step(pStmt);
 		if (row == SQLITE_ROW)
 		{
+		
 			int score = sqlite3_column_int(pStmt, 0);
-			int rank = sqlite3_column_int(pStmt, 1);
-			char aBuf[64];
-			str_format(aBuf, sizeof(aBuf), "'%s' is rank %d with a score of %.*f", name, rank, score % 100 ? 2 : 0, score/100.0);
+			int numWins = sqlite3_column_int(pStmt, 1);
+			int numKills = sqlite3_column_int(pStmt, 2);
+			int numDeaths = sqlite3_column_int(pStmt, 3);
+			int numShots = sqlite3_column_int(pStmt, 4);
+			int highestSpree = sqlite3_column_int(pStmt, 5);
+			int timePlayed = sqlite3_column_int(pStmt, 6);
+			int rank = sqlite3_column_int(pStmt, 7);
+			int scoreToNextRank = sqlite3_column_int(pStmt, 8);
+			
+			char aBuf[512];
+			str_format(aBuf, sizeof(aBuf), "'%s' is rank %d with a score of %.*f points (%d wins, %d kills, %d deaths, %d shots, %d spree, %d:%02dh played, %.*f points for next rank)", name, rank, score % 100 ? 2 : 0, score/100.0, numWins, numKills, numDeaths, numShots, highestSpree, timePlayed / 3600, timePlayed / 60 % 60, scoreToNextRank % 100 ? 2 : 0, scoreToNextRank/100.0);
 			GameServer()->SendChatTarget(clientId, aBuf);
 		}
 		else if (row == SQLITE_DONE)

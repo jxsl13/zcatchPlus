@@ -527,6 +527,9 @@ void CCharacter::FireWeapon()
 	}
 
 	m_AttackTick = Server()->Tick();
+	
+	// ranking
+	++GetPlayer()->m_RankCache.m_NumShots;
 
 	if(m_aWeapons[m_ActiveWeapon].m_Ammo > 0) // -1 == unlimited
 		m_aWeapons[m_ActiveWeapon].m_Ammo--;
