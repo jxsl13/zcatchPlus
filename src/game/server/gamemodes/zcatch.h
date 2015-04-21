@@ -36,6 +36,7 @@ public:
 	virtual void EndRound();
 	
 	/* ranking system */
+	virtual void OnInitRanking(sqlite3 *rankingDb);
 	virtual void OnChatCommandTop(CPlayer *pPlayer);
 	virtual void OnChatCommandOwnRank(CPlayer *pPlayer);
 	virtual void OnChatCommandRank(CPlayer *pPlayer, const char *name);

@@ -4,6 +4,7 @@
 #define GAME_SERVER_GAMECONTROLLER_H
 
 #include <base/vmath.h>
+#include <engine/external/sqlite/sqlite3.h>
 
 /*
 	Class: Game Controller
@@ -144,9 +145,10 @@ public:
 	virtual void PostReset();
 	
 	/* ranking system */
-	virtual void OnChatCommandTop(CPlayer *pPlayer) = 0;
-	virtual void OnChatCommandOwnRank(CPlayer *pPlayer) = 0;
-	virtual void OnChatCommandRank(CPlayer *pPlayer, const char *name) = 0;
+	virtual void OnInitRanking(sqlite3 *rankingDb) {}
+	virtual void OnChatCommandTop(CPlayer *pPlayer) {}
+	virtual void OnChatCommandOwnRank(CPlayer *pPlayer) {}
+	virtual void OnChatCommandRank(CPlayer *pPlayer, const char *name) {}
 };
 
 #endif

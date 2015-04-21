@@ -43,14 +43,6 @@ void CGameContext::Construct(int Resetting)
 	for(int i = 0; i < MAX_MUTES; i++)
 		m_aMutes[i].m_aIP[0] = 0;
 	
-	/* open ranking system db */
-	int rc = sqlite3_open("ranks.db", &rankingDb);
-	if (rc){
-		fprintf(stderr, "Can't open database (#%d): %s\n", rc, sqlite3_errmsg(rankingDb));
-		sqlite3_close(rankingDb);
-		exit(1);
-	}
-	
 }
 
 CGameContext::CGameContext(int Resetting)
@@ -69,9 +61,6 @@ CGameContext::~CGameContext()
 		delete m_apPlayers[i];
 	if(!m_Resetting)
 		delete m_pVoteOptionHeap;
-	
-	/* close ranking db */
-	sqlite3_close(rankingDb);
 }
 
 void CGameContext::Clear()
@@ -2055,6 +2044,16 @@ void CGameContext::OnInit(/*class IKernel *pKernel*/)
 	//world = new GAMEWORLD;
 	//players = new CPlayer[MAX_CLIENTS];
 
+	/* open ranking system db */
+	int rc = sqlite3_open(g_Config.m_SvRankingFile, &rankingDb);
+	if (rc){
+		char aBuf[512];
+		str_format(aBuf, sizeof(aBuf), "Can't open database (#%d): %s\n", rc, sqlite3_errmsg(rankingDb));
+		Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "ranking", aBuf);
+		sqlite3_close(rankingDb);
+		exit(1);
+	}
+	
 	// select gametype
 	/*if(str_comp(g_Config.m_SvGametype, "mod") == 0)
 		m_pController = new CGameControllerMOD(this);
@@ -2067,6 +2066,9 @@ void CGameContext::OnInit(/*class IKernel *pKernel*/)
 	else
 		m_pController = new CGameControllerDM(this);*/
 	m_pController = new CGameController_zCatch(this);
+	
+	/* ranking system */
+	m_pController->OnInitRanking(rankingDb);
 
 	// setup core world
 	//for(int i = 0; i < MAX_CLIENTS; i++)
@@ -2114,6 +2116,10 @@ void CGameContext::OnInit(/*class IKernel *pKernel*/)
 
 void CGameContext::OnShutdown()
 {
+	
+	/* close ranking db */
+	sqlite3_close(rankingDb);
+	
 	delete m_pController;
 	m_pController = 0;
 	Clear();

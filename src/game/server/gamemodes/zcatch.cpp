@@ -16,22 +16,25 @@ CGameController_zCatch::CGameController_zCatch(class CGameContext *pGameServer) 
 {
 	m_pGameType = "zCatch/TeeVi";
 	m_OldMode = g_Config.m_SvMode;
-	
-	/* ranking system: create zcatch score table */
-	char *zErrMsg = 0;
-	int rc = sqlite3_exec(GameServer()->GetRankingDb(), "CREATE TABLE IF NOT EXISTS zCatchScore(username TEXT PRIMARY KEY, score INTEGER DEFAULT 0);", NULL, 0, &zErrMsg);
-	if (rc != SQLITE_OK) {
-		fprintf(stderr, "SQL error (#%d): %s\n", rc, zErrMsg);
-		sqlite3_free(zErrMsg);
-		exit(1);
-	}
-	
 }
 
 CGameController_zCatch::~CGameController_zCatch() {
 	/* wait for all threads */
 	for (auto &thread: rankingThreads)
 		thread.join();
+}
+
+/* ranking system: create zcatch score table */
+void CGameController_zCatch::OnInitRanking(sqlite3 *rankingDb) {
+	char *zErrMsg = 0;
+	int rc = sqlite3_exec(GameServer()->GetRankingDb(), "CREATE TABLE IF NOT EXISTS zCatchScore(username TEXT PRIMARY KEY, score INTEGER DEFAULT 0);", NULL, 0, &zErrMsg);
+	if (rc != SQLITE_OK) {
+		char aBuf[512];
+		str_format(aBuf, sizeof(aBuf), "SQL error (#%d): %s\n", rc, zErrMsg);
+		GameServer()->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "ranking", aBuf);
+		sqlite3_free(zErrMsg);
+		exit(1);
+	}
 }
 
 void CGameController_zCatch::Tick()
@@ -272,7 +275,7 @@ bool CGameController_zCatch::OnEntity(int Index, vec2 Pos)
 void CGameController_zCatch::RewardWinner(int winnerId, int numEnemies) {
 	
 	/* calculate points (multiplied with 100) */
-	int points = 100 * numEnemies * numEnemies * numEnemies / 225 + 1;
+	int points = 100 * numEnemies * numEnemies * numEnemies / 225;
 	
 	/* abort if no points */
 	if (points == 0)
