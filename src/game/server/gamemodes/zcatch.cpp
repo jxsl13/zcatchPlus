@@ -526,7 +526,7 @@ void CGameController_zCatch::ChatCommandRankFetchDataAndPrint(int clientId, char
 			int scoreToNextRank = sqlite3_column_int(pStmt, 8);
 			
 			char aBuf[512];
-			str_format(aBuf, sizeof(aBuf), "'%s' is rank %d with a score of %.*f points (%d wins, %d kills, %d deaths, %d shots, %d spree, %d:%02dh played, %.*f points for next rank)", name, rank, score % 100 ? 2 : 0, score/100.0, numWins, numKills, numDeaths, numShots, highestSpree, timePlayed / 3600, timePlayed / 60 % 60, scoreToNextRank % 100 ? 2 : 0, scoreToNextRank/100.0);
+			str_format(aBuf, sizeof(aBuf), "'%s' is rank %d with a score of %.*f points (%d wins, %d kills, %d deaths, %d shots, spree of %d, %d:%02dh played, %.*f points for next rank)", name, rank, score % 100 ? 2 : 0, score/100.0, numWins, numKills, numDeaths, numShots, highestSpree, timePlayed / 3600, timePlayed / 60 % 60, scoreToNextRank % 100 ? 2 : 0, scoreToNextRank/100.0);
 			GameServer()->SendChatTarget(clientId, aBuf);
 		}
 		else if (row == SQLITE_DONE)
