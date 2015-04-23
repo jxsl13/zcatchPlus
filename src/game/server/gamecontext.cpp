@@ -1394,7 +1394,7 @@ void CGameContext::OnMessage(int MsgID, CUnpacker *pUnpacker, int ClientID)
 		if(pPlayer->HasZCatchVictims())
 		{
 			int lastVictim = pPlayer->LastZCatchVictim();
-			pPlayer->ReleaseZCatchVictim(CPlayer::ZCATCH_RELEASE_ALL, 1);
+			pPlayer->ReleaseZCatchVictim(CPlayer::ZCATCH_RELEASE_ALL, 1, true);
 			int nextToRelease = pPlayer->LastZCatchVictim();
 			char aBuf[128], bBuf[128];
 			str_format(bBuf, sizeof(bBuf), ", next: %s", Server()->ClientName(nextToRelease));

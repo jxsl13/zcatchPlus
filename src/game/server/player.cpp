@@ -36,6 +36,7 @@ CPlayer::CPlayer(CGameContext *pGameServer, int ClientID, int Team)
 	m_ZCatchVictims = NULL;
 	m_zCatchNumVictims = 0;
 	m_zCatchNumKillsInARow = 0;
+	m_zCatchNumKillsReleased = 0;
 	
 	// ranking system
 	m_RankCache.m_Points = 0;
@@ -446,7 +447,7 @@ void CPlayer::AddZCatchVictim(int ClientID, int reason)
 }
 
 // release one or more of the victims
-void CPlayer::ReleaseZCatchVictim(int ClientID, int limit)
+void CPlayer::ReleaseZCatchVictim(int ClientID, int limit, bool manual)
 {
 	CZCatchVictim **v = &m_ZCatchVictims;
 	CZCatchVictim *tmp;
@@ -471,6 +472,13 @@ void CPlayer::ReleaseZCatchVictim(int ClientID, int limit)
 			delete *v;
 			*v = tmp;
 			--m_zCatchNumVictims;
+			
+			// count releases of players you killed
+			if (manual && (*v)->Reason == ZCATCH_CAUGHT_REASON_KILLED)
+			{
+				++m_zCatchNumKillsReleased;
+			}
+			
 			if (limit && ++count >= limit)
 				return;
 		}

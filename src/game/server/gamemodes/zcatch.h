@@ -13,7 +13,7 @@ class CGameController_zCatch: public IGameController
 {
 	int m_OldMode;
 	
-	void RewardWinner(int winnerId, int numEnemies);
+	void RewardWinner(int winnerId);
 	
 	/* ranking system */
 	std::vector<std::thread> rankingThreads;

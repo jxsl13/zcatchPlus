@@ -122,7 +122,7 @@ void CGameController_zCatch::DoWincheck()
 				// give the winner points
 				if (winnerId > -1)
 				{
-					RewardWinner(winnerId, Players_Ingame - 1);
+					RewardWinner(winnerId);
 				}
 				
 				EndRound();
@@ -173,6 +173,7 @@ int CGameController_zCatch::OnCharacterDeath(class CCharacter *pVictim, class CP
 	// release all the victim's victims
 	victim->ReleaseZCatchVictim(CPlayer::ZCATCH_RELEASE_ALL);
 	victim->m_zCatchNumKillsInARow = 0;
+	victim->m_zCatchNumKillsReleased = 0;
 
 	// Update colours
 	OnPlayerInfoChange(victim);
@@ -306,9 +307,10 @@ bool CGameController_zCatch::OnEntity(int Index, vec2 Pos)
 }
 
 /* celebration and scoring */
-void CGameController_zCatch::RewardWinner(int winnerId, int numEnemies) {
+void CGameController_zCatch::RewardWinner(int winnerId) {
 	
 	CPlayer *winner = GameServer()->m_apPlayers[winnerId];
+	int numEnemies = min(15, winner->m_zCatchNumKillsInARow - winner->m_zCatchNumKillsReleased);
 	
 	/* calculate points (multiplied with 100) */
 	int points = 100 * numEnemies * numEnemies * numEnemies / 225;
