@@ -477,11 +477,13 @@ void CGameController_zCatch::OnChatCommandOwnRank(CPlayer *pPlayer)
 /* when a player typed /top into the chat */
 void CGameController_zCatch::OnChatCommandRank(CPlayer *pPlayer, const char *name)
 {
-	rankingThreads.push_back(std::thread(&CGameController_zCatch::ChatCommandRankFetchDataAndPrint, this, pPlayer->GetCID(), name));
+	char nameCopy[MAX_NAME_LENGTH];
+	str_copy(nameCopy, name, sizeof(nameCopy));
+	rankingThreads.push_back(std::thread(&CGameController_zCatch::ChatCommandRankFetchDataAndPrint, this, pPlayer->GetCID(), nameCopy));
 }
 
 /* get the top players */
-void CGameController_zCatch::ChatCommandRankFetchDataAndPrint(int clientId, const char *name)
+void CGameController_zCatch::ChatCommandRankFetchDataAndPrint(int clientId, char name[MAX_NAME_LENGTH])
 {
 	
 	/* prepare */

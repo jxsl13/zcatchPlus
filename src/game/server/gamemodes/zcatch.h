@@ -18,7 +18,7 @@ class CGameController_zCatch: public IGameController
 	/* ranking system */
 	std::vector<std::thread> rankingThreads;
 	void ChatCommandTopFetchDataAndPrint(int clientId);
-	void ChatCommandRankFetchDataAndPrint(int clientId, const char *name);
+	void ChatCommandRankFetchDataAndPrint(int clientId, char name[MAX_NAME_LENGTH]);
 	void SaveScore(const char *name, int score, int numWins, int numKills, int numDeaths, int numShots, int highestSpree, int timePlayed);
 
 public:
