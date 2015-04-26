@@ -182,7 +182,7 @@ int CGameController_zCatch::OnCharacterDeath(class CCharacter *pVictim, class CP
 	
 	// ranking
 	++victim->m_RankCache.m_NumDeaths;
-	if(pKiller != victim)
+	if(pKiller != victim && WeaponID != WEAPON_GAME)
 	{
 		++pKiller->m_RankCache.m_NumKills;
 		if (WeaponID == WEAPON_RIFLE && pVictim->m_TookBouncedWallshotDamage)
