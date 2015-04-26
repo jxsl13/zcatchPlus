@@ -147,7 +147,7 @@ public:
 	/* ranking system */
 	virtual void SaveRanking(CPlayer *player) {}
 	virtual void OnInitRanking(sqlite3 *rankingDb) {}
-	virtual void OnChatCommandTop(CPlayer *pPlayer) {}
+	virtual void OnChatCommandTop(CPlayer *pPlayer, const char *category = "") {}
 	virtual void OnChatCommandOwnRank(CPlayer *pPlayer) {}
 	virtual void OnChatCommandRank(CPlayer *pPlayer, const char *name) {}
 };

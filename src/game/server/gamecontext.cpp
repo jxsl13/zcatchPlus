@@ -1009,6 +1009,17 @@ void CGameContext::OnMessage(int MsgID, CUnpacker *pUnpacker, int ClientID)
 			{
 				m_pController->OnChatCommandTop(pPlayer);
 			}
+			else if(!str_comp_nocase_num("top ", pMsg->m_pMessage + 1, 4) || !str_comp_nocase_num("top5 ", pMsg->m_pMessage + 1, 5))
+			{
+				char *category = str_skip_whitespaces((char*)pMsg->m_pMessage + 5);
+				int length = str_length(category);
+				/* trim right */
+				while (length > 0 && str_skip_whitespaces(category + length - 1) >= (category + length)) {
+					--length;
+					category[length] = 0;
+				}
+				m_pController->OnChatCommandTop(pPlayer, category);
+			}
 			else if(!str_comp_nocase("rank", pMsg->m_pMessage + 1))
 			{
 				m_pController->OnChatCommandOwnRank(pPlayer);

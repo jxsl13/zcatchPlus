@@ -448,8 +448,6 @@ void CGameController_zCatch::SaveScore(const char *name, int score, int numWins,
 		
 		/* unlock database access */
 		GameServer()->UnlockRankingDb();
-		
-		sqlite3_finalize(pStmt);
 	}
 	else
 	{
@@ -459,21 +457,66 @@ void CGameController_zCatch::SaveScore(const char *name, int score, int numWins,
 		GameServer()->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "ranking", aBuf);
 	}
 	
+	sqlite3_finalize(pStmt);
+	
 }
 
 /* when a player typed /top into the chat */
-void CGameController_zCatch::OnChatCommandTop(CPlayer *pPlayer)
+void CGameController_zCatch::OnChatCommandTop(CPlayer *pPlayer, const char *category)
 {
-	rankingThreads.push_back(std::thread(&CGameController_zCatch::ChatCommandTopFetchDataAndPrint, this, pPlayer->GetCID()));
+	const char *column;
+	
+	if (!str_comp_nocase("score", category) || !str_comp_nocase("", category))
+	{
+		column = "score";
+	}
+	else if (!str_comp_nocase("wins", category))
+	{
+		column = "numWins";
+	}
+	else if (!str_comp_nocase("kills", category))
+	{
+		column = "numKills";
+	}
+	else if (!str_comp_nocase("wallshotkills", category))
+	{
+		column = "numKillsWallshot";
+	}
+	else if (!str_comp_nocase("deaths", category))
+	{
+		column = "numDeaths";
+	}
+	else if (!str_comp_nocase("shots", category))
+	{
+		column = "numShots";
+	}
+	else if (!str_comp_nocase("spree", category))
+	{
+		column = "highestSpree";
+	}
+	else if (!str_comp_nocase("time", category))
+	{
+		column = "timePlayed";
+	}
+	
+	else
+	{
+		GameServer()->SendChatTarget(pPlayer->GetCID(), "Usage: /top [score|wins|kills|wallshotkills|deaths|shots|spree|time]");
+		return;
+	}
+	
+	rankingThreads.push_back(std::thread(&CGameController_zCatch::ChatCommandTopFetchDataAndPrint, this, pPlayer->GetCID(), column));
 }
 
 /* get the top players */
-void CGameController_zCatch::ChatCommandTopFetchDataAndPrint(int clientId)
+void CGameController_zCatch::ChatCommandTopFetchDataAndPrint(int clientId, const char *column)
 {
 	
 	/* prepare */
 	const char *zTail;
-	const char *zSql = "SELECT username, score FROM zCatch ORDER BY score DESC LIMIT 5;";
+	char sqlBuf[128];
+	str_format(sqlBuf, sizeof(sqlBuf), "SELECT username, %s FROM zCatch ORDER BY %s DESC LIMIT 5;", column, column);
+	const char *zSql = sqlBuf;
 	sqlite3_stmt *pStmt;
 	int rc = sqlite3_prepare_v2(GameServer()->GetRankingDb(), zSql, strlen(zSql), &pStmt, &zTail);
 	
@@ -493,9 +536,10 @@ void CGameController_zCatch::ChatCommandTopFetchDataAndPrint(int clientId)
 			while ((rc = sqlite3_step(pStmt)) == SQLITE_ROW)
 			{
 				const unsigned char* name = sqlite3_column_text(pStmt, 0);
-				int score = sqlite3_column_int(pStmt, 1);
-				char aBuf[64];
-				str_format(aBuf, sizeof(aBuf), "[%.*f] %s", score % 100 ? 2 : 0, score/100.0, name);
+				int value = sqlite3_column_int(pStmt, 1);
+				char aBuf[64], bBuf[32];
+				FormatRankingColumn(column, bBuf, value);
+				str_format(aBuf, sizeof(aBuf), "[%s] %s", bBuf, name);
 				/* if the player left and the client id is unused, nothing will happen */
 				/* if another player joined, there is no big harm that he receives it */
 				/* maybe later i have a good idea how to prevent this */
@@ -519,8 +563,6 @@ void CGameController_zCatch::ChatCommandTopFetchDataAndPrint(int clientId)
 		{
 			GameServer()->SendChatTarget(clientId, "Could not load top ranks. Try again later.");
 		}
-		
-		sqlite3_finalize(pStmt);
 	}
 	else
 	{
@@ -529,6 +571,8 @@ void CGameController_zCatch::ChatCommandTopFetchDataAndPrint(int clientId)
 		str_format(aBuf, sizeof(aBuf), "SQL error (#%d): %s", rc, sqlite3_errmsg(GameServer()->GetRankingDb()));
 		GameServer()->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "ranking", aBuf);
 	}
+	
+	sqlite3_finalize(pStmt);
 }
 
 /* when a player typed /top into the chat */
@@ -637,8 +681,6 @@ void CGameController_zCatch::ChatCommandRankFetchDataAndPrint(int clientId, char
 			str_format(aBuf, sizeof(aBuf), "Could not get rank of '%s'. Try again later.", name);
 			GameServer()->SendChatTarget(clientId, aBuf);
 		}
-		
-		sqlite3_finalize(pStmt);
 	}
 	else
 	{
@@ -648,5 +690,16 @@ void CGameController_zCatch::ChatCommandRankFetchDataAndPrint(int clientId, char
 		GameServer()->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "ranking", aBuf);
 	}
 	
+	sqlite3_finalize(pStmt);
 	free(name);
+}
+
+void CGameController_zCatch::FormatRankingColumn(const char* column, char buf[32], int value)
+{
+	if (!str_comp_nocase("score", column))
+		str_format(buf, sizeof(buf), "%.*f", value % 100 ? 2 : 0, value/100.0);
+	else if (!str_comp_nocase("timePlayed", column))
+		str_format(buf, sizeof(buf), "%d:%02dh", value/3600, value/60 % 60);
+	else
+		str_format(buf, sizeof(buf), "%d", value);
 }

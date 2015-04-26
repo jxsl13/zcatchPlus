@@ -17,9 +17,10 @@ class CGameController_zCatch: public IGameController
 	
 	/* ranking system */
 	std::vector<std::thread> rankingThreads;
-	void ChatCommandTopFetchDataAndPrint(int clientId);
+	void ChatCommandTopFetchDataAndPrint(int clientId, const char *column);
 	void ChatCommandRankFetchDataAndPrint(int clientId, char *name);
 	void SaveScore(const char *name, int score, int numWins, int numKills, int numKillsWallshot, int numDeaths, int numShots, int highestSpree, int timePlayed);
+	static void FormatRankingColumn(const char* column, char buf[32], int value);
 
 public:
 	CGameController_zCatch(class CGameContext *pGameServer);
@@ -38,7 +39,7 @@ public:
 	/* ranking system */
 	virtual void SaveRanking(CPlayer *player);
 	virtual void OnInitRanking(sqlite3 *rankingDb);
-	virtual void OnChatCommandTop(CPlayer *pPlayer);
+	virtual void OnChatCommandTop(CPlayer *pPlayer, const char *category = "");
 	virtual void OnChatCommandOwnRank(CPlayer *pPlayer);
 	virtual void OnChatCommandRank(CPlayer *pPlayer, const char *name);
 };
