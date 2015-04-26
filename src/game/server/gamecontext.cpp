@@ -853,10 +853,38 @@ void CGameContext::OnMessage(int MsgID, CUnpacker *pUnpacker, int ClientID)
 			}
 			else if(!str_comp_nocase("help", pMsg->m_pMessage + 1))
 			{
+				SendChatTarget(ClientID, "--- Help topics ---");
+				SendChatTarget(ClientID, "/help 1: zCatch/TeeVi");
+				SendChatTarget(ClientID, "/help 2: releasing");
+				SendChatTarget(ClientID, "/help 3: writing PMs");
+				SendChatTarget(ClientID, "/help 4: ranking system");
+			}
+			else if(!str_comp_nocase("help 1", pMsg->m_pMessage + 1))
+			{
+				SendChatTarget(ClientID, "--- Help 1 / 4 ---");
+				SendChatTarget(ClientID, "Players you catch (kill) join again when you die. Catch everyone to win.");
+				SendChatTarget(ClientID, "/kills: list of players you caught");
 				SendChatTarget(ClientID, "/victims: who is waiting for your death");
-				SendChatTarget(ClientID, "/kills: list of players you killed");
+			}
+			else if(!str_comp_nocase("help 2", pMsg->m_pMessage + 1))
+			{
+				SendChatTarget(ClientID, "--- Help 2 / 4 ---");
+				SendChatTarget(ClientID, "On suicide via console the last victim is released instead. You die if there is noone to release. The console command for suicide is 'kill'.");
+			}
+			else if(!str_comp_nocase("help 3", pMsg->m_pMessage + 1))
+			{
+				SendChatTarget(ClientID, "--- Help 3 / 4 ---");
+				SendChatTarget(ClientID, "You can write private messages:");
 				SendChatTarget(ClientID, "/t <name> <msg>: write PM to <name>");
 				SendChatTarget(ClientID, "/ti <id> <msg>: write PM via ID");
+			}
+			else if(!str_comp_nocase("help 4", pMsg->m_pMessage + 1))
+			{
+				SendChatTarget(ClientID, "--- Help 4 / 4 ---");
+				SendChatTarget(ClientID, "The ranking system saves various stats about players.");
+				SendChatTarget(ClientID, "/top: display top 5 players");
+				SendChatTarget(ClientID, "/rank [<name>]: display player's rank");
+				SendChatTarget(ClientID, "/rank: display own rank");
 			}
 			else if(!str_comp_nocase("victims", pMsg->m_pMessage + 1))
 			{
