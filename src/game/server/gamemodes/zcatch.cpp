@@ -350,7 +350,7 @@ void CGameController_zCatch::RewardWinner(int winnerId) {
 	/* announce in chat */
 	char aBuf[96];
 	str_format(aBuf, sizeof(aBuf), "Winner '%s' gets %.2f points.", name, points/100.0);
-	GameServer()->SendChatTarget(-1, aBuf);
+	GameServer()->SendChat(-1, CGameContext::CHAT_ALL, aBuf);
 	
 }
 
