@@ -75,18 +75,6 @@ void CGameController_zCatch::Tick()
 		m_OldMode = g_Config.m_SvMode;
 	}
 	
-	// save rankings every minute
-	if (Server()->Tick() % (Server()->TickSpeed() * 60) == 0)
-	{
-		for(int i = 0; i < MAX_CLIENTS; i++)
-		{
-			if(GameServer()->m_apPlayers[i])
-			{
-				SaveRanking(GameServer()->m_apPlayers[i]);
-			}
-		}
-	}
-	
 }
 
 void CGameController_zCatch::DoWincheck()
