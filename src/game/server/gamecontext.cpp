@@ -876,6 +876,13 @@ void CGameContext::OnMessage(int MsgID, CUnpacker *pUnpacker, int ClientID)
 					SendChatTarget(ClientID, aBuf);
 				}
 			}
+			else if(!str_comp_nocase("cmdlist", pMsg->m_pMessage + 1))
+			{
+				if (RankingEnabled())
+					SendChatTarget(ClientID, "Chat commands: /info, /help, /kills, /victims, /t <name> <msg>, /ti <id> <msg>, /top, /rank [<name>]");
+				else
+					SendChatTarget(ClientID, "Chat commands: /info, /help, /kills, /victims, /t <name> <msg>, /ti <id> <msg>");
+			}
 			else if(!str_comp_nocase("help", pMsg->m_pMessage + 1))
 			{
 				SendChatTarget(ClientID, "--- Help topics ---");
