@@ -69,10 +69,9 @@ void CGameController_zCatch::Tick()
 {
 	IGameController::Tick();
 
-	if(m_OldMode != g_Config.m_SvMode)
+	if(m_OldMode != g_Config.m_SvMode && !GameServer()->m_World.m_Paused)
 	{
-		Server()->MapReload();
-		m_OldMode = g_Config.m_SvMode;
+		EndRound();
 	}
 	
 }
@@ -208,6 +207,14 @@ void CGameController_zCatch::OnPlayerInfoChange(class CPlayer *pP)
 
 void CGameController_zCatch::StartRound()
 {
+	
+	// if sv_mode changed: restart map (with new mode then)
+	if(m_OldMode != g_Config.m_SvMode)
+	{
+		m_OldMode = g_Config.m_SvMode;
+		Server()->MapReload();
+	}
+	
 	IGameController::StartRound();
 
 	for(int i = 0; i < MAX_CLIENTS; i++)
@@ -218,6 +225,7 @@ void CGameController_zCatch::StartRound()
 			GameServer()->m_apPlayers[i]->m_Deaths = 0;
 			GameServer()->m_apPlayers[i]->m_TicksSpec = 0;
 			GameServer()->m_apPlayers[i]->m_TicksIngame = 0;
+			GameServer()->m_apPlayers[i]->RankCacheStartPlaying();
 		}
 	}
 }
@@ -266,6 +274,7 @@ void CGameController_zCatch::EndRound()
 			
 			// save ranking stats
 			SaveRanking(GameServer()->m_apPlayers[i]);
+			GameServer()->m_apPlayers[i]->RankCacheStopPlaying();
 
 			if(!GameServer()->m_apPlayers[i]->m_SpecExplicit)
 			{

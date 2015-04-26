@@ -57,6 +57,15 @@ CGameContext::CGameContext()
 
 CGameContext::~CGameContext()
 {
+	
+	/* ranking db */
+	/* wait for all threads */
+	for (auto &thread: m_RankingThreads)
+	{
+		thread->join();
+		delete thread;
+	}
+		
 	for(int i = 0; i < MAX_CLIENTS; i++)
 		delete m_apPlayers[i];
 	
@@ -64,13 +73,6 @@ CGameContext::~CGameContext()
 	{
 		delete m_pVoteOptionHeap;
 		
-		/* ranking db */
-		/* wait for all threads */
-		for (auto &thread: m_RankingThreads)
-		{
-			thread->join();
-			delete thread;
-		}
 		/* close ranking db */
 		sqlite3_close(m_RankingDb);
 	}
