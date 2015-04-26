@@ -26,21 +26,22 @@ for (( c = 0; c < $NUM_ENTRIES; c++ )); do
 			username, score, numWins, numKills, numKillsWallshot, numDeaths, numShots, highestSpree, timePlayed
 		)
 		SELECT
-			username,
-			score + $SCORE,
-			numWins + $NUM_WINS,
-			numKills + $NUM_KILLS,
-			numKillsWallshot + $NUM_KILLS_WALLSHOT,
-			numDeaths + $NUM_DEATHS,
-			numShots + $NUM_SHOTS,
-			MAX(highestSpree, $HIGHEST_SPREE),
-			timePlayed + $TIME_PLAYED
-		FROM (SELECT 1)
+			new.username,
+			COALESCE(old.score, 0) + $SCORE,
+			COALESCE(old.numWins, 0) + $NUM_WINS,
+			COALESCE(old.numKills, 0) + $NUM_KILLS,
+			COALESCE(old.numKillsWallshot, 0) + $NUM_KILLS_WALLSHOT,
+			COALESCE(old.numDeaths, 0) + $NUM_DEATHS,
+			COALESCE(old.numShots, 0) + $NUM_SHOTS,
+			MAX(COALESCE(old.highestSpree, 0), $HIGHEST_SPREE),
+			COALESCE(old.timePlayed, 0) + $TIME_PLAYED
+		FROM (
+			SELECT \"$USERNAME\" as username
+		) new
 		LEFT JOIN (
 			SELECT *
 			FROM zCatch
-			WHERE username = \"$USERNAME\"
-		);"
+		) old ON old.username = new.username;"
 	
 	sleep 0.005
 	

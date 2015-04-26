@@ -380,21 +380,23 @@ void CGameController_zCatch::SaveScore(const char *name, int score, int numWins,
 			username, score, numWins, numKills, numKillsWallshot, numDeaths, numShots, highestSpree, timePlayed \
 		) \
 		SELECT \
-			username, \
-			score + ?2, \
-			numWins + ?3, \
-			numKills + ?4, \
-			numKillsWallshot + ?5, \
-			numDeaths + ?6, \
-			numShots + ?7, \
-			MAX(highestSpree, ?8), \
-			timePlayed + ?9 \
-		FROM (SELECT 1) \
+			new.username, \
+			COALESCE(old.score, 0) + ?2, \
+			COALESCE(old.numWins, 0) + ?3, \
+			COALESCE(old.numKills, 0) + ?4, \
+			COALESCE(old.numKillsWallshot, 0) + ?5, \
+			COALESCE(old.numDeaths, 0) + ?6, \
+			COALESCE(old.numShots, 0) + ?7, \
+			MAX(COALESCE(old.highestSpree, 0), ?8), \
+			COALESCE(old.timePlayed, 0) + ?9 \
+		FROM ( \
+			SELECT ?1 as username \
+		) new \
 		LEFT JOIN ( \
 			SELECT * \
 			FROM zCatch \
-			WHERE username = ?1 \
-		);";
+		) old ON old.username = new.username; \
+		";
 	sqlite3_stmt *pStmt;
 	int rc = sqlite3_prepare_v2(GameServer()->GetRankingDb(), zSql, strlen(zSql), &pStmt, &zTail);
 	
