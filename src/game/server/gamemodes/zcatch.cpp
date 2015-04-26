@@ -392,6 +392,11 @@ void CGameController_zCatch::SaveRanking(CPlayer *player) {
 /* adds the score to the player */
 void CGameController_zCatch::SaveScore(CGameContext* GameServer, const char *name, int score, int numWins, int numKills, int numKillsWallshot, int numDeaths, int numShots, int highestSpree, int timePlayed) {
 
+	/* debug */
+	char aBuf[512];
+	str_format(aBuf, sizeof(aBuf), "Saving user stats of '%s'", name);
+	GameServer->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "ranking", aBuf);
+
 	/* prepare */
 	const char *zTail;
 	const char *zSql = "\

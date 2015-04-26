@@ -64,10 +64,6 @@ CPlayer::CPlayer(CGameContext *pGameServer, int ClientID, int Team)
 CPlayer::~CPlayer()
 {
 	
-	// save ranking stats
-	if (GameServer()->m_pController != NULL)
-		GameServer()->m_pController->SaveRanking(this);
-	
 	while(m_ZCatchVictims != NULL)
 	{
 		CZCatchVictim *tmp = m_ZCatchVictims;
@@ -228,6 +224,9 @@ void CPlayer::Snap(int SnappingClient)
 void CPlayer::OnDisconnect(const char *pReason)
 {
 	KillCharacter();
+	
+	// save ranking stats
+	GameServer()->m_pController->SaveRanking(this);
 
 	if(Server()->ClientIngame(m_ClientID))
 	{
