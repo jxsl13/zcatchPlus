@@ -2199,6 +2199,23 @@ bool CGameContext::IsClientAimBot(int ClientID)
 	return m_apPlayers[ClientID] && m_apPlayers[ClientID]->m_IsAimBot;
 }
 
+/* wait given ms to lock ranking db, if time is negative wait until database is unlocked */
+bool CGameContext::LockRankingDb(int ms)
+{
+	if (ms < 0)
+	{
+		m_RankingDbMutex.lock();
+		return true;
+	}
+	return m_RankingDbMutex.try_lock_for(std::chrono::milliseconds(ms));
+}
+
+/* unlock ranking db */
+void CGameContext::UnlockRankingDb()
+{
+	m_RankingDbMutex.unlock();
+}
+
 const char *CGameContext::GameType() { return m_pController && m_pController->m_pGameType ? m_pController->m_pGameType : ""; }
 const char *CGameContext::Version() { return GAME_VERSION; }
 const char *CGameContext::NetVersion() { return GAME_NETVERSION; }

@@ -27,6 +27,13 @@ CGameController_zCatch::~CGameController_zCatch() {
 /* ranking system: create zcatch score table */
 void CGameController_zCatch::OnInitRanking(sqlite3 *rankingDb) {
 	char *zErrMsg = 0;
+		
+	/* lock database access in this process */
+	GameServer()->LockRankingDb();
+	
+	/* when another process uses the database, wait up to 10 seconds */
+	sqlite3_busy_timeout(GameServer()->GetRankingDb(), 10000);
+	
 	int rc = sqlite3_exec(GameServer()->GetRankingDb(), "\
 			BEGIN; \
 			CREATE TABLE IF NOT EXISTS zCatch( \
@@ -43,6 +50,11 @@ void CGameController_zCatch::OnInitRanking(sqlite3 *rankingDb) {
 			CREATE INDEX IF NOT EXISTS zCatch_score_index ON zCatch (score); \
 			COMMIT; \
 		", NULL, 0, &zErrMsg);
+	
+	/* unlock database access */
+	GameServer()->UnlockRankingDb();
+	
+	/* check for error */
 	if (rc != SQLITE_OK) {
 		char aBuf[512];
 		str_format(aBuf, sizeof(aBuf), "SQL error (#%d): %s\n", rc, zErrMsg);
@@ -413,8 +425,30 @@ void CGameController_zCatch::SaveScore(const char *name, int score, int numWins,
 		sqlite3_bind_int(pStmt, 8, highestSpree);
 		sqlite3_bind_int(pStmt, 9, timePlayed);
 		
+		/* lock database access in this process */
+		GameServer()->LockRankingDb();
+		
+		/* when another process uses the database, wait up to 1 minute */
+		sqlite3_busy_timeout(GameServer()->GetRankingDb(), 60000);
+		
 		/* save to database */
-		sqlite3_step(pStmt);
+		switch (sqlite3_step(pStmt))
+		{
+			case SQLITE_DONE:
+				/* nothing */
+				break;
+			case SQLITE_BUSY:
+				GameServer()->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "ranking", "Error: could not save records (timeout).");
+				break;
+			default:
+				char aBuf[512];
+				str_format(aBuf, sizeof(aBuf), "SQL error (#%d): %s", rc, sqlite3_errmsg(GameServer()->GetRankingDb()));
+				GameServer()->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "ranking", aBuf);
+		}
+		
+		/* unlock database access */
+		GameServer()->UnlockRankingDb();
+		
 		sqlite3_finalize(pStmt);
 	}
 	else
@@ -445,24 +479,45 @@ void CGameController_zCatch::ChatCommandTopFetchDataAndPrint(int clientId)
 	
 	if (rc == SQLITE_OK)
 	{
-		/* fetch from database */
-		int numRows = 0;
-		while (sqlite3_step(pStmt) == SQLITE_ROW)
-		{
-			const unsigned char* name = sqlite3_column_text(pStmt, 0);
-			int score = sqlite3_column_int(pStmt, 1);
-			char aBuf[64];
-			str_format(aBuf, sizeof(aBuf), "[%.*f] %s", score % 100 ? 2 : 0, score/100.0, name);
-			/* if the player left and the client id is unused, nothing will happen */
-			/* if another player joined, there is no big harm that he receives it */
-			/* maybe later i have a good idea how to prevent this */
-			GameServer()->SendChatTarget(clientId, aBuf);
-			++numRows;
-		}
 		
-		if (numRows == 0)
+		/* lock database access in this process, but wait maximum 1 second */
+		if (GameServer()->LockRankingDb(1000))
 		{
-			GameServer()->SendChatTarget(clientId, "There are no ranks");
+			
+			/* when another process uses the database, wait up to 1 second */
+			sqlite3_busy_timeout(GameServer()->GetRankingDb(), 1000);
+			
+			/* fetch from database */
+			int numRows = 0;
+			int rc;
+			while ((rc = sqlite3_step(pStmt)) == SQLITE_ROW)
+			{
+				const unsigned char* name = sqlite3_column_text(pStmt, 0);
+				int score = sqlite3_column_int(pStmt, 1);
+				char aBuf[64];
+				str_format(aBuf, sizeof(aBuf), "[%.*f] %s", score % 100 ? 2 : 0, score/100.0, name);
+				/* if the player left and the client id is unused, nothing will happen */
+				/* if another player joined, there is no big harm that he receives it */
+				/* maybe later i have a good idea how to prevent this */
+				GameServer()->SendChatTarget(clientId, aBuf);
+				++numRows;
+			}
+			
+			/* unlock database access */
+			GameServer()->UnlockRankingDb();
+			
+			if (numRows == 0)
+			{
+				if (rc == SQLITE_BUSY)
+					GameServer()->SendChatTarget(clientId, "Could not load top ranks. Try again later.");
+				else
+					GameServer()->SendChatTarget(clientId, "There are no ranks");
+			}
+			
+		}
+		else
+		{
+			GameServer()->SendChatTarget(clientId, "Could not load top ranks. Try again later.");
 		}
 		
 		sqlite3_finalize(pStmt);
@@ -519,37 +574,67 @@ void CGameController_zCatch::ChatCommandRankFetchDataAndPrint(int clientId, char
 		/* bind parameters in query */
 		sqlite3_bind_text(pStmt, 1, name, strlen(name), 0);
 		
-		/* fetch from database */
-		int row = sqlite3_step(pStmt);
-		if (row == SQLITE_ROW)
+		/* lock database access in this process, but wait maximum 1 second */
+		if (GameServer()->LockRankingDb(1000))
 		{
-		
-			int score = sqlite3_column_int(pStmt, 0);
-			int numWins = sqlite3_column_int(pStmt, 1);
-			int numKills = sqlite3_column_int(pStmt, 2);
-			int numKillsWallshot = sqlite3_column_int(pStmt, 3);
-			int numDeaths = sqlite3_column_int(pStmt, 4);
-			int numShots = sqlite3_column_int(pStmt, 5);
-			int highestSpree = sqlite3_column_int(pStmt, 6);
-			int timePlayed = sqlite3_column_int(pStmt, 7);
-			int rank = sqlite3_column_int(pStmt, 8);
-			int scoreToNextRank = sqlite3_column_int(pStmt, 9);
 			
-			char aBuf[512];
-			if (g_Config.m_SvMode == 1) // laser
+			/* when another process uses the database, wait up to 1 second */
+			sqlite3_busy_timeout(GameServer()->GetRankingDb(), 1000);
+			
+			/* fetch from database */
+			int row = sqlite3_step(pStmt);
+			
+			/* unlock database access */
+			GameServer()->UnlockRankingDb();
+			
+			/* result row was fetched */
+			if (row == SQLITE_ROW)
 			{
-				str_format(aBuf, sizeof(aBuf), "'%s' is rank %d with a score of %.*f points (%d wins, %d kills (%d wallshot), %d deaths, %d shots, spree of %d, %d:%02dh played, %.*f points for next rank)", name, rank, score % 100 ? 2 : 0, score/100.0, numWins, numKills, numKillsWallshot, numDeaths, numShots, highestSpree, timePlayed / 3600, timePlayed / 60 % 60, scoreToNextRank % 100 ? 2 : 0, scoreToNextRank/100.0);
+			
+				int score = sqlite3_column_int(pStmt, 0);
+				int numWins = sqlite3_column_int(pStmt, 1);
+				int numKills = sqlite3_column_int(pStmt, 2);
+				int numKillsWallshot = sqlite3_column_int(pStmt, 3);
+				int numDeaths = sqlite3_column_int(pStmt, 4);
+				int numShots = sqlite3_column_int(pStmt, 5);
+				int highestSpree = sqlite3_column_int(pStmt, 6);
+				int timePlayed = sqlite3_column_int(pStmt, 7);
+				int rank = sqlite3_column_int(pStmt, 8);
+				int scoreToNextRank = sqlite3_column_int(pStmt, 9);
+				
+				char aBuf[512];
+				if (g_Config.m_SvMode == 1) // laser
+				{
+					str_format(aBuf, sizeof(aBuf), "'%s' is rank %d with a score of %.*f points (%d wins, %d kills (%d wallshot), %d deaths, %d shots, spree of %d, %d:%02dh played, %.*f points for next rank)", name, rank, score % 100 ? 2 : 0, score/100.0, numWins, numKills, numKillsWallshot, numDeaths, numShots, highestSpree, timePlayed / 3600, timePlayed / 60 % 60, scoreToNextRank % 100 ? 2 : 0, scoreToNextRank/100.0);
+				}
+				else
+				{
+					str_format(aBuf, sizeof(aBuf), "'%s' is rank %d with a score of %.*f points (%d wins, %d kills, %d deaths, %d shots, spree of %d, %d:%02dh played, %.*f points for next rank)", name, rank, score % 100 ? 2 : 0, score/100.0, numWins, numKills, numDeaths, numShots, highestSpree, timePlayed / 3600, timePlayed / 60 % 60, scoreToNextRank % 100 ? 2 : 0, scoreToNextRank/100.0);
+				}
+				GameServer()->SendChatTarget(clientId, aBuf);
 			}
-			else
+			
+			/* database is locked */
+			else if (row == SQLITE_BUSY)
 			{
-				str_format(aBuf, sizeof(aBuf), "'%s' is rank %d with a score of %.*f points (%d wins, %d kills, %d deaths, %d shots, spree of %d, %d:%02dh played, %.*f points for next rank)", name, rank, score % 100 ? 2 : 0, score/100.0, numWins, numKills, numDeaths, numShots, highestSpree, timePlayed / 3600, timePlayed / 60 % 60, scoreToNextRank % 100 ? 2 : 0, scoreToNextRank/100.0);
+				char aBuf[64];
+				str_format(aBuf, sizeof(aBuf), "Could not get rank of '%s'. Try again later.", name);
+				GameServer()->SendChatTarget(clientId, aBuf);
 			}
-			GameServer()->SendChatTarget(clientId, aBuf);
+			
+			/* no result found */
+			else if (row == SQLITE_DONE)
+			{
+				char aBuf[64];
+				str_format(aBuf, sizeof(aBuf), "'%s' has no rank", name);
+				GameServer()->SendChatTarget(clientId, aBuf);
+			}
+			
 		}
-		else if (row == SQLITE_DONE)
+		else
 		{
 			char aBuf[64];
-			str_format(aBuf, sizeof(aBuf), "'%s' has no rank", name);
+			str_format(aBuf, sizeof(aBuf), "Could not get rank of '%s'. Try again later.", name);
 			GameServer()->SendChatTarget(clientId, aBuf);
 		}
 		

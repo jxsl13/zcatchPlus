@@ -17,6 +17,8 @@
 
 /* ranking system */
 #include <engine/external/sqlite/sqlite3.h>
+#include <mutex>
+#include <chrono>
 
 #define MAX_MUTES 35
 #define ZCATCH_VERSION "0.4.8"
@@ -87,6 +89,7 @@ class CGameContext : public IGameServer
 	
 	/* ranking system: sqlite connection */
 	sqlite3 *rankingDb;
+	std::timed_mutex m_RankingDbMutex;
 	
 public:
 	IServer *Server() const { return m_pServer; }
@@ -217,6 +220,8 @@ public:
 	
 	/* ranking system */
 	sqlite3* GetRankingDb() { return rankingDb; };
+	bool LockRankingDb(int ms = -1);
+	void UnlockRankingDb();
 };
 
 inline int CmaskAll() { return -1; }
