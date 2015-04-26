@@ -28,4 +28,5 @@ config.cfg
 
 banmaster*
 
-ranking.db
+/ranking.db
+/ranking.db-journal
