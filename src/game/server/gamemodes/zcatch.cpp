@@ -363,10 +363,25 @@ void CGameController_zCatch::SaveRanking(CPlayer *player) {
 	/* prepare */
 	player->RankCacheStopPlaying(); // so that m_RankCache.m_TimePlayed is updated
 	
+	/* check if saving is needed */
+	if (player->m_RankCache.m_Points == 0 &&
+		player->m_RankCache.m_NumWins == 0 &&
+		player->m_RankCache.m_NumKills == 0 &&
+		player->m_RankCache.m_NumKillsWallshot == 0 &&
+		player->m_RankCache.m_NumDeaths == 0 &&
+		player->m_RankCache.m_NumShots == 0 &&
+		player->m_zCatchNumKillsInARow == 0 &&
+		player->m_RankCache.m_TimePlayed == 0)
+			return;
+	
+	/* player's name */
+	char *name = (char*)malloc(MAX_NAME_LENGTH);
+	str_copy(name, GameServer()->Server()->ClientName(player->GetCID()), MAX_NAME_LENGTH);
+	
 	/* give the points */
 	GameServer()->AddRankingThread(new std::thread(&CGameController_zCatch::SaveScore,
 		GameServer(), // username
-		GameServer()->Server()->ClientName(player->GetCID()), // username
+		name, // username
 		player->m_RankCache.m_Points, // score
 		player->m_RankCache.m_NumWins, // numWins
 		player->m_RankCache.m_NumKills, // numKills
@@ -390,7 +405,7 @@ void CGameController_zCatch::SaveRanking(CPlayer *player) {
 }
 
 /* adds the score to the player */
-void CGameController_zCatch::SaveScore(CGameContext* GameServer, const char *name, int score, int numWins, int numKills, int numKillsWallshot, int numDeaths, int numShots, int highestSpree, int timePlayed) {
+void CGameController_zCatch::SaveScore(CGameContext* GameServer, char *name, int score, int numWins, int numKills, int numKillsWallshot, int numDeaths, int numShots, int highestSpree, int timePlayed) {
 
 	/* debug */
 	char aBuf[512];
@@ -470,7 +485,7 @@ void CGameController_zCatch::SaveScore(CGameContext* GameServer, const char *nam
 	}
 	
 	sqlite3_finalize(pStmt);
-	
+	free(name);
 }
 
 /* when a player typed /top into the chat */

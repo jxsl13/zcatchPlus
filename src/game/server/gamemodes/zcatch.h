@@ -17,7 +17,7 @@ class CGameController_zCatch: public IGameController
 	/* ranking system */
 	static void ChatCommandTopFetchDataAndPrint(CGameContext* GameServer, int clientId, const char *column);
 	static void ChatCommandRankFetchDataAndPrint(CGameContext* GameServer, int clientId, char *name);
-	static void SaveScore(CGameContext* GameServer, const char *name, int score, int numWins, int numKills, int numKillsWallshot, int numDeaths, int numShots, int highestSpree, int timePlayed);
+	static void SaveScore(CGameContext* GameServer, char *name, int score, int numWins, int numKills, int numKillsWallshot, int numDeaths, int numShots, int highestSpree, int timePlayed);
 	static void FormatRankingColumn(const char* column, char buf[32], int value);
 
 public:
