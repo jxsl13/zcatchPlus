@@ -223,10 +223,11 @@ void CPlayer::Snap(int SnappingClient)
 
 void CPlayer::OnDisconnect(const char *pReason)
 {
-	KillCharacter();
 	
 	// save ranking stats
 	GameServer()->m_pController->SaveRanking(this);
+	
+	KillCharacter();
 
 	if(Server()->ClientIngame(m_ClientID))
 	{

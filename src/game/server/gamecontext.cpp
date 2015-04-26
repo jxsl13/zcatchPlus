@@ -2127,6 +2127,7 @@ void CGameContext::OnInit(/*class IKernel *pKernel*/)
 			sqlite3_close(m_RankingDb);
 			exit(1);
 		}
+		Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "ranking", "SQLite3 database opened");
 		/* wait up to 5 seconds if the db is used */
 		sqlite3_busy_timeout(m_RankingDb, 5000);
 	}
