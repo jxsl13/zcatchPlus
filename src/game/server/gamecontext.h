@@ -17,6 +17,8 @@
 
 /* ranking system */
 #include <engine/external/sqlite/sqlite3.h>
+#include <thread>
+#include <vector>
 #include <mutex>
 #include <chrono>
 
@@ -33,6 +35,7 @@
 				Remove entities marked for deletion (GAMEWORLD::remove_entities)
 			Game Controller (GAMECONTROLLER::tick)
 			All players (CPlayer::tick)
+
 
 
 	Snap
@@ -88,7 +91,8 @@ class CGameContext : public IGameServer
 	bool MuteValidation(CPlayer *player);
 	
 	/* ranking system: sqlite connection */
-	sqlite3 *rankingDb;
+	sqlite3 *m_RankingDb;
+	std::vector<std::thread*> m_RankingThreads;
 	std::timed_mutex m_RankingDbMutex;
 	
 public:
@@ -147,6 +151,7 @@ public:
 	void CreateDeath(vec2 Pos, int Who);
 	void CreateSound(vec2 Pos, int Sound, int Mask=-1);
 	void CreateSoundGlobal(int Sound, int Target=-1);
+
 
 
 	enum
@@ -219,9 +224,10 @@ public:
 	virtual bool IsClientAimBot(int ClientID);
 	
 	/* ranking system */
-	sqlite3* GetRankingDb() { return rankingDb; };
+	sqlite3* GetRankingDb() { return m_RankingDb; };
 	bool LockRankingDb(int ms = -1);
 	void UnlockRankingDb();
+	void AddRankingThread(std::thread *thread) { m_RankingThreads.push_back(thread); };
 };
 
 inline int CmaskAll() { return -1; }

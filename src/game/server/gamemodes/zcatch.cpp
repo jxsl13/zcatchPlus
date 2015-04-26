@@ -19,9 +19,10 @@ CGameController_zCatch::CGameController_zCatch(class CGameContext *pGameServer) 
 }
 
 CGameController_zCatch::~CGameController_zCatch() {
-	/* wait for all threads */
-	for (auto &thread: rankingThreads)
-		thread.join();
+	/* save all players */
+	for (int i = 0; i < MAX_CLIENTS; i++)
+		if (GameServer()->m_apPlayers[i])
+			SaveRanking(GameServer()->m_apPlayers[i]);
 }
 
 /* ranking system: create zcatch score table */
@@ -363,7 +364,8 @@ void CGameController_zCatch::SaveRanking(CPlayer *player) {
 	player->RankCacheStopPlaying(); // so that m_RankCache.m_TimePlayed is updated
 	
 	/* give the points */
-	rankingThreads.push_back(std::thread(&CGameController_zCatch::SaveScore, this,
+	GameServer()->AddRankingThread(new std::thread(&CGameController_zCatch::SaveScore,
+		GameServer(), // username
 		GameServer()->Server()->ClientName(player->GetCID()), // username
 		player->m_RankCache.m_Points, // score
 		player->m_RankCache.m_NumWins, // numWins
@@ -388,7 +390,7 @@ void CGameController_zCatch::SaveRanking(CPlayer *player) {
 }
 
 /* adds the score to the player */
-void CGameController_zCatch::SaveScore(const char *name, int score, int numWins, int numKills, int numKillsWallshot, int numDeaths, int numShots, int highestSpree, int timePlayed) {
+void CGameController_zCatch::SaveScore(CGameContext* GameServer, const char *name, int score, int numWins, int numKills, int numKillsWallshot, int numDeaths, int numShots, int highestSpree, int timePlayed) {
 
 	/* prepare */
 	const char *zTail;
@@ -415,7 +417,7 @@ void CGameController_zCatch::SaveScore(const char *name, int score, int numWins,
 		) old ON old.username = new.username; \
 		";
 	sqlite3_stmt *pStmt;
-	int rc = sqlite3_prepare_v2(GameServer()->GetRankingDb(), zSql, strlen(zSql), &pStmt, &zTail);
+	int rc = sqlite3_prepare_v2(GameServer->GetRankingDb(), zSql, strlen(zSql), &pStmt, &zTail);
 	
 	if (rc == SQLITE_OK)
 	{
@@ -431,10 +433,10 @@ void CGameController_zCatch::SaveScore(const char *name, int score, int numWins,
 		sqlite3_bind_int(pStmt, 9, timePlayed);
 		
 		/* lock database access in this process */
-		GameServer()->LockRankingDb();
+		GameServer->LockRankingDb();
 		
 		/* when another process uses the database, wait up to 1 minute */
-		sqlite3_busy_timeout(GameServer()->GetRankingDb(), 60000);
+		sqlite3_busy_timeout(GameServer->GetRankingDb(), 60000);
 		
 		/* save to database */
 		switch (sqlite3_step(pStmt))
@@ -443,23 +445,23 @@ void CGameController_zCatch::SaveScore(const char *name, int score, int numWins,
 				/* nothing */
 				break;
 			case SQLITE_BUSY:
-				GameServer()->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "ranking", "Error: could not save records (timeout).");
+				GameServer->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "ranking", "Error: could not save records (timeout).");
 				break;
 			default:
 				char aBuf[512];
-				str_format(aBuf, sizeof(aBuf), "SQL error (#%d): %s", rc, sqlite3_errmsg(GameServer()->GetRankingDb()));
-				GameServer()->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "ranking", aBuf);
+				str_format(aBuf, sizeof(aBuf), "SQL error (#%d): %s", rc, sqlite3_errmsg(GameServer->GetRankingDb()));
+				GameServer->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "ranking", aBuf);
 		}
 		
 		/* unlock database access */
-		GameServer()->UnlockRankingDb();
+		GameServer->UnlockRankingDb();
 	}
 	else
 	{
 		/* print error */
 		char aBuf[512];
-		str_format(aBuf, sizeof(aBuf), "SQL error (#%d): %s", rc, sqlite3_errmsg(GameServer()->GetRankingDb()));
-		GameServer()->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "ranking", aBuf);
+		str_format(aBuf, sizeof(aBuf), "SQL error (#%d): %s", rc, sqlite3_errmsg(GameServer->GetRankingDb()));
+		GameServer->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "ranking", aBuf);
 	}
 	
 	sqlite3_finalize(pStmt);
@@ -510,11 +512,11 @@ void CGameController_zCatch::OnChatCommandTop(CPlayer *pPlayer, const char *cate
 		return;
 	}
 	
-	rankingThreads.push_back(std::thread(&CGameController_zCatch::ChatCommandTopFetchDataAndPrint, this, pPlayer->GetCID(), column));
+	GameServer()->AddRankingThread(new std::thread(&CGameController_zCatch::ChatCommandTopFetchDataAndPrint, GameServer(), pPlayer->GetCID(), column));
 }
 
 /* get the top players */
-void CGameController_zCatch::ChatCommandTopFetchDataAndPrint(int clientId, const char *column)
+void CGameController_zCatch::ChatCommandTopFetchDataAndPrint(CGameContext* GameServer, int clientId, const char *column)
 {
 	
 	/* prepare */
@@ -523,17 +525,17 @@ void CGameController_zCatch::ChatCommandTopFetchDataAndPrint(int clientId, const
 	str_format(sqlBuf, sizeof(sqlBuf), "SELECT username, %s FROM zCatch ORDER BY %s DESC LIMIT 5;", column, column);
 	const char *zSql = sqlBuf;
 	sqlite3_stmt *pStmt;
-	int rc = sqlite3_prepare_v2(GameServer()->GetRankingDb(), zSql, strlen(zSql), &pStmt, &zTail);
+	int rc = sqlite3_prepare_v2(GameServer->GetRankingDb(), zSql, strlen(zSql), &pStmt, &zTail);
 	
 	if (rc == SQLITE_OK)
 	{
 		
 		/* lock database access in this process, but wait maximum 1 second */
-		if (GameServer()->LockRankingDb(1000))
+		if (GameServer->LockRankingDb(1000))
 		{
 			
 			/* when another process uses the database, wait up to 1 second */
-			sqlite3_busy_timeout(GameServer()->GetRankingDb(), 1000);
+			sqlite3_busy_timeout(GameServer->GetRankingDb(), 1000);
 			
 			/* fetch from database */
 			int numRows = 0;
@@ -548,33 +550,33 @@ void CGameController_zCatch::ChatCommandTopFetchDataAndPrint(int clientId, const
 				/* if the player left and the client id is unused, nothing will happen */
 				/* if another player joined, there is no big harm that he receives it */
 				/* maybe later i have a good idea how to prevent this */
-				GameServer()->SendChatTarget(clientId, aBuf);
+				GameServer->SendChatTarget(clientId, aBuf);
 				++numRows;
 			}
 			
 			/* unlock database access */
-			GameServer()->UnlockRankingDb();
+			GameServer->UnlockRankingDb();
 			
 			if (numRows == 0)
 			{
 				if (rc == SQLITE_BUSY)
-					GameServer()->SendChatTarget(clientId, "Could not load top ranks. Try again later.");
+					GameServer->SendChatTarget(clientId, "Could not load top ranks. Try again later.");
 				else
-					GameServer()->SendChatTarget(clientId, "There are no ranks");
+					GameServer->SendChatTarget(clientId, "There are no ranks");
 			}
 			
 		}
 		else
 		{
-			GameServer()->SendChatTarget(clientId, "Could not load top ranks. Try again later.");
+			GameServer->SendChatTarget(clientId, "Could not load top ranks. Try again later.");
 		}
 	}
 	else
 	{
 		/* print error */
 		char aBuf[512];
-		str_format(aBuf, sizeof(aBuf), "SQL error (#%d): %s", rc, sqlite3_errmsg(GameServer()->GetRankingDb()));
-		GameServer()->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "ranking", aBuf);
+		str_format(aBuf, sizeof(aBuf), "SQL error (#%d): %s", rc, sqlite3_errmsg(GameServer->GetRankingDb()));
+		GameServer->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "ranking", aBuf);
 	}
 	
 	sqlite3_finalize(pStmt);
@@ -591,11 +593,11 @@ void CGameController_zCatch::OnChatCommandRank(CPlayer *pPlayer, const char *nam
 {
 	char *queryName = (char*)malloc(MAX_NAME_LENGTH);
 	str_copy(queryName, name, MAX_NAME_LENGTH);
-	rankingThreads.push_back(std::thread(&CGameController_zCatch::ChatCommandRankFetchDataAndPrint, this, pPlayer->GetCID(), queryName));
+	GameServer()->AddRankingThread(new std::thread(&CGameController_zCatch::ChatCommandRankFetchDataAndPrint, GameServer(), pPlayer->GetCID(), queryName));
 }
 
 /* get the top players */
-void CGameController_zCatch::ChatCommandRankFetchDataAndPrint(int clientId, char *name)
+void CGameController_zCatch::ChatCommandRankFetchDataAndPrint(CGameContext* GameServer, int clientId, char *name)
 {
 	
 	/* prepare */
@@ -616,7 +618,7 @@ void CGameController_zCatch::ChatCommandRankFetchDataAndPrint(int clientId, char
 		WHERE username = ?1\
 		;";
 	sqlite3_stmt *pStmt;
-	int rc = sqlite3_prepare_v2(GameServer()->GetRankingDb(), zSql, strlen(zSql), &pStmt, &zTail);
+	int rc = sqlite3_prepare_v2(GameServer->GetRankingDb(), zSql, strlen(zSql), &pStmt, &zTail);
 	
 	if (rc == SQLITE_OK)
 	{
@@ -624,17 +626,17 @@ void CGameController_zCatch::ChatCommandRankFetchDataAndPrint(int clientId, char
 		sqlite3_bind_text(pStmt, 1, name, strlen(name), 0);
 		
 		/* lock database access in this process, but wait maximum 1 second */
-		if (GameServer()->LockRankingDb(1000))
+		if (GameServer->LockRankingDb(1000))
 		{
 			
 			/* when another process uses the database, wait up to 1 second */
-			sqlite3_busy_timeout(GameServer()->GetRankingDb(), 1000);
+			sqlite3_busy_timeout(GameServer->GetRankingDb(), 1000);
 			
 			/* fetch from database */
 			int row = sqlite3_step(pStmt);
 			
 			/* unlock database access */
-			GameServer()->UnlockRankingDb();
+			GameServer->UnlockRankingDb();
 			
 			/* result row was fetched */
 			if (row == SQLITE_ROW)
@@ -660,7 +662,7 @@ void CGameController_zCatch::ChatCommandRankFetchDataAndPrint(int clientId, char
 				{
 					str_format(aBuf, sizeof(aBuf), "'%s' is rank %d with a score of %.*f points (%d wins, %d kills, %d deaths, %d shots, spree of %d, %d:%02dh played, %.*f points for next rank)", name, rank, score % 100 ? 2 : 0, score/100.0, numWins, numKills, numDeaths, numShots, highestSpree, timePlayed / 3600, timePlayed / 60 % 60, scoreToNextRank % 100 ? 2 : 0, scoreToNextRank/100.0);
 				}
-				GameServer()->SendChatTarget(clientId, aBuf);
+				GameServer->SendChatTarget(clientId, aBuf);
 			}
 			
 			/* database is locked */
@@ -668,7 +670,7 @@ void CGameController_zCatch::ChatCommandRankFetchDataAndPrint(int clientId, char
 			{
 				char aBuf[64];
 				str_format(aBuf, sizeof(aBuf), "Could not get rank of '%s'. Try again later.", name);
-				GameServer()->SendChatTarget(clientId, aBuf);
+				GameServer->SendChatTarget(clientId, aBuf);
 			}
 			
 			/* no result found */
@@ -676,7 +678,7 @@ void CGameController_zCatch::ChatCommandRankFetchDataAndPrint(int clientId, char
 			{
 				char aBuf[64];
 				str_format(aBuf, sizeof(aBuf), "'%s' has no rank", name);
-				GameServer()->SendChatTarget(clientId, aBuf);
+				GameServer->SendChatTarget(clientId, aBuf);
 			}
 			
 		}
@@ -684,15 +686,15 @@ void CGameController_zCatch::ChatCommandRankFetchDataAndPrint(int clientId, char
 		{
 			char aBuf[64];
 			str_format(aBuf, sizeof(aBuf), "Could not get rank of '%s'. Try again later.", name);
-			GameServer()->SendChatTarget(clientId, aBuf);
+			GameServer->SendChatTarget(clientId, aBuf);
 		}
 	}
 	else
 	{
 		/* print error */
 		char aBuf[512];
-		str_format(aBuf, sizeof(aBuf), "SQL error (#%d): %s", rc, sqlite3_errmsg(GameServer()->GetRankingDb()));
-		GameServer()->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "ranking", aBuf);
+		str_format(aBuf, sizeof(aBuf), "SQL error (#%d): %s", rc, sqlite3_errmsg(GameServer->GetRankingDb()));
+		GameServer->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "ranking", aBuf);
 	}
 	
 	sqlite3_finalize(pStmt);

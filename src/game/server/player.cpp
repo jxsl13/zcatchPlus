@@ -65,7 +65,8 @@ CPlayer::~CPlayer()
 {
 	
 	// save ranking stats
-	GameServer()->m_pController->SaveRanking(this);
+	if (GameServer()->m_pController != NULL)
+		GameServer()->m_pController->SaveRanking(this);
 	
 	while(m_ZCatchVictims != NULL)
 	{

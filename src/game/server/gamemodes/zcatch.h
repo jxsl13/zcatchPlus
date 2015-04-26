@@ -7,7 +7,6 @@
 
 #include <game/server/gamecontroller.h>
 #include <thread>
-#include <vector>
 
 class CGameController_zCatch: public IGameController
 {
@@ -16,10 +15,9 @@ class CGameController_zCatch: public IGameController
 	void RewardWinner(int winnerId);
 	
 	/* ranking system */
-	std::vector<std::thread> rankingThreads;
-	void ChatCommandTopFetchDataAndPrint(int clientId, const char *column);
-	void ChatCommandRankFetchDataAndPrint(int clientId, char *name);
-	void SaveScore(const char *name, int score, int numWins, int numKills, int numKillsWallshot, int numDeaths, int numShots, int highestSpree, int timePlayed);
+	static void ChatCommandTopFetchDataAndPrint(CGameContext* GameServer, int clientId, const char *column);
+	static void ChatCommandRankFetchDataAndPrint(CGameContext* GameServer, int clientId, char *name);
+	static void SaveScore(CGameContext* GameServer, const char *name, int score, int numWins, int numKills, int numKillsWallshot, int numDeaths, int numShots, int highestSpree, int timePlayed);
 	static void FormatRankingColumn(const char* column, char buf[32], int value);
 
 public:

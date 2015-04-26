@@ -59,8 +59,21 @@ CGameContext::~CGameContext()
 {
 	for(int i = 0; i < MAX_CLIENTS; i++)
 		delete m_apPlayers[i];
-	if(!m_Resetting)
+	
+	if (!m_Resetting)
+	{
 		delete m_pVoteOptionHeap;
+		
+		/* ranking db */
+		/* wait for all threads */
+		for (auto &thread: m_RankingThreads)
+		{
+			thread->join();
+			delete thread;
+		}
+		/* close ranking db */
+		sqlite3_close(m_RankingDb);
+	}
 }
 
 void CGameContext::Clear()
@@ -70,6 +83,7 @@ void CGameContext::Clear()
 	CVoteOptionServer *pVoteOptionLast = m_pVoteOptionLast;
 	int NumVoteOptions = m_NumVoteOptions;
 	CTuningParams Tuning = m_Tuning;
+	sqlite3 *rankingDb = m_RankingDb;
 
 	m_Resetting = true;
 	this->~CGameContext();
@@ -81,6 +95,7 @@ void CGameContext::Clear()
 	m_pVoteOptionLast = pVoteOptionLast;
 	m_NumVoteOptions = NumVoteOptions;
 	m_Tuning = Tuning;
+	m_RankingDb = rankingDb;
 }
 
 
@@ -2084,16 +2099,16 @@ void CGameContext::OnInit(/*class IKernel *pKernel*/)
 	//players = new CPlayer[MAX_CLIENTS];
 
 	/* open ranking system db */
-	int rc = sqlite3_open(g_Config.m_SvRankingFile, &rankingDb);
+	int rc = sqlite3_open(g_Config.m_SvRankingFile, &m_RankingDb);
 	if (rc){
 		char aBuf[512];
-		str_format(aBuf, sizeof(aBuf), "Can't open database (#%d): %s\n", rc, sqlite3_errmsg(rankingDb));
+		str_format(aBuf, sizeof(aBuf), "Can't open database (#%d): %s\n", rc, sqlite3_errmsg(m_RankingDb));
 		Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "ranking", aBuf);
-		sqlite3_close(rankingDb);
+		sqlite3_close(m_RankingDb);
 		exit(1);
 	}
 	/* wait up to 5 seconds if the db is used */
-	sqlite3_busy_timeout(rankingDb, 5000);
+	sqlite3_busy_timeout(m_RankingDb, 5000);
 	
 	// select gametype
 	/*if(str_comp(g_Config.m_SvGametype, "mod") == 0)
@@ -2109,7 +2124,7 @@ void CGameContext::OnInit(/*class IKernel *pKernel*/)
 	m_pController = new CGameController_zCatch(this);
 	
 	/* ranking system */
-	m_pController->OnInitRanking(rankingDb);
+	m_pController->OnInitRanking(m_RankingDb);
 
 	// setup core world
 	//for(int i = 0; i < MAX_CLIENTS; i++)
@@ -2157,12 +2172,9 @@ void CGameContext::OnInit(/*class IKernel *pKernel*/)
 
 void CGameContext::OnShutdown()
 {
-	
-	/* close ranking db */
-	sqlite3_close(rankingDb);
-	
 	delete m_pController;
 	m_pController = 0;
+	
 	Clear();
 }
 
