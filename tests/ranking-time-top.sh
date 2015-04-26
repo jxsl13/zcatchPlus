@@ -8,4 +8,4 @@ if [ "$DATABASE" = "" ]; then
 fi
 
 echo -n "Results returned: "
-time sqlite3 $DATABASE "SELECT username, score FROM zCatchScore ORDER BY score DESC LIMIT 5;" | wc -l
+time sqlite3 $DATABASE "SELECT username, score FROM zCatch ORDER BY score DESC LIMIT 5;" | wc -l

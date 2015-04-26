@@ -29,7 +29,7 @@ void CGameController_zCatch::OnInitRanking(sqlite3 *rankingDb) {
 	char *zErrMsg = 0;
 	int rc = sqlite3_exec(GameServer()->GetRankingDb(), "\
 			BEGIN; \
-			CREATE TABLE IF NOT EXISTS zCatchScore( \
+			CREATE TABLE IF NOT EXISTS zCatch( \
 				username TEXT PRIMARY KEY, \
 				score UNSIGNED INTEGER DEFAULT 0, \
 				numWins UNSIGNED INTEGER DEFAULT 0, \
@@ -39,7 +39,7 @@ void CGameController_zCatch::OnInitRanking(sqlite3 *rankingDb) {
 				highestSpree UNSIGNED INTEGER DEFAULT 0, \
 				timePlayed UNSIGNED INTEGER DEFAULT 0 \
 			); \
-			CREATE INDEX IF NOT EXISTS zCatchScore_score_index ON zCatchScore (score); \
+			CREATE INDEX IF NOT EXISTS zCatch_score_index ON zCatch (score); \
 			COMMIT; \
 		", NULL, 0, &zErrMsg);
 	if (rc != SQLITE_OK) {
@@ -371,24 +371,23 @@ void CGameController_zCatch::SaveScore(const char *name, int score, int numWins,
 	/* prepare */
 	const char *zTail;
 	const char *zSql = "\
-		INSERT OR REPLACE INTO zCatchScore ( \
+		INSERT OR REPLACE INTO zCatch ( \
+			username, score, numWins, numKills, numDeaths, numShots, highestSpree, timePlayed \
+		) \
+		SELECT \
 			username, \
-			score, \
-			numWins, \
-			numKills, \
-			numDeaths, \
-			numShots, \
-			highestSpree, \
-			timePlayed \
-		) VALUES ( \
-			?1, \
-			COALESCE((SELECT score FROM zCatchScore WHERE username = ?1), 0) + ?2, \
-			COALESCE((SELECT numWins FROM zCatchScore WHERE username = ?1), 0) + ?3, \
-			COALESCE((SELECT numKills FROM zCatchScore WHERE username = ?1), 0) + ?4, \
-			COALESCE((SELECT numDeaths FROM zCatchScore WHERE username = ?1), 0) + ?5, \
-			COALESCE((SELECT numShots FROM zCatchScore WHERE username = ?1), 0) + ?6, \
-			MAX(COALESCE((SELECT highestSpree FROM zCatchScore WHERE username = ?1), 0), ?7), \
-			COALESCE((SELECT timePlayed FROM zCatchScore WHERE username = ?1), 0) + ?8 \
+			score + ?2, \
+			numWins + ?3, \
+			numKills + ?4, \
+			numDeaths + ?5, \
+			numShots + ?6, \
+			MAX(highestSpree, ?7), \
+			timePlayed + ?8 \
+		FROM (SELECT 1) \
+		LEFT JOIN ( \
+			SELECT * \
+			FROM zCatch \
+			WHERE username = ?1 \
 		);";
 	sqlite3_stmt *pStmt;
 	int rc = sqlite3_prepare_v2(GameServer()->GetRankingDb(), zSql, strlen(zSql), &pStmt, &zTail);
@@ -431,7 +430,7 @@ void CGameController_zCatch::ChatCommandTopFetchDataAndPrint(int clientId)
 	
 	/* prepare */
 	const char *zTail;
-	const char *zSql = "SELECT username, score FROM zCatchScore ORDER BY score DESC LIMIT 5;";
+	const char *zSql = "SELECT username, score FROM zCatch ORDER BY score DESC LIMIT 5;";
 	sqlite3_stmt *pStmt;
 	int rc = sqlite3_prepare_v2(GameServer()->GetRankingDb(), zSql, strlen(zSql), &pStmt, &zTail);
 	
@@ -497,9 +496,9 @@ void CGameController_zCatch::ChatCommandRankFetchDataAndPrint(int clientId, char
 			a.numShots, \
 			a.highestSpree, \
 			a.timePlayed, \
-			(SELECT COUNT(*) FROM zCatchScore b WHERE b.score > a.score) + 1, \
-			MAX(0, (SELECT MIN(b.score) FROM zCatchScore b WHERE b.score > a.score) - a.score) \
-		FROM zCatchScore a \
+			(SELECT COUNT(*) FROM zCatch b WHERE b.score > a.score) + 1, \
+			MAX(0, (SELECT MIN(b.score) FROM zCatch b WHERE b.score > a.score) - a.score) \
+		FROM zCatch a \
 		WHERE username = ?1\
 		;";
 	sqlite3_stmt *pStmt;

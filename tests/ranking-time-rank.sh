@@ -17,8 +17,8 @@ time sqlite3 $DATABASE "SELECT \
 			a.numShots, \
 			a.highestSpree, \
 			a.timePlayed, \
-			(SELECT COUNT(*) FROM zCatchScore b WHERE b.score > a.score) + 1, \
-			MAX(0, (SELECT MIN(b.score) FROM zCatchScore b WHERE b.score > a.score) - a.score) \
-		FROM zCatchScore a \
+			(SELECT COUNT(*) FROM zCatch b WHERE b.score > a.score) + 1, \
+			MAX(0, (SELECT MIN(b.score) FROM zCatch b WHERE b.score > a.score) - a.score) \
+		FROM zCatch a \
 		WHERE username = \"$USERNAME\" \
 	" | wc -l

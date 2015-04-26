@@ -21,24 +21,23 @@ for (( c = 0; c < $NUM_ENTRIES; c++ )); do
 	TIME_PLAYED=$RANDOM
 	
 	sqlite3 $DATABASE "
-		INSERT OR REPLACE INTO zCatchScore ( \
-			username, \
-			score, \
-			numWins, \
-			numKills, \
-			numDeaths, \
-			numShots, \
-			highestSpree, \
-			timePlayed \
-		) VALUES ( \
-			\"$USERNAME\", \
-			COALESCE((SELECT score FROM zCatchScore WHERE username = \"$USERNAME\"), 0) + $SCORE, \
-			COALESCE((SELECT numWins FROM zCatchScore WHERE username = \"$USERNAME\"), 0) + $NUM_WINS, \
-			COALESCE((SELECT numKills FROM zCatchScore WHERE username = \"$USERNAME\"), 0) + $NUM_KILLS, \
-			COALESCE((SELECT numDeaths FROM zCatchScore WHERE username = \"$USERNAME\"), 0) + $NUM_DEATHS, \
-			COALESCE((SELECT numShots FROM zCatchScore WHERE username = \"$USERNAME\"), 0) + $NUM_SHOTS, \
-			MAX(COALESCE((SELECT highestSpree FROM zCatchScore WHERE username = \"$USERNAME\"), 0), $HIGHEST_SPREE), \
-			COALESCE((SELECT timePlayed FROM zCatchScore WHERE username = \"$USERNAME\"), 0) + $TIME_PLAYED \
+		INSERT OR REPLACE INTO zCatch (
+			username, score, numWins, numKills, numDeaths, numShots, highestSpree, timePlayed
+		)
+		SELECT
+			username,
+			score + $SCORE,
+			numWins + $NUM_WINS,
+			numKills + $NUM_KILLS,
+			numDeaths + $NUM_DEATHS,
+			numShots + $NUM_SHOTS,
+			MAX(highestSpree, $HIGHEST_SPREE),
+			timePlayed + $TIME_PLAYED
+		FROM (SELECT 1)
+		LEFT JOIN (
+			SELECT *
+			FROM zCatch
+			WHERE username = \"$USERNAME\"
 		);"
 	
 	sleep 0.005
