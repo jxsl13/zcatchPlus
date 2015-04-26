@@ -879,7 +879,7 @@ void CGameContext::OnMessage(int MsgID, CUnpacker *pUnpacker, int ClientID)
 			else if(!str_comp_nocase("cmdlist", pMsg->m_pMessage + 1))
 			{
 				if (RankingEnabled())
-					SendChatTarget(ClientID, "Chat commands: /info, /help, /kills, /victims, /t <name> <msg>, /ti <id> <msg>, /top, /rank [<name>]");
+					SendChatTarget(ClientID, "Chat commands: /info, /help, /kills, /victims, /t <name> <msg>, /ti <id> <msg>, /top [<category>], /rank [<player>]");
 				else
 					SendChatTarget(ClientID, "Chat commands: /info, /help, /kills, /victims, /t <name> <msg>, /ti <id> <msg>");
 			}
@@ -915,10 +915,9 @@ void CGameContext::OnMessage(int MsgID, CUnpacker *pUnpacker, int ClientID)
 				if (RankingEnabled())
 				{
 					SendChatTarget(ClientID, "--- Help 4 / 4 ---");
-					SendChatTarget(ClientID, "The ranking system saves various stats about players.");
-					SendChatTarget(ClientID, "/top: display top 5 players");
-					SendChatTarget(ClientID, "/rank [<name>]: display player's rank");
-					SendChatTarget(ClientID, "/rank: display own rank");
+					SendChatTarget(ClientID, "The ranking system saves various stats about players. The stats are updated at the end of a round and on leaving the server.");
+					SendChatTarget(ClientID, "/top [<category>]: display top 5 players");
+					SendChatTarget(ClientID, "/rank [<player>]: display own/players's rank");
 				}
 				else
 				{
