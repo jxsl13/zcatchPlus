@@ -15,6 +15,7 @@ for (( c = 0; c < $NUM_ENTRIES; c++ )); do
 	SCORE=$(( $RANDOM % 10000 ))
 	NUM_WINS=$(( $RANDOM % 100 ))
 	NUM_KILLS=$(( $RANDOM % 1000 ))
+	NUM_KILLS_WALLSHOT=$(( $RANDOM % 100 ))
 	NUM_DEATHS=$(( $RANDOM % 1000 ))
 	NUM_SHOTS=$RANDOM
 	HIGHEST_SPREE=$(( $RANDOM % 16 ))
@@ -22,13 +23,14 @@ for (( c = 0; c < $NUM_ENTRIES; c++ )); do
 	
 	sqlite3 $DATABASE "
 		INSERT OR REPLACE INTO zCatch (
-			username, score, numWins, numKills, numDeaths, numShots, highestSpree, timePlayed
+			username, score, numWins, numKills, numKillsWallshot, numDeaths, numShots, highestSpree, timePlayed
 		)
 		SELECT
 			username,
 			score + $SCORE,
 			numWins + $NUM_WINS,
 			numKills + $NUM_KILLS,
+			numKillsWallshot + $NUM_KILLS_WALLSHOT,
 			numDeaths + $NUM_DEATHS,
 			numShots + $NUM_SHOTS,
 			MAX(highestSpree, $HIGHEST_SPREE),

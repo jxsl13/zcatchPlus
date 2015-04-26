@@ -34,6 +34,7 @@ void CGameController_zCatch::OnInitRanking(sqlite3 *rankingDb) {
 				score UNSIGNED INTEGER DEFAULT 0, \
 				numWins UNSIGNED INTEGER DEFAULT 0, \
 				numKills UNSIGNED INTEGER DEFAULT 0, \
+				numKillsWallshot UNSIGNED INTEGER DEFAULT 0, \
 				numDeaths UNSIGNED INTEGER DEFAULT 0, \
 				numShots UNSIGNED INTEGER DEFAULT 0, \
 				highestSpree UNSIGNED INTEGER DEFAULT 0, \
@@ -348,6 +349,7 @@ void CGameController_zCatch::SaveRanking(CPlayer *player) {
 		player->m_RankCache.m_Points, // score
 		player->m_RankCache.m_NumWins, // numWins
 		player->m_RankCache.m_NumKills, // numKills
+		player->m_RankCache.m_NumKillsWallshot, // numKillsWallshot
 		player->m_RankCache.m_NumDeaths, // numDeaths
 		player->m_RankCache.m_NumShots, // numShots
 		player->m_zCatchNumKillsInARow, // highestSpree
@@ -358,6 +360,7 @@ void CGameController_zCatch::SaveRanking(CPlayer *player) {
 	player->m_RankCache.m_Points = 0;
 	player->m_RankCache.m_NumWins = 0;
 	player->m_RankCache.m_NumKills = 0;
+	player->m_RankCache.m_NumKillsWallshot = 0;
 	player->m_RankCache.m_NumDeaths = 0;
 	player->m_RankCache.m_NumShots = 0;
 	player->m_RankCache.m_TimePlayed = 0;
@@ -366,23 +369,24 @@ void CGameController_zCatch::SaveRanking(CPlayer *player) {
 }
 
 /* adds the score to the player */
-void CGameController_zCatch::SaveScore(const char *name, int score, int numWins, int numKills, int numDeaths, int numShots, int highestSpree, int timePlayed) {
+void CGameController_zCatch::SaveScore(const char *name, int score, int numWins, int numKills, int numKillsWallshot, int numDeaths, int numShots, int highestSpree, int timePlayed) {
 
 	/* prepare */
 	const char *zTail;
 	const char *zSql = "\
 		INSERT OR REPLACE INTO zCatch ( \
-			username, score, numWins, numKills, numDeaths, numShots, highestSpree, timePlayed \
+			username, score, numWins, numKills, numKillsWallshot, numDeaths, numShots, highestSpree, timePlayed \
 		) \
 		SELECT \
 			username, \
 			score + ?2, \
 			numWins + ?3, \
 			numKills + ?4, \
-			numDeaths + ?5, \
-			numShots + ?6, \
-			MAX(highestSpree, ?7), \
-			timePlayed + ?8 \
+			numKillsWallshot + ?5, \
+			numDeaths + ?6, \
+			numShots + ?7, \
+			MAX(highestSpree, ?8), \
+			timePlayed + ?9 \
 		FROM (SELECT 1) \
 		LEFT JOIN ( \
 			SELECT * \
@@ -399,10 +403,11 @@ void CGameController_zCatch::SaveScore(const char *name, int score, int numWins,
 		sqlite3_bind_int(pStmt, 2, score);
 		sqlite3_bind_int(pStmt, 3, numWins);
 		sqlite3_bind_int(pStmt, 4, numKills);
-		sqlite3_bind_int(pStmt, 5, numDeaths);
-		sqlite3_bind_int(pStmt, 6, numShots);
-		sqlite3_bind_int(pStmt, 7, highestSpree);
-		sqlite3_bind_int(pStmt, 8, timePlayed);
+		sqlite3_bind_int(pStmt, 5, numKillsWallshot);
+		sqlite3_bind_int(pStmt, 6, numDeaths);
+		sqlite3_bind_int(pStmt, 7, numShots);
+		sqlite3_bind_int(pStmt, 8, highestSpree);
+		sqlite3_bind_int(pStmt, 9, timePlayed);
 		
 		/* save to database */
 		sqlite3_step(pStmt);

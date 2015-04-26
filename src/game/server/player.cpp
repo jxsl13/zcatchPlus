@@ -42,6 +42,7 @@ CPlayer::CPlayer(CGameContext *pGameServer, int ClientID, int Team)
 	m_RankCache.m_Points = 0;
 	m_RankCache.m_NumWins = 0;
 	m_RankCache.m_NumKills = 0;
+	m_RankCache.m_NumKillsWallshot = 0;
 	m_RankCache.m_NumDeaths = 0;
 	m_RankCache.m_NumShots = 0;
 	m_RankCache.m_TimePlayed = 0;

@@ -142,6 +142,7 @@ public:
 		int m_Points;
 		int m_NumWins;
 		int m_NumKills;
+		int m_NumKillsWallshot;
 		int m_NumDeaths;
 		int m_NumShots;
 		int m_TimePlayed; // ticks
