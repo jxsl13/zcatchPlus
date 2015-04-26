@@ -183,6 +183,8 @@ int CGameController_zCatch::OnCharacterDeath(class CCharacter *pVictim, class CP
 	// ranking
 	++victim->m_RankCache.m_NumDeaths;
 	++pKiller->m_RankCache.m_NumKills;
+	if (WeaponID == WEAPON_RIFLE && pVictim->m_TookBouncedWallshotDamage)
+		++pKiller->m_RankCache.m_NumKillsWallshot;
 
 	return 0;
 }
@@ -497,6 +499,7 @@ void CGameController_zCatch::ChatCommandRankFetchDataAndPrint(int clientId, char
 			a.score, \
 			a.numWins, \
 			a.numKills, \
+			a.numKillsWallshot, \
 			a.numDeaths, \
 			a.numShots, \
 			a.highestSpree, \
@@ -522,15 +525,23 @@ void CGameController_zCatch::ChatCommandRankFetchDataAndPrint(int clientId, char
 			int score = sqlite3_column_int(pStmt, 0);
 			int numWins = sqlite3_column_int(pStmt, 1);
 			int numKills = sqlite3_column_int(pStmt, 2);
-			int numDeaths = sqlite3_column_int(pStmt, 3);
-			int numShots = sqlite3_column_int(pStmt, 4);
-			int highestSpree = sqlite3_column_int(pStmt, 5);
-			int timePlayed = sqlite3_column_int(pStmt, 6);
-			int rank = sqlite3_column_int(pStmt, 7);
-			int scoreToNextRank = sqlite3_column_int(pStmt, 8);
+			int numKillsWallshot = sqlite3_column_int(pStmt, 3);
+			int numDeaths = sqlite3_column_int(pStmt, 4);
+			int numShots = sqlite3_column_int(pStmt, 5);
+			int highestSpree = sqlite3_column_int(pStmt, 6);
+			int timePlayed = sqlite3_column_int(pStmt, 7);
+			int rank = sqlite3_column_int(pStmt, 8);
+			int scoreToNextRank = sqlite3_column_int(pStmt, 9);
 			
 			char aBuf[512];
-			str_format(aBuf, sizeof(aBuf), "'%s' is rank %d with a score of %.*f points (%d wins, %d kills, %d deaths, %d shots, spree of %d, %d:%02dh played, %.*f points for next rank)", name, rank, score % 100 ? 2 : 0, score/100.0, numWins, numKills, numDeaths, numShots, highestSpree, timePlayed / 3600, timePlayed / 60 % 60, scoreToNextRank % 100 ? 2 : 0, scoreToNextRank/100.0);
+			if (g_Config.m_SvMode == 1) // laser
+			{
+				str_format(aBuf, sizeof(aBuf), "'%s' is rank %d with a score of %.*f points (%d wins, %d kills (%d wallshot), %d deaths, %d shots, spree of %d, %d:%02dh played, %.*f points for next rank)", name, rank, score % 100 ? 2 : 0, score/100.0, numWins, numKills, numKillsWallshot, numDeaths, numShots, highestSpree, timePlayed / 3600, timePlayed / 60 % 60, scoreToNextRank % 100 ? 2 : 0, scoreToNextRank/100.0);
+			}
+			else
+			{
+				str_format(aBuf, sizeof(aBuf), "'%s' is rank %d with a score of %.*f points (%d wins, %d kills, %d deaths, %d shots, spree of %d, %d:%02dh played, %.*f points for next rank)", name, rank, score % 100 ? 2 : 0, score/100.0, numWins, numKills, numDeaths, numShots, highestSpree, timePlayed / 3600, timePlayed / 60 % 60, scoreToNextRank % 100 ? 2 : 0, scoreToNextRank/100.0);
+			}
 			GameServer()->SendChatTarget(clientId, aBuf);
 		}
 		else if (row == SQLITE_DONE)

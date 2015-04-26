@@ -76,6 +76,9 @@ public:
 	
 	// zCatch
 	int m_KillerLastDieTickBeforceFiring;
+	
+	// ranking system
+	bool m_TookBouncedWallshotDamage;
 
 private:
 	// player controlling this character
