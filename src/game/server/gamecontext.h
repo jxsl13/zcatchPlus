@@ -225,6 +225,7 @@ public:
 	
 	/* ranking system */
 	sqlite3* GetRankingDb() { return m_RankingDb; };
+	bool RankingEnabled() { return m_RankingDb != NULL; };
 	bool LockRankingDb(int ms = -1);
 	void UnlockRankingDb();
 	void AddRankingThread(std::thread *thread) { m_RankingThreads.push_back(thread); };

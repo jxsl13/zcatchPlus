@@ -38,7 +38,12 @@ void CGameContext::Construct(int Resetting)
 	m_LockTeams = 0;
 
 	if(Resetting==NO_RESET)
+	{
 		m_pVoteOptionHeap = new CHeap();
+		
+		/* ranking system */
+		m_RankingDb = NULL;
+	}
 	
 	for(int i = 0; i < MAX_MUTES; i++)
 		m_aMutes[i].m_aIP[0] = 0;
@@ -74,7 +79,10 @@ CGameContext::~CGameContext()
 		delete m_pVoteOptionHeap;
 		
 		/* close ranking db */
-		sqlite3_close(m_RankingDb);
+		if (RankingEnabled())
+		{
+			sqlite3_close(m_RankingDb);
+		}
 	}
 }
 
@@ -897,11 +905,19 @@ void CGameContext::OnMessage(int MsgID, CUnpacker *pUnpacker, int ClientID)
 			}
 			else if(!str_comp_nocase("help 4", pMsg->m_pMessage + 1))
 			{
-				SendChatTarget(ClientID, "--- Help 4 / 4 ---");
-				SendChatTarget(ClientID, "The ranking system saves various stats about players.");
-				SendChatTarget(ClientID, "/top: display top 5 players");
-				SendChatTarget(ClientID, "/rank [<name>]: display player's rank");
-				SendChatTarget(ClientID, "/rank: display own rank");
+				if (RankingEnabled())
+				{
+					SendChatTarget(ClientID, "--- Help 4 / 4 ---");
+					SendChatTarget(ClientID, "The ranking system saves various stats about players.");
+					SendChatTarget(ClientID, "/top: display top 5 players");
+					SendChatTarget(ClientID, "/rank [<name>]: display player's rank");
+					SendChatTarget(ClientID, "/rank: display own rank");
+				}
+				else
+				{
+					SendChatTarget(ClientID, "--- Help 4 / 4 ---");
+					SendChatTarget(ClientID, "The ranking system is disabled on this server.");
+				}
 			}
 			else if(!str_comp_nocase("victims", pMsg->m_pMessage + 1))
 			{
@@ -1022,11 +1038,11 @@ void CGameContext::OnMessage(int MsgID, CUnpacker *pUnpacker, int ClientID)
 			}
 			
 			/* ranking system */
-			else if(!str_comp_nocase("top", pMsg->m_pMessage + 1) || !str_comp_nocase("top5", pMsg->m_pMessage + 1))
+			else if(RankingEnabled() && (!str_comp_nocase("top", pMsg->m_pMessage + 1) || !str_comp_nocase("top5", pMsg->m_pMessage + 1)))
 			{
 				m_pController->OnChatCommandTop(pPlayer);
 			}
-			else if(!str_comp_nocase_num("top ", pMsg->m_pMessage + 1, 4) || !str_comp_nocase_num("top5 ", pMsg->m_pMessage + 1, 5))
+			else if(RankingEnabled() && (!str_comp_nocase_num("top ", pMsg->m_pMessage + 1, 4) || !str_comp_nocase_num("top5 ", pMsg->m_pMessage + 1, 5)))
 			{
 				char *category = str_skip_whitespaces((char*)pMsg->m_pMessage + 5);
 				int length = str_length(category);
@@ -1037,11 +1053,11 @@ void CGameContext::OnMessage(int MsgID, CUnpacker *pUnpacker, int ClientID)
 				}
 				m_pController->OnChatCommandTop(pPlayer, category);
 			}
-			else if(!str_comp_nocase("rank", pMsg->m_pMessage + 1))
+			else if(RankingEnabled() && (!str_comp_nocase("rank", pMsg->m_pMessage + 1)))
 			{
 				m_pController->OnChatCommandOwnRank(pPlayer);
 			}
-			else if(!str_comp_nocase_num("rank ", pMsg->m_pMessage + 1, 5))
+			else if(RankingEnabled() && (!str_comp_nocase_num("rank ", pMsg->m_pMessage + 1, 5)))
 			{
 				char *name = str_skip_whitespaces((char*)pMsg->m_pMessage + 6);
 				int length = str_length(name);
@@ -2101,16 +2117,19 @@ void CGameContext::OnInit(/*class IKernel *pKernel*/)
 	//players = new CPlayer[MAX_CLIENTS];
 
 	/* open ranking system db */
-	int rc = sqlite3_open(g_Config.m_SvRankingFile, &m_RankingDb);
-	if (rc){
-		char aBuf[512];
-		str_format(aBuf, sizeof(aBuf), "Can't open database (#%d): %s\n", rc, sqlite3_errmsg(m_RankingDb));
-		Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "ranking", aBuf);
-		sqlite3_close(m_RankingDb);
-		exit(1);
+	if (g_Config.m_SvRanking == 1)
+	{
+		int rc = sqlite3_open(g_Config.m_SvRankingFile, &m_RankingDb);
+		if (rc){
+			char aBuf[512];
+			str_format(aBuf, sizeof(aBuf), "Can't open database (#%d): %s\n", rc, sqlite3_errmsg(m_RankingDb));
+			Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "ranking", aBuf);
+			sqlite3_close(m_RankingDb);
+			exit(1);
+		}
+		/* wait up to 5 seconds if the db is used */
+		sqlite3_busy_timeout(m_RankingDb, 5000);
 	}
-	/* wait up to 5 seconds if the db is used */
-	sqlite3_busy_timeout(m_RankingDb, 5000);
 	
 	// select gametype
 	/*if(str_comp(g_Config.m_SvGametype, "mod") == 0)
@@ -2126,7 +2145,10 @@ void CGameContext::OnInit(/*class IKernel *pKernel*/)
 	m_pController = new CGameController_zCatch(this);
 	
 	/* ranking system */
-	m_pController->OnInitRanking(m_RankingDb);
+	if (RankingEnabled())
+	{
+		m_pController->OnInitRanking(m_RankingDb);
+	}
 
 	// setup core world
 	//for(int i = 0; i < MAX_CLIENTS; i++)

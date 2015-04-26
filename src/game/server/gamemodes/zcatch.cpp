@@ -355,7 +355,11 @@ void CGameController_zCatch::RewardWinner(int winnerId) {
 }
 
 /* save a player's ranking stats */
-void CGameController_zCatch::SaveRanking(CPlayer *player) {
+void CGameController_zCatch::SaveRanking(CPlayer *player)
+{
+	
+	if (!GameServer()->RankingEnabled())
+		return;
 	
 	/* prepare */
 	player->RankCacheStopPlaying(); // so that m_RankCache.m_TimePlayed is updated
