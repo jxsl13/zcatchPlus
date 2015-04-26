@@ -49,6 +49,13 @@ void CGameController_zCatch::OnInitRanking(sqlite3 *rankingDb) {
 				timePlayed UNSIGNED INTEGER DEFAULT 0 \
 			); \
 			CREATE INDEX IF NOT EXISTS zCatch_score_index ON zCatch (score); \
+			CREATE INDEX IF NOT EXISTS zCatch_numWins_index ON zCatch (numWins); \
+			CREATE INDEX IF NOT EXISTS zCatch_numKills_index ON zCatch (numKills); \
+			CREATE INDEX IF NOT EXISTS zCatch_numKillsWallshot_index ON zCatch (numKillsWallshot); \
+			CREATE INDEX IF NOT EXISTS zCatch_numDeaths_index ON zCatch (numDeaths); \
+			CREATE INDEX IF NOT EXISTS zCatch_numShots_index ON zCatch (numShots); \
+			CREATE INDEX IF NOT EXISTS zCatch_highestSpree_index ON zCatch (highestSpree); \
+			CREATE INDEX IF NOT EXISTS zCatch_timePlayed_index ON zCatch (timePlayed); \
 			COMMIT; \
 		", NULL, 0, &zErrMsg);
 	
