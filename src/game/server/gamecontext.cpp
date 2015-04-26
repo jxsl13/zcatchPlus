@@ -2053,6 +2053,8 @@ void CGameContext::OnInit(/*class IKernel *pKernel*/)
 		sqlite3_close(rankingDb);
 		exit(1);
 	}
+	/* wait up to 5 seconds if the db is used */
+	sqlite3_busy_timeout(rankingDb, 5000);
 	
 	// select gametype
 	/*if(str_comp(g_Config.m_SvGametype, "mod") == 0)
