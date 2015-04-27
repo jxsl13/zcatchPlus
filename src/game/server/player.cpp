@@ -469,17 +469,18 @@ void CPlayer::ReleaseZCatchVictim(int ClientID, int limit, bool manual)
 				if(victim->m_zCatchJoinSpecWhenReleased)
 					victim->SetTeam(GameServer()->m_pController->ClampTeam(TEAM_SPECTATORS));
 			}
-			// delete from list
-			tmp = (*v)->prev;
-			delete *v;
-			*v = tmp;
-			--m_zCatchNumVictims;
 			
 			// count releases of players you killed
 			if (manual && (*v)->Reason == ZCATCH_CAUGHT_REASON_KILLED)
 			{
 				++m_zCatchNumKillsReleased;
 			}
+			
+			// delete from list
+			tmp = (*v)->prev;
+			delete *v;
+			*v = tmp;
+			--m_zCatchNumVictims;
 			
 			if (limit && ++count >= limit)
 				return;
