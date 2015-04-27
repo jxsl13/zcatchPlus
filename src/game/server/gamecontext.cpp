@@ -1379,6 +1379,25 @@ void CGameContext::OnMessage(int MsgID, CUnpacker *pUnpacker, int ClientID)
 			SendChatTarget(ClientID, aBuf);
 			str_format(aBuf, sizeof(aBuf), "You were released by '%s'.", Server()->ClientName(ClientID));
 			SendChatTarget(lastVictim, aBuf);
+			
+			// console release log
+			str_format(aBuf, sizeof(aBuf), "release killer='%d:%s' victim='%d:%s'" , ClientID, Server()->ClientName(ClientID), lastVictim, Server()->ClientName(lastVictim));
+			Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "game", aBuf);
+
+			// Send release information to the same killer's victims
+			// Message flood risk on first killed players!
+				//if(pPlayer->m_zCatchNumVictims > 0)
+				//{
+				//	CPlayer::CZCatchVictim *v = pPlayer->m_ZCatchVictims;
+				//	str_format(aBuf, sizeof(aBuf), "'%s' released '%s'", Server()->ClientName(ClientID), Server()->ClientName(lastVictim));
+				//	while(v != NULL)
+				//	{
+				//		SendChatTarget(v->ClientID, aBuf);
+				//		v = v->prev;
+				//	}
+				//}
+			
+
 			return;
 		}
 		else if(g_Config.m_SvSuicideTime == 0)
