@@ -372,14 +372,19 @@ void CGameController_zCatch::SaveRanking(CPlayer *player)
 	player->RankCacheStopPlaying(); // so that m_RankCache.m_TimePlayed is updated
 	
 	/* check if saving is needed */
-	if (player->m_RankCache.m_Points == 0 &&
-		player->m_RankCache.m_NumWins == 0 &&
+	/* because compared to simply the & operator, the && operator does not conpinue to check all the conditions 
+	of the if statement if one of them does not meet the criteria, so the order of the conditions decides how fast 
+	those are checked
+	I wonder if the numKillsWallshot is actually needed due to every wallshot being a shot, meaning that the wallshot 
+	doesn't need to be checked*/
+	if (player->m_RankCache.m_NumShots == 0 &&
+		player->m_RankCache.m_TimePlayed == 0 &&
 		player->m_RankCache.m_NumKills == 0 &&
-		player->m_RankCache.m_NumKillsWallshot == 0 &&
 		player->m_RankCache.m_NumDeaths == 0 &&
-		player->m_RankCache.m_NumShots == 0 &&
 		player->m_zCatchNumKillsInARow == 0 &&
-		player->m_RankCache.m_TimePlayed == 0)
+		player->m_RankCache.m_NumWins == 0 &&
+		player->m_RankCache.m_Points == 0 &&
+		player->m_RankCache.m_NumKillsWallshot == 0)
 			return;
 	
 	/* player's name */
