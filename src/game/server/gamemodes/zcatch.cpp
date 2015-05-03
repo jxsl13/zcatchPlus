@@ -341,16 +341,18 @@ void CGameController_zCatch::RewardWinner(int winnerId) {
 	int points = 100 * numEnemies * numEnemies * numEnemies / 225;
 	
 	/* set winner's ranking stats */
-	winner->m_RankCache.m_Points += points;
 	++winner->m_RankCache.m_NumWins;
-	/* saving is done in EndRound() */
 	
 	/* abort if no points */
-	if (points == 0)
+	if (points == 0) // logical opposite would be <= 0, but left it as is
 	{
 		return;
 	}
-
+	// you don't need to increment anything if there is nothing to be incremented
+	winner->m_RankCache.m_Points += points;
+	
+	/* saving is done in EndRound() */
+	
 	/* the winner's name */
 	const char *name = GameServer()->Server()->ClientName(winnerId);
 	
