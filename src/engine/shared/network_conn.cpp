@@ -13,6 +13,7 @@ void CNetConnection::Reset()
 {
 	m_Sequence = 0;
 	m_Ack = 0;
+	m_PeerAck = 0;
 	m_RemoteClosed = 0;
 
 	m_State = NET_CONNSTATE_OFFLINE;
@@ -186,9 +187,13 @@ void CNetConnection::Disconnect(const char *pReason)
 		else
 			SendControl(NET_CTRLMSG_CLOSE, 0, 0);
 
-		m_ErrorString[0] = 0;
-		if(pReason)
-			str_copy(m_ErrorString, pReason, sizeof(m_ErrorString));
+		if(pReason != m_ErrorString)
+		{
+			if(pReason)
+				str_copy(m_ErrorString, pReason, sizeof(m_ErrorString));
+			else
+				m_ErrorString[0] = 0;
+		}
 	}
 
 	Reset();
@@ -196,6 +201,19 @@ void CNetConnection::Disconnect(const char *pReason)
 
 int CNetConnection::Feed(CNetPacketConstruct *pPacket, NETADDR *pAddr)
 {
+	// check if actual ack value is valid(own sequence..latest peer ack)
+	if(m_Sequence >= m_PeerAck)
+	{
+		if(pPacket->m_Ack < m_PeerAck || pPacket->m_Ack > m_Sequence)
+			return 0;
+	}
+	else
+	{
+		if(pPacket->m_Ack < m_PeerAck && pPacket->m_Ack > m_Sequence)
+			return 0;
+	}
+	m_PeerAck = pPacket->m_Ack;
+
 	int64 Now = time_get();
 
 	// check if resend is requested

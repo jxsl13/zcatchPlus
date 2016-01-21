@@ -16,6 +16,10 @@ bulgarian
 == Български
 == 100
 
+chuvash
+== Чăвашла
+== 643
+
 czech
 == Česky
 == 203
@@ -70,6 +74,10 @@ romanian
 
 russian
 == Русский
+== 643
+
+sakha
+== Саха тыла
 == 643
 
 serbian
