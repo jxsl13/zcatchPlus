@@ -36,7 +36,9 @@ enum
 	NETSTATE_ONLINE,
 
 	NETBANTYPE_SOFT=1,
-	NETBANTYPE_DROP=2
+	NETBANTYPE_DROP=2,
+
+	NETCREATE_FLAG_RANDOMPORT=1
 };
 
 
@@ -136,6 +138,7 @@ class CNetConnection
 private:
 	unsigned short m_Sequence;
 	unsigned short m_Ack;
+	unsigned short m_PeerAck;
 	unsigned m_State;
 
 	int m_Token;

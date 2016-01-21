@@ -1526,11 +1526,7 @@ void CGameContext::ConTuneDump(IConsole::IResult *pResult, void *pUserData)
 void CGameContext::ConPause(IConsole::IResult *pResult, void *pUserData)
 {
 	CGameContext *pSelf = (CGameContext *)pUserData;
-
-	if(pSelf->m_pController->IsGameOver())
-		return;
-
-	pSelf->m_World.m_Paused ^= 1;
+	pSelf->m_pController->TogglePause();
 }
 
 void CGameContext::ConChangeMap(IConsole::IResult *pResult, void *pUserData)

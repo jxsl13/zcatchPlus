@@ -6,7 +6,7 @@ See license.txt.
 The following is the content of the readme.txt distributed with zCatch:
 #############################################################################
 
-Copyright (c) 2012 Magnus Auvinen
+Copyright (c) 2015 Magnus Auvinen
 
 
 This software is provided 'as-is', without any express or implied
