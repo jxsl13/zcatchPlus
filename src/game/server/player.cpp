@@ -374,6 +374,10 @@ void CPlayer::TryRespawn()
 	m_Spawning = false;
 	m_pCharacter = new(m_ClientID) CCharacter(&GameServer()->m_World);
 	m_pCharacter->Spawn(this, SpawnPos);
+	
+	// zCatch/TeeVi hard mode: weapon overheat reset
+	m_HardMode.m_ModeWeaponOverheats.m_Heat = 0;
+	
 	GameServer()->CreatePlayerSpawn(SpawnPos);
 }
 
@@ -503,4 +507,28 @@ void CPlayer::RankCacheStopPlaying() {
 		m_RankCache.m_TimePlayed += Server()->Tick() - m_RankCache.m_TimeStartedPlaying;
 		m_RankCache.m_TimeStartedPlaying = -1;
 	}
+}
+
+// add hard mode setting
+bool CPlayer::AddHardMode(const char* mode)
+{
+	if(!str_comp_nocase("ammo210", mode))
+	{
+		m_HardMode.m_ModeAmmoLimit = 2;
+		m_HardMode.m_ModeAmmoRegenFactor = 10;
+	}
+	else if(!str_comp_nocase("ammo15", mode))
+	{
+		m_HardMode.m_ModeAmmoLimit = 1;
+		m_HardMode.m_ModeAmmoRegenFactor = 5;
+	}
+	else if(!str_comp_nocase("overheat", mode))
+	{
+		m_HardMode.m_ModeWeaponOverheats.m_Active = true;
+	}
+	else
+		return false;
+	
+	m_HardMode.m_Active = true;
+	return true;
 }

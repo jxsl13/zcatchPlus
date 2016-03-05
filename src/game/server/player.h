@@ -151,6 +151,30 @@ public:
 	void RankCacheStartPlaying();
 	void RankCacheStopPlaying();
 	
+	// zCatch/TeeVi hard mode
+	struct {
+		bool m_Active;
+		unsigned int m_ModeAmmoLimit;
+		unsigned int m_ModeAmmoRegenFactor;
+		bool m_ModeDirectHits; // TODO
+		bool m_ModeSuperWeakness; // TODO
+		bool m_ModeDoubleKill; // TODO
+		bool m_ModeKillTimelimit; // TODO
+		bool m_ModeWinTimelimit; // TODO
+		bool m_ModeHookWhileKilling; // TODO
+		bool m_ModeReducedReach; // TODO
+		bool m_ModeLaserWallshots; // TODO
+		bool m_ModeShortHook; // TODO
+		bool m_ModeGrenadeSelfKill; // TODO
+		bool m_ModeStandToShoot; // TODO
+		struct {
+			bool m_Active;
+			unsigned int m_Heat;
+		} m_ModeWeaponOverheats;
+		bool m_ModeTotalAmmo; // TODO
+	} m_HardMode;
+	bool AddHardMode(const char*);
+	
 	// bot detection
 	int m_IsAimBot;
 	int m_AimBotIndex;

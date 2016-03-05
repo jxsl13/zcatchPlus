@@ -1075,6 +1075,66 @@ void CGameContext::OnMessage(int MsgID, CUnpacker *pUnpacker, int ClientID)
 				m_pController->OnChatCommandRank(pPlayer, name);
 			}
 			
+			// hard mode
+			else if(g_Config.m_SvAllowHardMode == 1 && (!str_comp_nocase_num("hard", pMsg->m_pMessage + 1, 4)))
+			{
+				if(pPlayer->m_HardMode.m_Active)
+				{
+					SendChatTarget(ClientID, "You already are in hard mode.");
+				}
+				else
+				{
+					char *optionStart, *m = (char*)pMsg->m_pMessage + 5;
+					
+					// read options from the command and assign those hard modes
+					while(*m)
+					{
+						optionStart = str_skip_whitespaces(m);
+						m = str_skip_to_whitespace(optionStart);
+						
+						// no mode is longer than this
+						if((m - optionStart) > 30)
+						{
+							SendChatTarget(ClientID, "That mode is bullshit!");
+							return;
+						}
+						
+						// get mode
+						char mode[32];
+						str_copy(mode, optionStart, m - optionStart + 1);
+						
+						// add mode
+						if(!pPlayer->AddHardMode(mode))
+						{
+							// unknown mode
+							char aBuf[256];
+							str_format(aBuf, sizeof(aBuf), "'%s' is not a hard mode, dumbass!", mode);
+							SendChatTarget(ClientID, aBuf);
+							return;
+						}
+					}
+					
+					// none mode was added above
+					// assign random
+					if(!pPlayer->m_HardMode.m_Active)
+					{
+						switch(rand() % 3)
+						{
+							case 0: pPlayer->AddHardMode("ammo210");
+							case 1: pPlayer->AddHardMode("ammo15");
+							case 2: pPlayer->AddHardMode("overheat");
+						}
+					}
+					
+					// player has to start over again
+					pPlayer->KillCharacter();
+					
+					char aBuf[256];
+					str_format(aBuf, sizeof(aBuf), "'%s' entered hard mode", Server()->ClientName(ClientID));
+					SendChat(-1, CGameContext::CHAT_ALL, aBuf);
+				}
+			}
+			
 			else
 			{
 				SendChatTarget(ClientID, "Unknown command, try /info");

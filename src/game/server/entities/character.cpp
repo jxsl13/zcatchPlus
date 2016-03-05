@@ -375,6 +375,20 @@ void CCharacter::FireWeapon()
 		}
 		return;
 	}
+	
+	// zCatch/TeeVi hard mode: weapon overheating
+	if(GetPlayer()->m_HardMode.m_Active && GetPlayer()->m_HardMode.m_ModeWeaponOverheats.m_Active)
+	{
+		GetPlayer()->m_HardMode.m_ModeWeaponOverheats.m_Heat += 45 + rand() % 11;
+		if(GetPlayer()->m_HardMode.m_ModeWeaponOverheats.m_Heat > 100)
+		{
+			GameServer()->SendBroadcast("Your weapon overheated, exploded and killed you.", GetPlayer()->GetCID());
+			GameServer()->CreateExplosion(m_Pos, GetPlayer()->GetCID(), m_ActiveWeapon, true);
+			GameServer()->CreateSound(m_Pos, SOUND_GRENADE_EXPLODE);
+			Die(GetPlayer()->GetCID(), WEAPON_WORLD);
+			return;
+		}
+	}
 
 	vec2 ProjStartPos = m_Pos+Direction*m_ProximityRadius*0.75f;
 
@@ -541,10 +555,16 @@ void CCharacter::HandleWeapons()
 			if (m_aWeapons[m_ActiveWeapon].m_AmmoRegenStart < 0)
 				m_aWeapons[m_ActiveWeapon].m_AmmoRegenStart = Server()->Tick();
 
+			if(GetPlayer()->m_HardMode.m_Active && GetPlayer()->m_HardMode.m_ModeAmmoRegenFactor > 0)
+				AmmoRegenTime *= GetPlayer()->m_HardMode.m_ModeAmmoRegenFactor;
+
 			if ((Server()->Tick() - m_aWeapons[m_ActiveWeapon].m_AmmoRegenStart) >= AmmoRegenTime * Server()->TickSpeed() / 1000)
 			{
 				// Add some ammo
-				m_aWeapons[m_ActiveWeapon].m_Ammo = min(m_aWeapons[m_ActiveWeapon].m_Ammo + 1, g_Config.m_SvWeaponsAmmo);
+				int maxAmmo = g_Config.m_SvWeaponsAmmo;
+				if(GetPlayer()->m_HardMode.m_Active && GetPlayer()->m_HardMode.m_ModeAmmoLimit > 0)
+					maxAmmo = min(g_Config.m_SvWeaponsAmmo, (int)GetPlayer()->m_HardMode.m_ModeAmmoLimit);
+				m_aWeapons[m_ActiveWeapon].m_Ammo = min(m_aWeapons[m_ActiveWeapon].m_Ammo + 1, maxAmmo);
 				m_aWeapons[m_ActiveWeapon].m_AmmoRegenStart = -1;
 			}
 		}
@@ -693,6 +713,14 @@ void CCharacter::Tick()
 	// save position
 	m_LastPositions[Server()->Tick() % m_LastPositionsSize] = m_Pos;
 	
+	// zCatch/TeeVi hard mode: weapon overheating
+	if(Server()->Tick() % 2)
+	{
+		if(GetPlayer()->m_HardMode.m_ModeWeaponOverheats.m_Heat > 0)
+			--GetPlayer()->m_HardMode.m_ModeWeaponOverheats.m_Heat;
+		m_Armor = clamp((int)GetPlayer()->m_HardMode.m_ModeWeaponOverheats.m_Heat/10, 0, 10);
+	}
+
 	return;
 }
 
