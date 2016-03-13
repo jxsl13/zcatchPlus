@@ -95,6 +95,9 @@ class CGameContext : public IGameServer
 	std::vector<std::thread*> m_RankingThreads;
 	std::timed_mutex m_RankingDbMutex;
 	
+	// zCatch/TeeVi: hard mode
+	std::vector<const char*> m_HardModes;
+	
 public:
 	IServer *Server() const { return m_pServer; }
 	class IConsole *Console() { return m_pConsole; }
@@ -229,6 +232,9 @@ public:
 	bool LockRankingDb(int ms = -1);
 	void UnlockRankingDb();
 	void AddRankingThread(std::thread *thread) { m_RankingThreads.push_back(thread); };
+	
+	// zCatch/TeeVi: hard mode
+	std::vector<const char*> GetHardModes() { return std::vector<const char*>(m_HardModes.begin(), m_HardModes.end()); };
 };
 
 inline int CmaskAll() { return -1; }

@@ -437,7 +437,7 @@ void CCharacter::FireWeapon()
 
 		case WEAPON_GUN:
 		{
-			CProjectile *pProj = new CProjectile(GameWorld(), WEAPON_GUN,
+			new CProjectile(GameWorld(), WEAPON_GUN,
 				m_pPlayer->GetCID(),
 				ProjStartPos,
 				Direction,
@@ -458,7 +458,7 @@ void CCharacter::FireWeapon()
 				a += Spreading[i+2];
 				float v = 1-(absolute(i)/(float)ShotSpread);
 				float Speed = mix((float)GameServer()->Tuning()->m_ShotgunSpeeddiff, 1.0f, v);
-				CProjectile *pProj = new CProjectile(GameWorld(), WEAPON_SHOTGUN,
+				new CProjectile(GameWorld(), WEAPON_SHOTGUN,
 					m_pPlayer->GetCID(),
 					ProjStartPos,
 					vec2(cosf(a), sinf(a))*Speed,
@@ -877,17 +877,12 @@ bool CCharacter::TakeDamage(vec2 Force, int Dmg, int From, int Weapon)
 
 	if(GameServer()->m_pController->IsFriendlyFire(m_pPlayer->GetCID(), From) && !g_Config.m_SvTeamdamage)
 		return false;
-	
-	/* zCatch */
-	if(From == m_pPlayer->GetCID() || Weapon == WEAPON_GAME)
-		return false;
-
-	if(g_Config.m_SvMode == 4 && Weapon == WEAPON_GRENADE && Dmg < g_Config.m_SvGrenadeMinDamage)
-		return false;
 
 	// zCatch/TeeVi hard mode
 	auto killer = GameServer()->m_apPlayers[From];
 	auto hardMode = &killer->m_HardMode;
+	bool selfKillAllowed = hardMode->m_ModeSelfKill;
+	int minDamage = g_Config.m_SvGrenadeMinDamage;
 	if(hardMode->m_Active)
 	{
 		auto killerChar = killer->GetCharacter();
@@ -895,7 +890,18 @@ bool CCharacter::TakeDamage(vec2 Force, int Dmg, int From, int Weapon)
 		// hookkill: only take damage if killer hooks you
 		if(hardMode->m_ModeHookWhileKilling && (!killerChar || killerChar->m_Core.m_HookedPlayer != m_pPlayer->GetCID()))
 			return false;
+		
+		// super weakness
+		if(hardMode->m_ModeSuperWeakness)
+			minDamage = 0;
 	}
+	
+	/* zCatch */
+	if((!selfKillAllowed && From == m_pPlayer->GetCID()) || Weapon == WEAPON_GAME)
+		return false;
+
+	if(g_Config.m_SvMode == 4 && Weapon == WEAPON_GRENADE && Dmg < minDamage)
+		return false;
 		
 	m_Health = 0;
 	m_Armor = 0;

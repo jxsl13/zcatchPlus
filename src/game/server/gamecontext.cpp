@@ -48,6 +48,15 @@ void CGameContext::Construct(int Resetting)
 	for(int i = 0; i < MAX_MUTES; i++)
 		m_aMutes[i].m_aIP[0] = 0;
 	
+	// zCatch/TeeVi: hard mode
+	m_HardModes.clear();
+	m_HardModes.push_back("ammo210");
+	m_HardModes.push_back("ammo15");
+	m_HardModes.push_back("overheat");
+	m_HardModes.push_back("hookkill");
+	m_HardModes.push_back("selfie");
+	m_HardModes.push_back("weak");
+	m_HardModes.push_back("sloth");
 }
 
 CGameContext::CGameContext(int Resetting)
@@ -1078,13 +1087,15 @@ void CGameContext::OnMessage(int MsgID, CUnpacker *pUnpacker, int ClientID)
 			// hard mode
 			else if(g_Config.m_SvAllowHardMode == 1 && (!str_comp_nocase_num("hard", pMsg->m_pMessage + 1, 4) || !str_comp_nocase_num("hard ", pMsg->m_pMessage + 1, 5)))
 			{
-				if(pPlayer->m_HardMode.m_Active)
-				{
-					SendChatTarget(ClientID, "You already are in hard mode.");
-				}
-				else
+				//if(pPlayer->m_HardMode.m_Active)
+				//{
+					//SendChatTarget(ClientID, "You already are in hard mode.");
+				//}
+				//else
 				{
 					char *optionStart, *m = (char*)pMsg->m_pMessage + 5;
+					
+					pPlayer->ResetHardMode();
 					
 					// read options from the command and assign those hard modes
 					while(*m)
@@ -1110,6 +1121,18 @@ void CGameContext::OnMessage(int MsgID, CUnpacker *pUnpacker, int ClientID)
 							char aBuf[256];
 							str_format(aBuf, sizeof(aBuf), "'%s' is not a hard mode, dumbass!", mode);
 							SendChatTarget(ClientID, aBuf);
+							
+							// give out list of hard modes
+							char mBuf[256], mBuf2[256];
+							mBuf[0] = 0;
+							for(auto it = m_HardModes.begin(); it != m_HardModes.end(); ++it)
+							{
+								str_format(mBuf2, sizeof(mBuf2), "%s %s", mBuf, *it);
+								str_copy(mBuf, mBuf2, sizeof(mBuf));
+							}
+							str_format(aBuf, sizeof(aBuf), "Hard modes:%s", mBuf);
+							SendChatTarget(ClientID, aBuf);
+							
 							return;
 						}
 					}
@@ -1141,13 +1164,13 @@ void CGameContext::OnMessage(int MsgID, CUnpacker *pUnpacker, int ClientID)
 						SendChatTarget(ClientID, aBuf);
 					}
 					if(mode->m_ModeHookWhileKilling)
-					{
 						SendChatTarget(ClientID, "Hard mode: hook players while catching them");
-					}
 					if(mode->m_ModeWeaponOverheats.m_Active)
-					{
 						SendChatTarget(ClientID, "Hard mode: your weapon kills you if overheating");
-					}
+					if(mode->m_ModeSelfKill)
+						SendChatTarget(ClientID, "Hard mode: you can kill yourself with your weapon");
+					if(mode->m_ModeSuperWeakness)
+						SendChatTarget(ClientID, "Hard mode: the smallest amount of damage kills you");
 				}
 			}
 			

@@ -526,12 +526,17 @@ bool CPlayer::AddHardMode(const char* mode)
 		m_HardMode.m_ModeAmmoRegenFactor = 5;
 	}
 	else if(!str_comp_nocase("overheat", mode))
-	{
 		m_HardMode.m_ModeWeaponOverheats.m_Active = true;
-	}
 	else if(!str_comp_nocase("hookkill", mode))
-	{
 		m_HardMode.m_ModeHookWhileKilling = true;
+	else if(!str_comp_nocase("selfie", mode))
+		m_HardMode.m_ModeSelfKill = true;
+	else if(!str_comp_nocase("weak", mode))
+		m_HardMode.m_ModeSuperWeakness = true;
+	else if(!str_comp_nocase("sloth", mode))
+	{
+		m_HardMode.m_ModeSelfKill = true;
+		m_HardMode.m_ModeSuperWeakness = true;
 	}
 	else
 		return false;
@@ -543,15 +548,10 @@ bool CPlayer::AddHardMode(const char* mode)
 // reset hard mode
 void CPlayer::AddRandomHardMode(unsigned int count)
 {
-	std::vector<const char*> modes;
-	modes.push_back("ammo210");
-	modes.push_back("ammo15");
-	modes.push_back("overheat");
-	modes.push_back("hookkill");
-	
+	auto modes = m_pGameServer->GetHardModes();
 	std::random_shuffle(modes.begin(), modes.end());
 	
-	for(auto it = modes.begin(); count > 0; ++it)
+	for(auto it = modes.begin(); count > 0 && it != modes.end(); ++it)
 	{
 		AddHardMode(*it);
 		--count;
@@ -561,5 +561,5 @@ void CPlayer::AddRandomHardMode(unsigned int count)
 // reset hard mode
 void CPlayer::ResetHardMode()
 {
-	mem_zero(&m_HardMode.m_Active, sizeof(m_HardMode.m_Active));
+	mem_zero(&m_HardMode, sizeof(m_HardMode));
 }

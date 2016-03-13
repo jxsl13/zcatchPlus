@@ -157,7 +157,7 @@ public:
 		unsigned int m_ModeAmmoLimit;
 		unsigned int m_ModeAmmoRegenFactor;
 		bool m_ModeDirectHits; // TODO
-		bool m_ModeSuperWeakness; // TODO
+		bool m_ModeSuperWeakness;
 		bool m_ModeDoubleKill; // TODO
 		bool m_ModeKillTimelimit; // TODO
 		bool m_ModeWinTimelimit; // TODO
@@ -165,7 +165,7 @@ public:
 		bool m_ModeReducedReach; // TODO
 		bool m_ModeLaserWallshots; // TODO
 		bool m_ModeShortHook; // TODO
-		bool m_ModeGrenadeSelfKill; // TODO
+		bool m_ModeSelfKill;
 		bool m_ModeStandToShoot; // TODO
 		struct {
 			bool m_Active;
