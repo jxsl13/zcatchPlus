@@ -885,6 +885,18 @@ bool CCharacter::TakeDamage(vec2 Force, int Dmg, int From, int Weapon)
 	if(g_Config.m_SvMode == 4 && Weapon == WEAPON_GRENADE && Dmg < g_Config.m_SvGrenadeMinDamage)
 		return false;
 
+	// zCatch/TeeVi hard mode
+	auto killer = GameServer()->m_apPlayers[From];
+	auto hardMode = &killer->m_HardMode;
+	if(hardMode->m_Active)
+	{
+		auto killerChar = killer->GetCharacter();
+		
+		// hookkill: only take damage if killer hooks you
+		if(hardMode->m_ModeHookWhileKilling && (!killerChar || killerChar->m_Core.m_HookedPlayer != m_pPlayer->GetCID()))
+			return false;
+	}
+		
 	m_Health = 0;
 	m_Armor = 0;
 	/* end zCatch */

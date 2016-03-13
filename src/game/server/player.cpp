@@ -1,6 +1,8 @@
 /* (c) Magnus Auvinen. See licence.txt in the root of the distribution for more information. */
 /* If you are missing that file, acquire a complete release at teeworlds.com.                */
 #include <new>
+#include <algorithm> // std::random_shuffle
+#include <vector> // std::vector
 #include <engine/shared/config.h>
 #include "player.h"
 
@@ -37,6 +39,7 @@ CPlayer::CPlayer(CGameContext *pGameServer, int ClientID, int Team)
 	m_zCatchNumVictims = 0;
 	m_zCatchNumKillsInARow = 0;
 	m_zCatchNumKillsReleased = 0;
+	ResetHardMode();
 	
 	// ranking system
 	m_RankCache.m_Points = 0;
@@ -526,9 +529,37 @@ bool CPlayer::AddHardMode(const char* mode)
 	{
 		m_HardMode.m_ModeWeaponOverheats.m_Active = true;
 	}
+	else if(!str_comp_nocase("hookkill", mode))
+	{
+		m_HardMode.m_ModeHookWhileKilling = true;
+	}
 	else
 		return false;
 	
 	m_HardMode.m_Active = true;
 	return true;
+}
+
+// reset hard mode
+void CPlayer::AddRandomHardMode(unsigned int count)
+{
+	std::vector<const char*> modes;
+	modes.push_back("ammo210");
+	modes.push_back("ammo15");
+	modes.push_back("overheat");
+	modes.push_back("hookkill");
+	
+	std::random_shuffle(modes.begin(), modes.end());
+	
+	for(auto it = modes.begin(); count > 0; ++it)
+	{
+		AddHardMode(*it);
+		--count;
+	}
+}
+
+// reset hard mode
+void CPlayer::ResetHardMode()
+{
+	mem_zero(&m_HardMode.m_Active, sizeof(m_HardMode.m_Active));
 }

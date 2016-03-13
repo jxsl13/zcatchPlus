@@ -161,7 +161,7 @@ public:
 		bool m_ModeDoubleKill; // TODO
 		bool m_ModeKillTimelimit; // TODO
 		bool m_ModeWinTimelimit; // TODO
-		bool m_ModeHookWhileKilling; // TODO
+		bool m_ModeHookWhileKilling;
 		bool m_ModeReducedReach; // TODO
 		bool m_ModeLaserWallshots; // TODO
 		bool m_ModeShortHook; // TODO
@@ -174,6 +174,8 @@ public:
 		bool m_ModeTotalAmmo; // TODO
 	} m_HardMode;
 	bool AddHardMode(const char*);
+	void AddRandomHardMode(unsigned int count = 1);
+	void ResetHardMode();
 	
 	// bot detection
 	int m_IsAimBot;

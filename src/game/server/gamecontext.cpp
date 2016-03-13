@@ -1076,7 +1076,7 @@ void CGameContext::OnMessage(int MsgID, CUnpacker *pUnpacker, int ClientID)
 			}
 			
 			// hard mode
-			else if(g_Config.m_SvAllowHardMode == 1 && (!str_comp_nocase_num("hard", pMsg->m_pMessage + 1, 4)))
+			else if(g_Config.m_SvAllowHardMode == 1 && (!str_comp_nocase_num("hard", pMsg->m_pMessage + 1, 4) || !str_comp_nocase_num("hard ", pMsg->m_pMessage + 1, 5)))
 			{
 				if(pPlayer->m_HardMode.m_Active)
 				{
@@ -1118,12 +1118,7 @@ void CGameContext::OnMessage(int MsgID, CUnpacker *pUnpacker, int ClientID)
 					// assign random
 					if(!pPlayer->m_HardMode.m_Active)
 					{
-						switch(rand() % 3)
-						{
-							case 0: pPlayer->AddHardMode("ammo210");
-							case 1: pPlayer->AddHardMode("ammo15");
-							case 2: pPlayer->AddHardMode("overheat");
-						}
+						pPlayer->AddRandomHardMode();
 					}
 					
 					// player has to start over again
@@ -1132,6 +1127,27 @@ void CGameContext::OnMessage(int MsgID, CUnpacker *pUnpacker, int ClientID)
 					char aBuf[256];
 					str_format(aBuf, sizeof(aBuf), "'%s' entered hard mode", Server()->ClientName(ClientID));
 					SendChat(-1, CGameContext::CHAT_ALL, aBuf);
+					
+					// inform player about the hard modes he got
+					auto mode = &pPlayer->m_HardMode;
+					if(mode->m_ModeAmmoLimit > 0)
+					{
+						str_format(aBuf, sizeof(aBuf), "Hard mode: ammo limit of %d", mode->m_ModeAmmoLimit);
+						SendChatTarget(ClientID, aBuf);
+					}
+					if(mode->m_ModeAmmoRegenFactor > 0)
+					{
+						str_format(aBuf, sizeof(aBuf), "Hard mode: %dx ammo regeneration time", mode->m_ModeAmmoRegenFactor);
+						SendChatTarget(ClientID, aBuf);
+					}
+					if(mode->m_ModeHookWhileKilling)
+					{
+						SendChatTarget(ClientID, "Hard mode: hook players while catching them");
+					}
+					if(mode->m_ModeWeaponOverheats.m_Active)
+					{
+						SendChatTarget(ClientID, "Hard mode: your weapon kills you if overheating");
+					}
 				}
 			}
 			

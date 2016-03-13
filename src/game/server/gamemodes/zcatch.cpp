@@ -274,38 +274,44 @@ void CGameController_zCatch::OnCharacterSpawn(class CCharacter *pChr)
 
 void CGameController_zCatch::EndRound()
 {
+	if(m_Warmup) // game can't end when we are running warmup
+		return;
+
 	for(int i = 0; i < MAX_CLIENTS; i++)
 	{
-		if(GameServer()->m_apPlayers[i])
+		auto player = GameServer()->m_apPlayers[i];
+		if(player)
 		{
 			
 			// save ranking stats
-			SaveRanking(GameServer()->m_apPlayers[i]);
-			GameServer()->m_apPlayers[i]->RankCacheStopPlaying();
+			SaveRanking(player);
+			player->RankCacheStopPlaying();
 
-			if(!GameServer()->m_apPlayers[i]->m_SpecExplicit)
+			if(!player->m_SpecExplicit)
 			{
-				GameServer()->m_apPlayers[i]->SetTeamDirect(GameServer()->m_pController->ClampTeam(1));
+				player->SetTeamDirect(GameServer()->m_pController->ClampTeam(1));
 
 				char aBuf[128];
-				str_format(aBuf, sizeof(aBuf), "Kills: %d | Deaths: %d", GameServer()->m_apPlayers[i]->m_Kills, GameServer()->m_apPlayers[i]->m_Deaths);
+				str_format(aBuf, sizeof(aBuf), "Kills: %d | Deaths: %d", player->m_Kills, player->m_Deaths);
 				GameServer()->SendChatTarget(i, aBuf);
 
-				if(GameServer()->m_apPlayers[i]->m_TicksSpec != 0 || GameServer()->m_apPlayers[i]->m_TicksIngame != 0)
+				if(player->m_TicksSpec != 0 || player->m_TicksIngame != 0)
 				{
-					double TimeInSpec = (GameServer()->m_apPlayers[i]->m_TicksSpec * 100.0) / (GameServer()->m_apPlayers[i]->m_TicksIngame + GameServer()->m_apPlayers[i]->m_TicksSpec);
+					double TimeInSpec = (player->m_TicksSpec * 100.0) / (player->m_TicksIngame + player->m_TicksSpec);
 					str_format(aBuf, sizeof(aBuf), "Spec: %.2f%% | Ingame: %.2f%%", (double) TimeInSpec, (double) (100.0 - TimeInSpec));
 					GameServer()->SendChatTarget(i, aBuf);
 				}
 				// release all players
-				GameServer()->m_apPlayers[i]->ReleaseZCatchVictim(CPlayer::ZCATCH_RELEASE_ALL);
-				GameServer()->m_apPlayers[i]->m_zCatchNumKillsInARow = 0;
+				player->ReleaseZCatchVictim(CPlayer::ZCATCH_RELEASE_ALL);
+				player->m_zCatchNumKillsInARow = 0;
 			}
+			
+			// zCatch/TeeVi: hard mode
+			// reset hard mode
+			player->ResetHardMode();
+			
 		}
 	}
-
-	if(m_Warmup) // game can't end when we are running warmup
-		return;
 
 	GameServer()->m_World.m_Paused = true;
 	m_GameOverTick = Server()->Tick();
