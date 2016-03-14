@@ -89,6 +89,7 @@ void CGameController_zCatch::DoWincheck()
 	{
 		int Players = 0, Players_Spec = 0, Players_SpecExplicit = 0;
 		int winnerId = -1;
+		CPlayer *winner = NULL;
 
 		for(int i = 0; i < MAX_CLIENTS; i++)
 		{
@@ -98,7 +99,10 @@ void CGameController_zCatch::DoWincheck()
 				if(GameServer()->m_apPlayers[i]->GetTeam() == TEAM_SPECTATORS)
 					Players_Spec++;
 				else
+				{
 					winnerId = i;
+					winner = GameServer()->m_apPlayers[i];
+				}
 				if(GameServer()->m_apPlayers[i]->m_SpecExplicit)
 					Players_SpecExplicit++;
 			}
@@ -120,8 +124,15 @@ void CGameController_zCatch::DoWincheck()
 						GameServer()->m_apPlayers[i]->ReleaseZCatchVictim(CPlayer::ZCATCH_RELEASE_ALL);
 				}
 			}
-			if(Players_Ingame < g_Config.m_SvLastStandingPlayers)
+			if(winner && winner->m_HardMode.m_Active && winner->m_HardMode.m_ModeTotalFails.m_Active && winner->m_HardMode.m_ModeTotalFails.m_Fails > winner->m_HardMode.m_ModeTotalFails.m_Max)
 			{
+				winner->ReleaseZCatchVictim(CPlayer::ZCATCH_RELEASE_ALL);
+				winner->m_HardMode.m_ModeTotalFails.m_Fails = 0;
+				GameServer()->SendChatTarget(-1, "The winner failed the hard mode. All players have been released.");
+			}
+			else if(Players_Ingame < g_Config.m_SvLastStandingPlayers)
+			{
+				winner->HardModeRestart();
 				GameServer()->SendChatTarget(-1, "Too few players to end round. All players have been released.");
 			}
 			else

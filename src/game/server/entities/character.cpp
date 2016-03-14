@@ -112,6 +112,9 @@ bool CCharacter::Spawn(CPlayer *pPlayer, vec2 Pos)
 	m_Alive = true;
 
 	GameServer()->m_pController->OnCharacterSpawn(this);
+	
+	// zCatch/TeeVi: hard mode
+	m_pPlayer->HardModeRestart();
 
 	return true;
 }
@@ -880,27 +883,32 @@ bool CCharacter::TakeDamage(vec2 Force, int Dmg, int From, int Weapon)
 
 	// zCatch/TeeVi hard mode
 	auto killer = GameServer()->m_apPlayers[From];
-	auto hardMode = &killer->m_HardMode;
+	auto killerHardMode = &killer->m_HardMode;
+	auto hardMode = &m_pPlayer->m_HardMode;
 	bool selfKillAllowed = hardMode->m_ModeSelfKill;
-	int minDamage = g_Config.m_SvGrenadeMinDamage;
+	
+	// own hard mode
 	if(hardMode->m_Active)
+	{	
+		
+	}
+	
+	// killer hard mode
+	if(killerHardMode->m_Active)
 	{
 		auto killerChar = killer->GetCharacter();
 		
 		// hookkill: only take damage if killer hooks you
-		if(hardMode->m_ModeHookWhileKilling && (!killerChar || killerChar->m_Core.m_HookedPlayer != m_pPlayer->GetCID()))
+		if(killerHardMode->m_ModeHookWhileKilling && (!killerChar || killerChar->m_Core.m_HookedPlayer != m_pPlayer->GetCID()))
 			return false;
 		
-		// super weakness
-		if(hardMode->m_ModeSuperWeakness)
-			minDamage = 0;
 	}
 	
 	/* zCatch */
 	if((!selfKillAllowed && From == m_pPlayer->GetCID()) || Weapon == WEAPON_GAME)
 		return false;
 
-	if(g_Config.m_SvMode == 4 && Weapon == WEAPON_GRENADE && Dmg < minDamage)
+	if(g_Config.m_SvMode == 4 && Weapon == WEAPON_GRENADE && Dmg < g_Config.m_SvGrenadeMinDamage)
 		return false;
 		
 	m_Health = 0;

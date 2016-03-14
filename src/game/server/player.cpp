@@ -529,14 +529,17 @@ bool CPlayer::AddHardMode(const char* mode)
 		m_HardMode.m_ModeWeaponOverheats.m_Active = true;
 	else if(!str_comp_nocase("hookkill", mode))
 		m_HardMode.m_ModeHookWhileKilling = true;
-	else if(!str_comp_nocase("selfie", mode))
+	else if(!str_comp_nocase("self", mode))
 		m_HardMode.m_ModeSelfKill = true;
-	else if(!str_comp_nocase("weak", mode))
-		m_HardMode.m_ModeSuperWeakness = true;
-	else if(!str_comp_nocase("sloth", mode))
+	else if(!str_comp_nocase("fail0", mode))
 	{
-		m_HardMode.m_ModeSelfKill = true;
-		m_HardMode.m_ModeSuperWeakness = true;
+		m_HardMode.m_ModeTotalFails.m_Active = true;
+		m_HardMode.m_ModeTotalFails.m_Max = 0;
+	}
+	else if(!str_comp_nocase("fail3", mode))
+	{
+		m_HardMode.m_ModeTotalFails.m_Active = true;
+		m_HardMode.m_ModeTotalFails.m_Max = 3;
 	}
 	else
 		return false;
@@ -562,4 +565,22 @@ void CPlayer::AddRandomHardMode(unsigned int count)
 void CPlayer::ResetHardMode()
 {
 	mem_zero(&m_HardMode, sizeof(m_HardMode));
+}
+
+// reset hard mode counters
+void CPlayer::HardModeRestart()
+{
+	m_HardMode.m_ModeTotalFails.m_Fails = 0;
+}
+
+// when the players fails a shot (no kill and no speed nade)
+void CPlayer::HardModeFailedShot()
+{
+	if(m_HardMode.m_Active && m_HardMode.m_ModeTotalFails.m_Active)
+	{
+		m_HardMode.m_ModeTotalFails.m_Fails++;
+		char Buf[128];
+		str_format(Buf, sizeof(Buf), "Fails: %d/%d", m_HardMode.m_ModeTotalFails.m_Fails, m_HardMode.m_ModeTotalFails.m_Max);
+		GameServer()->SendBroadcast(Buf, GetCID());
+	}
 }

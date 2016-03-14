@@ -156,8 +156,6 @@ public:
 		bool m_Active;
 		unsigned int m_ModeAmmoLimit;
 		unsigned int m_ModeAmmoRegenFactor;
-		bool m_ModeDirectHits; // TODO
-		bool m_ModeSuperWeakness;
 		bool m_ModeDoubleKill; // TODO
 		bool m_ModeKillTimelimit; // TODO
 		bool m_ModeWinTimelimit; // TODO
@@ -171,11 +169,17 @@ public:
 			bool m_Active;
 			unsigned int m_Heat;
 		} m_ModeWeaponOverheats;
-		bool m_ModeTotalAmmo; // TODO
+		struct {
+			bool m_Active;
+			unsigned int m_Max;
+			unsigned int m_Fails;
+		} m_ModeTotalFails;
 	} m_HardMode;
 	bool AddHardMode(const char*);
 	void AddRandomHardMode(unsigned int count = 1);
 	void ResetHardMode();
+	void HardModeRestart();
+	void HardModeFailedShot();
 	
 	// bot detection
 	int m_IsAimBot;

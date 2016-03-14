@@ -82,6 +82,14 @@ void CProjectile::Tick()
 
 		GameServer()->m_World.DestroyEntity(this);
 	}
+	
+	// zCatch/TeeVi: hard mode
+	if(Collide && !TargetChr && m_Owner >= 0 && !m_Explosive)
+	{
+		auto player = GameServer()->m_apPlayers[m_Owner];
+		if(player)
+			player->HardModeFailedShot();
+	}
 }
 
 void CProjectile::TickPaused()

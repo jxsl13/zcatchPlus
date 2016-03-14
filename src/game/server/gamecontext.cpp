@@ -54,9 +54,9 @@ void CGameContext::Construct(int Resetting)
 	m_HardModes.push_back("ammo15");
 	m_HardModes.push_back("overheat");
 	m_HardModes.push_back("hookkill");
-	m_HardModes.push_back("selfie");
-	m_HardModes.push_back("weak");
-	m_HardModes.push_back("sloth");
+	m_HardModes.push_back("self");
+	m_HardModes.push_back("fail0");
+	m_HardModes.push_back("fail3");
 }
 
 CGameContext::CGameContext(int Resetting)
@@ -199,6 +199,13 @@ void CGameContext::CreateExplosion(vec2 Pos, int Owner, int Weapon, bool NoDamag
 			CCharacter *ownerChar = GetPlayerChar(Owner);
 			if(ownerChar)
 				ownerChar->GiveAmmo(Weapon, 1);
+		}
+		else
+		{
+			// zCatch/TeeVi: hard mode
+			auto ownerChar = GetPlayerChar(Owner);
+			if(ownerChar && ownerLastDieTickBeforceFiring == ownerChar->GetPlayer()->m_DieTick)
+				ownerChar->GetPlayer()->HardModeFailedShot();
 		}
 	}
 }
@@ -1153,14 +1160,9 @@ void CGameContext::OnMessage(int MsgID, CUnpacker *pUnpacker, int ClientID)
 					
 					// inform player about the hard modes he got
 					auto mode = &pPlayer->m_HardMode;
-					if(mode->m_ModeAmmoLimit > 0)
+					if(mode->m_ModeAmmoLimit > 0 || mode->m_ModeAmmoRegenFactor > 0)
 					{
-						str_format(aBuf, sizeof(aBuf), "Hard mode: ammo limit of %d", mode->m_ModeAmmoLimit);
-						SendChatTarget(ClientID, aBuf);
-					}
-					if(mode->m_ModeAmmoRegenFactor > 0)
-					{
-						str_format(aBuf, sizeof(aBuf), "Hard mode: %dx ammo regeneration time", mode->m_ModeAmmoRegenFactor);
+						str_format(aBuf, sizeof(aBuf), "Hard mode: ammo limit of %d and %dx regen time", mode->m_ModeAmmoLimit, mode->m_ModeAmmoRegenFactor);
 						SendChatTarget(ClientID, aBuf);
 					}
 					if(mode->m_ModeHookWhileKilling)
@@ -1169,8 +1171,11 @@ void CGameContext::OnMessage(int MsgID, CUnpacker *pUnpacker, int ClientID)
 						SendChatTarget(ClientID, "Hard mode: your weapon kills you if overheating");
 					if(mode->m_ModeSelfKill)
 						SendChatTarget(ClientID, "Hard mode: you can kill yourself with your weapon");
-					if(mode->m_ModeSuperWeakness)
-						SendChatTarget(ClientID, "Hard mode: the smallest amount of damage kills you");
+					if(mode->m_ModeTotalFails.m_Active)
+					{
+						str_format(aBuf, sizeof(aBuf), "Hard mode: you are allowed to fail %d shots", mode->m_ModeTotalFails.m_Max);
+						SendChatTarget(ClientID, aBuf);
+					}
 				}
 			}
 			
