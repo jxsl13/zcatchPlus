@@ -157,7 +157,11 @@ public:
 		unsigned int m_ModeAmmoLimit;
 		unsigned int m_ModeAmmoRegenFactor;
 		bool m_ModeDoubleKill; // TODO
-		bool m_ModeKillTimelimit; // TODO
+		struct {
+			bool m_Active;
+			int m_TimeSeconds;
+			int m_LastKillTick;
+		} m_ModeKillTimelimit;
 		bool m_ModeWinTimelimit; // TODO
 		bool m_ModeHookWhileKilling;
 		bool m_ModeReducedReach; // TODO

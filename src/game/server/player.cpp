@@ -160,6 +160,29 @@ void CPlayer::Tick()
 	m_CurrentTarget.x = m_LatestActivity.m_TargetX;
 	m_CurrentTarget.y = m_LatestActivity.m_TargetY;
 	m_AimBotTargetSpeed = abs(distance(m_CurrentTarget, m_LastTarget));
+	
+	// zCatch/TeeVi: hard mode
+	if(m_HardMode.m_Active)
+	{
+		auto tl = &m_HardMode.m_ModeKillTimelimit;
+		if(tl->m_Active && m_ZCatchVictims != NULL)
+		{
+			int nextKillTick = tl->m_LastKillTick + tl->m_TimeSeconds * Server()->TickSpeed();
+			int ticksLeft = nextKillTick - Server()->Tick();
+			if(ticksLeft == 0)
+			{
+				ReleaseZCatchVictim(ZCATCH_RELEASE_ALL, 1, false);
+				tl->m_LastKillTick = Server()->Tick();
+				GameServer()->SendBroadcast("One of your victims has been released.", GetCID());
+			}
+			else if ((ticksLeft % Server()->TickSpeed()) == 0) // show every second
+			{
+				char aBuf[256];
+				str_format(aBuf, sizeof(aBuf), "You have %d seconds to catch the next one.", ticksLeft / Server()->TickSpeed());
+				GameServer()->SendBroadcast(aBuf, GetCID());
+			}
+		}
+	}
 }
 
 void CPlayer::PostTick()
@@ -540,6 +563,21 @@ bool CPlayer::AddHardMode(const char* mode)
 	{
 		m_HardMode.m_ModeTotalFails.m_Active = true;
 		m_HardMode.m_ModeTotalFails.m_Max = 3;
+	}
+	else if(!str_comp_nocase("5s", mode))
+	{
+		m_HardMode.m_ModeKillTimelimit.m_Active = true;
+		m_HardMode.m_ModeKillTimelimit.m_TimeSeconds = 5;
+	}
+	else if(!str_comp_nocase("10s", mode))
+	{
+		m_HardMode.m_ModeKillTimelimit.m_Active = true;
+		m_HardMode.m_ModeKillTimelimit.m_TimeSeconds = 10;
+	}
+	else if(!str_comp_nocase("20s", mode))
+	{
+		m_HardMode.m_ModeKillTimelimit.m_Active = true;
+		m_HardMode.m_ModeKillTimelimit.m_TimeSeconds = 20;
 	}
 	else
 		return false;

@@ -129,11 +129,13 @@ void CGameController_zCatch::DoWincheck()
 				winner->ReleaseZCatchVictim(CPlayer::ZCATCH_RELEASE_ALL);
 				winner->m_HardMode.m_ModeTotalFails.m_Fails = 0;
 				GameServer()->SendChatTarget(-1, "The winner failed the hard mode. All players have been released.");
+				GameServer()->SendBroadcast("The winner failed the hard mode. All players have been released.", -1);
 			}
 			else if(Players_Ingame < g_Config.m_SvLastStandingPlayers)
 			{
 				winner->HardModeRestart();
 				GameServer()->SendChatTarget(-1, "Too few players to end round. All players have been released.");
+				GameServer()->SendBroadcast("Too few players to end round. All players have been released.", -1);
 			}
 			else
 			{
@@ -207,6 +209,12 @@ int CGameController_zCatch::OnCharacterDeath(class CCharacter *pVictim, class CP
 		{
 			++pKiller->m_RankCache.m_NumKillsWallshot;
 		}
+	}
+
+	// zCatch/TeeVi: hard mode
+	if(pKiller->m_HardMode.m_Active && pKiller->m_HardMode.m_ModeKillTimelimit.m_Active)
+	{
+		pKiller->m_HardMode.m_ModeKillTimelimit.m_LastKillTick = Server()->Tick();
 	}
 
 	return 0;

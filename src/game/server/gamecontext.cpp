@@ -57,6 +57,9 @@ void CGameContext::Construct(int Resetting)
 	m_HardModes.push_back("self");
 	m_HardModes.push_back("fail0");
 	m_HardModes.push_back("fail3");
+	m_HardModes.push_back("5s");
+	m_HardModes.push_back("10s");
+	m_HardModes.push_back("20s");
 }
 
 CGameContext::CGameContext(int Resetting)
@@ -1174,6 +1177,11 @@ void CGameContext::OnMessage(int MsgID, CUnpacker *pUnpacker, int ClientID)
 					if(mode->m_ModeTotalFails.m_Active)
 					{
 						str_format(aBuf, sizeof(aBuf), "Hard mode: you are allowed to fail %d shots", mode->m_ModeTotalFails.m_Max);
+						SendChatTarget(ClientID, aBuf);
+					}
+					if(mode->m_ModeKillTimelimit.m_Active)
+					{
+						str_format(aBuf, sizeof(aBuf), "Hard mode: you have %d seconds between catching players", mode->m_ModeKillTimelimit.m_TimeSeconds);
 						SendChatTarget(ClientID, aBuf);
 					}
 				}
