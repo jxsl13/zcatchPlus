@@ -579,6 +579,13 @@ bool CPlayer::AddHardMode(const char* mode)
 		m_HardMode.m_ModeKillTimelimit.m_Active = true;
 		m_HardMode.m_ModeKillTimelimit.m_TimeSeconds = 20;
 	}
+	else if(!str_comp_nocase("double", mode))
+	{
+		m_HardMode.m_ModeDoubleKill.m_Active = true;
+		m_HardMode.m_ModeDoubleKill.m_Character = NULL;
+	}
+	else if(!str_comp_nocase("stand", mode))
+		m_HardMode.m_ModeStandToShoot = true;
 	else
 		return false;
 	
@@ -609,6 +616,7 @@ void CPlayer::ResetHardMode()
 void CPlayer::HardModeRestart()
 {
 	m_HardMode.m_ModeTotalFails.m_Fails = 0;
+	m_HardMode.m_ModeDoubleKill.m_Character = NULL;
 }
 
 // when the players fails a shot (no kill and no speed nade)

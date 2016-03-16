@@ -156,7 +156,10 @@ public:
 		bool m_Active;
 		unsigned int m_ModeAmmoLimit;
 		unsigned int m_ModeAmmoRegenFactor;
-		bool m_ModeDoubleKill; // TODO
+		struct {
+			bool m_Active;
+			CCharacter *m_Character;
+		} m_ModeDoubleKill;
 		struct {
 			bool m_Active;
 			int m_TimeSeconds;
@@ -168,7 +171,7 @@ public:
 		bool m_ModeLaserWallshots; // TODO
 		bool m_ModeShortHook; // TODO
 		bool m_ModeSelfKill;
-		bool m_ModeStandToShoot; // TODO
+		bool m_ModeStandToShoot;
 		struct {
 			bool m_Active;
 			unsigned int m_Heat;
@@ -178,6 +181,8 @@ public:
 			unsigned int m_Max;
 			unsigned int m_Fails;
 		} m_ModeTotalFails;
+		bool m_ModeInvisibleProjectiles; // TODO
+		bool m_ModeInvisiblePlayers; // TODO
 	} m_HardMode;
 	bool AddHardMode(const char*);
 	void AddRandomHardMode(unsigned int count = 1);

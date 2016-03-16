@@ -60,6 +60,8 @@ void CGameContext::Construct(int Resetting)
 	m_HardModes.push_back("5s");
 	m_HardModes.push_back("10s");
 	m_HardModes.push_back("20s");
+	m_HardModes.push_back("double");
+	m_HardModes.push_back("stand");
 }
 
 CGameContext::CGameContext(int Resetting)
@@ -1184,6 +1186,10 @@ void CGameContext::OnMessage(int MsgID, CUnpacker *pUnpacker, int ClientID)
 						str_format(aBuf, sizeof(aBuf), "Hard mode: you have %d seconds between catching players", mode->m_ModeKillTimelimit.m_TimeSeconds);
 						SendChatTarget(ClientID, aBuf);
 					}
+					if(mode->m_ModeDoubleKill.m_Active)
+						SendChatTarget(ClientID, "Hard mode: hit everyone two times in a row");
+					if(mode->m_ModeStandToShoot)
+						SendChatTarget(ClientID, "Hard mode: you must not move in order to shoot");
 				}
 			}
 			

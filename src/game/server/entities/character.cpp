@@ -379,16 +379,28 @@ void CCharacter::FireWeapon()
 		return;
 	}
 	
-	// zCatch/TeeVi hard mode: weapon overheating
-	if(GetPlayer()->m_HardMode.m_Active && GetPlayer()->m_HardMode.m_ModeWeaponOverheats.m_Active)
+	// zCatch/TeeVi: hard mode
+	if(m_pPlayer->m_HardMode.m_Active)
 	{
-		GetPlayer()->m_HardMode.m_ModeWeaponOverheats.m_Heat += 45 + rand() % 11;
-		if(GetPlayer()->m_HardMode.m_ModeWeaponOverheats.m_Heat > 100)
+		
+		// weapon overheating
+		if(m_pPlayer->m_HardMode.m_ModeWeaponOverheats.m_Active)
 		{
-			GameServer()->SendBroadcast("Your weapon overheated, exploded and killed you.", GetPlayer()->GetCID());
-			GameServer()->CreateExplosion(m_Pos, GetPlayer()->GetCID(), m_ActiveWeapon, true);
-			GameServer()->CreateSound(m_Pos, SOUND_GRENADE_EXPLODE);
-			Die(GetPlayer()->GetCID(), WEAPON_WORLD);
+			m_pPlayer->m_HardMode.m_ModeWeaponOverheats.m_Heat += 45 + rand() % 11;
+			if(m_pPlayer->m_HardMode.m_ModeWeaponOverheats.m_Heat > 100)
+			{
+				GameServer()->SendBroadcast("Your weapon overheated, exploded and killed you.", m_pPlayer->GetCID());
+				GameServer()->CreateExplosion(m_Pos, m_pPlayer->GetCID(), m_ActiveWeapon, true);
+				GameServer()->CreateSound(m_Pos, SOUND_GRENADE_EXPLODE);
+				Die(m_pPlayer->GetCID(), WEAPON_WORLD);
+				return;
+			}
+		}
+		
+		// stand to shoot
+		if(m_pPlayer->m_HardMode.m_ModeStandToShoot && m_Core.m_Input.m_Direction)
+		{
+			GameServer()->SendBroadcast("You must not move to shoot.", m_pPlayer->GetCID());
 			return;
 		}
 	}
@@ -886,6 +898,7 @@ bool CCharacter::TakeDamage(vec2 Force, int Dmg, int From, int Weapon)
 	auto killerHardMode = &killer->m_HardMode;
 	auto hardMode = &m_pPlayer->m_HardMode;
 	bool selfKillAllowed = hardMode->m_ModeSelfKill;
+	bool firstOfDoubleKill = false;
 	
 	// own hard mode
 	if(hardMode->m_Active)
@@ -902,6 +915,9 @@ bool CCharacter::TakeDamage(vec2 Force, int Dmg, int From, int Weapon)
 		if(killerHardMode->m_ModeHookWhileKilling && (!killerChar || killerChar->m_Core.m_HookedPlayer != m_pPlayer->GetCID()))
 			return false;
 		
+		// double kill: don't really kill if it is the first time
+		if(killer != m_pPlayer && killerHardMode->m_ModeDoubleKill.m_Active && killerHardMode->m_ModeDoubleKill.m_Character != this)
+			firstOfDoubleKill = true;
 	}
 	
 	/* zCatch */
@@ -959,7 +975,18 @@ bool CCharacter::TakeDamage(vec2 Force, int Dmg, int From, int Weapon)
 	// check for death
 	if(m_Health <= 0)
 	{
-		Die(From, Weapon);
+		if(firstOfDoubleKill)
+		{
+			killerHardMode->m_ModeDoubleKill.m_Character = this;
+			char Buf[128];
+			str_format(Buf, sizeof(Buf), "Hit '%s' another time!", Server()->ClientName(m_pPlayer->GetCID()));
+			GameServer()->SendBroadcast(Buf, killer->GetCID());
+		}
+		else
+		{
+			killerHardMode->m_ModeDoubleKill.m_Character = NULL;
+			Die(From, Weapon);
+		}
 
 		// set attacker's face to happy (taunt!)
 		if (From >= 0 && From != m_pPlayer->GetCID() && GameServer()->m_apPlayers[From])
