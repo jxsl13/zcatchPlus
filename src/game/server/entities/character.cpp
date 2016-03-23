@@ -396,13 +396,6 @@ void CCharacter::FireWeapon()
 				return;
 			}
 		}
-		
-		// stand to shoot
-		if(m_pPlayer->m_HardMode.m_ModeStandToShoot && m_Core.m_Input.m_Direction)
-		{
-			GameServer()->SendBroadcast("You must not move to shoot.", m_pPlayer->GetCID());
-			return;
-		}
 	}
 
 	vec2 ProjStartPos = m_Pos+Direction*m_ProximityRadius*0.75f;
@@ -896,15 +889,7 @@ bool CCharacter::TakeDamage(vec2 Force, int Dmg, int From, int Weapon)
 	// zCatch/TeeVi hard mode
 	auto killer = GameServer()->m_apPlayers[From];
 	auto killerHardMode = &killer->m_HardMode;
-	auto hardMode = &m_pPlayer->m_HardMode;
-	bool selfKillAllowed = hardMode->m_ModeSelfKill;
 	bool firstOfDoubleKill = false;
-	
-	// own hard mode
-	if(hardMode->m_Active)
-	{	
-		
-	}
 	
 	// killer hard mode
 	if(killerHardMode->m_Active)
@@ -921,7 +906,7 @@ bool CCharacter::TakeDamage(vec2 Force, int Dmg, int From, int Weapon)
 	}
 	
 	/* zCatch */
-	if((!selfKillAllowed && From == m_pPlayer->GetCID()) || Weapon == WEAPON_GAME)
+	if(From == m_pPlayer->GetCID() || Weapon == WEAPON_GAME)
 		return false;
 
 	if(g_Config.m_SvMode == 4 && Weapon == WEAPON_GRENADE && Dmg < g_Config.m_SvGrenadeMinDamage)

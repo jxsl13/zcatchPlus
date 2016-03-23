@@ -538,54 +538,54 @@ void CPlayer::RankCacheStopPlaying() {
 // add hard mode setting
 bool CPlayer::AddHardMode(const char* mode)
 {
-	if(!str_comp_nocase("ammo210", mode))
+	bool isLaser = g_Config.m_SvMode == 1;
+	bool isGrenade = g_Config.m_SvMode == 4;
+	bool isLaserOrGrenade = isLaser || isGrenade;
+	
+	if(!str_comp_nocase("ammo210", mode) && isGrenade)
 	{
 		m_HardMode.m_ModeAmmoLimit = 2;
 		m_HardMode.m_ModeAmmoRegenFactor = 10;
 	}
-	else if(!str_comp_nocase("ammo15", mode))
+	else if(!str_comp_nocase("ammo15", mode) && isGrenade)
 	{
 		m_HardMode.m_ModeAmmoLimit = 1;
 		m_HardMode.m_ModeAmmoRegenFactor = 5;
 	}
-	else if(!str_comp_nocase("overheat", mode))
+	else if(!str_comp_nocase("overheat", mode) && isLaserOrGrenade)
 		m_HardMode.m_ModeWeaponOverheats.m_Active = true;
-	else if(!str_comp_nocase("hookkill", mode))
+	else if(!str_comp_nocase("hookkill", mode) && isLaserOrGrenade)
 		m_HardMode.m_ModeHookWhileKilling = true;
-	else if(!str_comp_nocase("self", mode))
-		m_HardMode.m_ModeSelfKill = true;
-	else if(!str_comp_nocase("fail0", mode))
+	else if(!str_comp_nocase("fail0", mode) && isGrenade)
 	{
 		m_HardMode.m_ModeTotalFails.m_Active = true;
 		m_HardMode.m_ModeTotalFails.m_Max = 0;
 	}
-	else if(!str_comp_nocase("fail3", mode))
+	else if(!str_comp_nocase("fail3", mode) && isGrenade)
 	{
 		m_HardMode.m_ModeTotalFails.m_Active = true;
 		m_HardMode.m_ModeTotalFails.m_Max = 3;
 	}
-	else if(!str_comp_nocase("5s", mode))
+	else if(!str_comp_nocase("5s", mode) && isLaserOrGrenade)
 	{
 		m_HardMode.m_ModeKillTimelimit.m_Active = true;
 		m_HardMode.m_ModeKillTimelimit.m_TimeSeconds = 5;
 	}
-	else if(!str_comp_nocase("10s", mode))
+	else if(!str_comp_nocase("10s", mode) && isLaserOrGrenade)
 	{
 		m_HardMode.m_ModeKillTimelimit.m_Active = true;
 		m_HardMode.m_ModeKillTimelimit.m_TimeSeconds = 10;
 	}
-	else if(!str_comp_nocase("20s", mode))
+	else if(!str_comp_nocase("20s", mode) && isLaserOrGrenade)
 	{
 		m_HardMode.m_ModeKillTimelimit.m_Active = true;
 		m_HardMode.m_ModeKillTimelimit.m_TimeSeconds = 20;
 	}
-	else if(!str_comp_nocase("double", mode))
+	else if(!str_comp_nocase("double", mode) && isLaserOrGrenade)
 	{
 		m_HardMode.m_ModeDoubleKill.m_Active = true;
 		m_HardMode.m_ModeDoubleKill.m_Character = NULL;
 	}
-	else if(!str_comp_nocase("stand", mode))
-		m_HardMode.m_ModeStandToShoot = true;
 	else
 		return false;
 	
@@ -601,8 +601,11 @@ void CPlayer::AddRandomHardMode(unsigned int count)
 	
 	for(auto it = modes.begin(); count > 0 && it != modes.end(); ++it)
 	{
-		AddHardMode(*it);
-		--count;
+		if((g_Config.m_SvMode == 1 && it->laser)|| (g_Config.m_SvMode == 4 && it->grenade))
+		{
+			AddHardMode(it->name);
+			--count;
+		}
 	}
 }
 
@@ -626,7 +629,15 @@ void CPlayer::HardModeFailedShot()
 	{
 		m_HardMode.m_ModeTotalFails.m_Fails++;
 		char Buf[128];
-		str_format(Buf, sizeof(Buf), "Fails: %d/%d", m_HardMode.m_ModeTotalFails.m_Fails, m_HardMode.m_ModeTotalFails.m_Max);
+		if(m_HardMode.m_ModeTotalFails.m_Fails >= m_HardMode.m_ModeTotalFails.m_Max)
+		{
+			KillCharacter();
+			str_copy(Buf, "You failed too often.", sizeof(Buf));
+		}
+		else
+		{
+			str_format(Buf, sizeof(Buf), "Fails: %d/%d", m_HardMode.m_ModeTotalFails.m_Fails, m_HardMode.m_ModeTotalFails.m_Max);
+		}
 		GameServer()->SendBroadcast(Buf, GetCID());
 	}
 }

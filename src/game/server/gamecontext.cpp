@@ -50,18 +50,16 @@ void CGameContext::Construct(int Resetting)
 	
 	// zCatch/TeeVi: hard mode
 	m_HardModes.clear();
-	m_HardModes.push_back("ammo210");
-	m_HardModes.push_back("ammo15");
-	m_HardModes.push_back("overheat");
-	m_HardModes.push_back("hookkill");
-	m_HardModes.push_back("self");
-	m_HardModes.push_back("fail0");
-	m_HardModes.push_back("fail3");
-	m_HardModes.push_back("5s");
-	m_HardModes.push_back("10s");
-	m_HardModes.push_back("20s");
-	m_HardModes.push_back("double");
-	m_HardModes.push_back("stand");
+	m_HardModes.push_back({"ammo210", false, true});
+	m_HardModes.push_back({"ammo15", false, true});
+	m_HardModes.push_back({"overheat", true, true});
+	m_HardModes.push_back({"hookkill", true, true});
+	m_HardModes.push_back({"fail0", false, true});
+	m_HardModes.push_back({"fail3", false, true});
+	m_HardModes.push_back({"5s", true, true});
+	m_HardModes.push_back({"10s", true, true});
+	m_HardModes.push_back({"20s", true, true});
+	m_HardModes.push_back({"double", true, true});
 }
 
 CGameContext::CGameContext(int Resetting)
@@ -1139,8 +1137,11 @@ void CGameContext::OnMessage(int MsgID, CUnpacker *pUnpacker, int ClientID)
 							mBuf[0] = 0;
 							for(auto it = m_HardModes.begin(); it != m_HardModes.end(); ++it)
 							{
-								str_format(mBuf2, sizeof(mBuf2), "%s %s", mBuf, *it);
-								str_copy(mBuf, mBuf2, sizeof(mBuf));
+								if((g_Config.m_SvMode == 1 && it->laser)|| (g_Config.m_SvMode == 4 && it->grenade))
+								{
+									str_format(mBuf2, sizeof(mBuf2), "%s %s", mBuf, it->name);
+									str_copy(mBuf, mBuf2, sizeof(mBuf));
+								}
 							}
 							str_format(aBuf, sizeof(aBuf), "Hard modes:%s", mBuf);
 							SendChatTarget(ClientID, aBuf);
@@ -1174,8 +1175,6 @@ void CGameContext::OnMessage(int MsgID, CUnpacker *pUnpacker, int ClientID)
 						SendChatTarget(ClientID, "Hard mode: hook players while catching them");
 					if(mode->m_ModeWeaponOverheats.m_Active)
 						SendChatTarget(ClientID, "Hard mode: your weapon kills you if overheating");
-					if(mode->m_ModeSelfKill)
-						SendChatTarget(ClientID, "Hard mode: you can kill yourself with your weapon");
 					if(mode->m_ModeTotalFails.m_Active)
 					{
 						str_format(aBuf, sizeof(aBuf), "Hard mode: you are allowed to fail %d shots", mode->m_ModeTotalFails.m_Max);
@@ -1188,8 +1187,6 @@ void CGameContext::OnMessage(int MsgID, CUnpacker *pUnpacker, int ClientID)
 					}
 					if(mode->m_ModeDoubleKill.m_Active)
 						SendChatTarget(ClientID, "Hard mode: hit everyone two times in a row");
-					if(mode->m_ModeStandToShoot)
-						SendChatTarget(ClientID, "Hard mode: you must not move in order to shoot");
 				}
 			}
 			
