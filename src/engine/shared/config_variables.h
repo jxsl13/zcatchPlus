@@ -95,6 +95,7 @@ MACRO_CONFIG_INT_ACCESSLEVEL(SvRconMaxTries, sv_rcon_max_tries, 3, 0, 100, CFGFL
 MACRO_CONFIG_INT_ACCESSLEVEL(SvRconBantime, sv_rcon_bantime, 5, 0, 1440, CFGFLAG_SERVER, "The time a client gets banned if remote console authentication fails. 0 makes it just use kick", IConsole::ACCESS_LEVEL_ADMIN)
 MACRO_CONFIG_INT(SvAutoDemoRecord, sv_auto_demo_record, 0, 0, 1, CFGFLAG_SERVER, "Automatically record demos")
 MACRO_CONFIG_INT(SvAutoDemoMax, sv_auto_demo_max, 10, 0, 1000, CFGFLAG_SERVER, "Maximum number of automatically recorded demos (0 = no limit)")
+MACRO_CONFIG_STR(SvAutoDemoPrefix, sv_auto_demo_prefix, 64, "autorecord", CFGFLAG_SERVER, "Prefix for automatically recorded demos")
 
 MACRO_CONFIG_STR(EcBindaddr, ec_bindaddr, 128, "localhost", CFGFLAG_ECON, "Address to bind the external console to. Anything but 'localhost' is dangerous")
 MACRO_CONFIG_INT(EcPort, ec_port, 0, 0, 0, CFGFLAG_ECON, "Port to use for the external console")
