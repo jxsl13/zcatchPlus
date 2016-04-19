@@ -1097,11 +1097,11 @@ void CGameContext::OnMessage(int MsgID, CUnpacker *pUnpacker, int ClientID)
 			// hard mode
 			else if(g_Config.m_SvAllowHardMode == 1 && (!str_comp_nocase_num("hard", pMsg->m_pMessage + 1, 4) || !str_comp_nocase_num("hard ", pMsg->m_pMessage + 1, 5)))
 			{
-				//if(pPlayer->m_HardMode.m_Active)
-				//{
-					//SendChatTarget(ClientID, "You already are in hard mode.");
-				//}
-				//else
+				if(pPlayer->m_HardMode.m_Active)
+				{
+					SendChatTarget(ClientID, "You already are in hard mode.");
+				}
+				else
 				{
 					char *optionStart, *m = (char*)pMsg->m_pMessage + 5;
 					
