@@ -593,20 +593,21 @@ bool CPlayer::AddHardMode(const char* mode)
 	return true;
 }
 
-// reset hard mode
-void CPlayer::AddRandomHardMode(unsigned int count)
+// add a random hard mode
+const char* CPlayer::AddRandomHardMode()
 {
 	auto modes = m_pGameServer->GetHardModes();
 	std::random_shuffle(modes.begin(), modes.end());
 	
-	for(auto it = modes.begin(); count > 0 && it != modes.end(); ++it)
+	for(auto it = modes.begin(); it != modes.end(); ++it)
 	{
 		if((g_Config.m_SvMode == 1 && it->laser)|| (g_Config.m_SvMode == 4 && it->grenade))
 		{
 			AddHardMode(it->name);
-			--count;
+			return it->name;
 		}
 	}
+	return "";
 }
 
 // reset hard mode

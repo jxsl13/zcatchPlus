@@ -179,7 +179,7 @@ public:
 		bool m_ModeInvisiblePlayers; // TODO
 	} m_HardMode;
 	bool AddHardMode(const char*);
-	void AddRandomHardMode(unsigned int count = 1);
+	const char* AddRandomHardMode();
 	void ResetHardMode();
 	void HardModeRestart();
 	void HardModeFailedShot();
