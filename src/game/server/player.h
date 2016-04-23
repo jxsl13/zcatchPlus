@@ -154,6 +154,7 @@ public:
 	// zCatch/TeeVi hard mode
 	struct {
 		bool m_Active;
+		char m_Description[256];
 		unsigned int m_ModeAmmoLimit;
 		unsigned int m_ModeAmmoRegenFactor;
 		struct {

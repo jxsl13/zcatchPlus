@@ -1108,11 +1108,11 @@ void CGameContext::OnMessage(int MsgID, CUnpacker *pUnpacker, int ClientID)
 					pPlayer->ResetHardMode();
 
 					// to print the hard modes in the chat later
-					char modes[128] = {0};
-					auto addMode = [&modes](const char* mode) {
-						if(modes[0] != 0)
-							str_append(modes, " ", sizeof(modes));
-						str_append(modes, mode, sizeof(modes));
+					auto addMode = [pPlayer](const char* mode) {
+						auto d = &pPlayer->m_HardMode.m_Description;
+						if(*d[0] != 0)
+							str_append(*d, " ", sizeof(*d));
+						str_append(*d, mode, sizeof(*d));
 					};
 
 					// read options from the command and assign those hard modes
@@ -1171,7 +1171,7 @@ void CGameContext::OnMessage(int MsgID, CUnpacker *pUnpacker, int ClientID)
 					pPlayer->KillCharacter();
 					
 					char aBuf[256];
-					str_format(aBuf, sizeof(aBuf), "'%s' entered hard mode (%s)", Server()->ClientName(ClientID), modes);
+					str_format(aBuf, sizeof(aBuf), "'%s' entered hard mode (%s)", Server()->ClientName(ClientID), pPlayer->m_HardMode.m_Description);
 					SendChat(-1, CGameContext::CHAT_ALL, aBuf);
 					
 				}

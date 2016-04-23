@@ -146,6 +146,14 @@ void CGameController_zCatch::DoWincheck()
 					RewardWinner(winnerId);
 				}
 				
+				// announce if winner is in hard mode
+				if(winner->m_HardMode.m_Active) {
+					char aBuf[256];
+					auto name = GameServer()->Server()->ClientName(winnerId);
+					str_format(aBuf, sizeof(aBuf), "Player '%s' won in hard mode (%s).", name, winner->m_HardMode.m_Description);
+					GameServer()->SendChat(-1, CGameContext::CHAT_ALL, aBuf);
+				}
+				
 				EndRound();
 			}
 		}
