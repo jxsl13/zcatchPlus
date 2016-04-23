@@ -1174,30 +1174,32 @@ void CGameContext::OnMessage(int MsgID, CUnpacker *pUnpacker, int ClientID)
 					str_format(aBuf, sizeof(aBuf), "'%s' entered hard mode (%s)", Server()->ClientName(ClientID), modes);
 					SendChat(-1, CGameContext::CHAT_ALL, aBuf);
 					
-					// inform player about the hard modes he got
-					auto mode = &pPlayer->m_HardMode;
-					if(mode->m_ModeAmmoLimit > 0 || mode->m_ModeAmmoRegenFactor > 0)
-					{
-						str_format(aBuf, sizeof(aBuf), "Hard mode: ammo limit of %d and %dx regen time", mode->m_ModeAmmoLimit, mode->m_ModeAmmoRegenFactor);
-						SendChatTarget(ClientID, aBuf);
-					}
-					if(mode->m_ModeHookWhileKilling)
-						SendChatTarget(ClientID, "Hard mode: hook players while catching them");
-					if(mode->m_ModeWeaponOverheats.m_Active)
-						SendChatTarget(ClientID, "Hard mode: your weapon kills you if overheating");
-					if(mode->m_ModeTotalFails.m_Active)
-					{
-						str_format(aBuf, sizeof(aBuf), "Hard mode: you are allowed to fail %d shots", mode->m_ModeTotalFails.m_Max);
-						SendChatTarget(ClientID, aBuf);
-					}
-					if(mode->m_ModeKillTimelimit.m_Active)
-					{
-						str_format(aBuf, sizeof(aBuf), "Hard mode: you have %d seconds between catching players", mode->m_ModeKillTimelimit.m_TimeSeconds);
-						SendChatTarget(ClientID, aBuf);
-					}
-					if(mode->m_ModeDoubleKill.m_Active)
-						SendChatTarget(ClientID, "Hard mode: hit everyone two times in a row");
 				}
+				
+				// inform player about the hard modes he got
+				char aBuf[256];
+				auto mode = &pPlayer->m_HardMode;
+				if(mode->m_ModeAmmoLimit > 0 || mode->m_ModeAmmoRegenFactor > 0)
+				{
+					str_format(aBuf, sizeof(aBuf), "Hard mode: ammo limit of %d and %dx regen time", mode->m_ModeAmmoLimit, mode->m_ModeAmmoRegenFactor);
+					SendChatTarget(ClientID, aBuf);
+				}
+				if(mode->m_ModeHookWhileKilling)
+					SendChatTarget(ClientID, "Hard mode: hook players while catching them");
+				if(mode->m_ModeWeaponOverheats.m_Active)
+					SendChatTarget(ClientID, "Hard mode: your weapon kills you if overheating");
+				if(mode->m_ModeTotalFails.m_Active)
+				{
+					str_format(aBuf, sizeof(aBuf), "Hard mode: you are allowed to fail %d shots", mode->m_ModeTotalFails.m_Max);
+					SendChatTarget(ClientID, aBuf);
+				}
+				if(mode->m_ModeKillTimelimit.m_Active)
+				{
+					str_format(aBuf, sizeof(aBuf), "Hard mode: you have %d seconds between catching players", mode->m_ModeKillTimelimit.m_TimeSeconds);
+					SendChatTarget(ClientID, aBuf);
+				}
+				if(mode->m_ModeDoubleKill.m_Active)
+					SendChatTarget(ClientID, "Hard mode: hit everyone two times in a row");
 			}
 			
 			else
