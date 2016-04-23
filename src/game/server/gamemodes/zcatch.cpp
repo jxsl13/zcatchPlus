@@ -226,7 +226,10 @@ void CGameController_zCatch::OnPlayerInfoChange(class CPlayer *pP)
 	{
 		int Num = max(0, 160 - pP->m_zCatchNumKillsInARow * 10);
 		pP->m_TeeInfos.m_ColorBody = Num * 0x010000 + 0xff00;
-		pP->m_TeeInfos.m_ColorFeet = pP->m_zCatchNumKillsInARow == 20 ? 0x40ff00 : pP->m_TeeInfos.m_ColorBody;
+		if(pP->m_HardMode.m_Active)
+			pP->m_TeeInfos.m_ColorFeet = 0xffff00; // red
+		else
+			pP->m_TeeInfos.m_ColorFeet = pP->m_zCatchNumKillsInARow == 20 ? 0x40ff00 : pP->m_TeeInfos.m_ColorBody;
 		pP->m_TeeInfos.m_UseCustomColor = 1;
 	}
 }
