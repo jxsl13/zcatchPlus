@@ -321,14 +321,11 @@ void CGameController_zCatch::EndRound()
 			{
 				player->SetTeamDirect(GameServer()->m_pController->ClampTeam(1));
 
-				char aBuf[128];
-				str_format(aBuf, sizeof(aBuf), "Kills: %d | Deaths: %d", player->m_Kills, player->m_Deaths);
-				GameServer()->SendChatTarget(i, aBuf);
-
 				if(player->m_TicksSpec != 0 || player->m_TicksIngame != 0)
 				{
-					double TimeInSpec = (player->m_TicksSpec * 100.0) / (player->m_TicksIngame + player->m_TicksSpec);
-					str_format(aBuf, sizeof(aBuf), "Spec: %.2f%% | Ingame: %.2f%%", (double) TimeInSpec, (double) (100.0 - TimeInSpec));
+					char aBuf[128];
+					double TimeIngame = (player->m_TicksIngame * 100.0) / (player->m_TicksIngame + player->m_TicksSpec);
+					str_format(aBuf, sizeof(aBuf), "K/D: %d/%d (%.2f%% ingame)", player->m_Kills, player->m_Deaths, TimeIngame);
 					GameServer()->SendChatTarget(i, aBuf);
 				}
 				// release all players
