@@ -630,7 +630,7 @@ void CPlayer::HardModeFailedShot()
 	{
 		m_HardMode.m_ModeTotalFails.m_Fails++;
 		char Buf[128];
-		if(m_HardMode.m_ModeTotalFails.m_Fails >= m_HardMode.m_ModeTotalFails.m_Max)
+		if(m_HardMode.m_ModeTotalFails.m_Fails > m_HardMode.m_ModeTotalFails.m_Max)
 		{
 			KillCharacter();
 			str_copy(Buf, "You failed too often.", sizeof(Buf));
