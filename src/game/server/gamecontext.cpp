@@ -888,7 +888,7 @@ void CGameContext::OnMessage(int MsgID, CUnpacker *pUnpacker, int ClientID)
 				char aBuf[128];
 				str_format(aBuf, sizeof(aBuf), "zCatch %s by erd and Teetime, modified by Teelevision. See /help.", ZCATCH_VERSION);
 				SendChatTarget(ClientID, aBuf);
-				SendChatTarget(ClientID, "You are caught when killed and released when your killer dies. Catch everyone to win the round.");
+				SendChatTarget(ClientID, "Players you catch (kill) join again when you die. Catch everyone to win.");
 				if(g_Config.m_SvLastStandingPlayers > 2)
 				{
 					str_format(aBuf, sizeof(aBuf), "If there are less than %d players, the round does not end and all players are released instead.", g_Config.m_SvLastStandingPlayers);
@@ -897,52 +897,52 @@ void CGameContext::OnMessage(int MsgID, CUnpacker *pUnpacker, int ClientID)
 			}
 			else if(!str_comp_nocase("cmdlist", pMsg->m_pMessage + 1))
 			{
-				if (RankingEnabled())
-					SendChatTarget(ClientID, "Chat commands: /info, /help, /kills, /victims, /t <name> <msg>, /ti <id> <msg>, /top [<category>], /rank [<player>]");
-				else
-					SendChatTarget(ClientID, "Chat commands: /info, /help, /kills, /victims, /t <name> <msg>, /ti <id> <msg>");
+				SendChatTarget(ClientID, "Use /help to learn about chat commands.");
 			}
 			else if(!str_comp_nocase("help", pMsg->m_pMessage + 1))
 			{
-				SendChatTarget(ClientID, "--- Help topics ---");
-				SendChatTarget(ClientID, "/help 1: zCatch/TeeVi");
-				SendChatTarget(ClientID, "/help 2: releasing");
-				SendChatTarget(ClientID, "/help 3: writing PMs");
-				SendChatTarget(ClientID, "/help 4: ranking system");
+				SendChatTarget(ClientID, "Help topics: [1] game, [2] releasing, [3] PMs, [4] ranking, [5] hard mode");
+				SendChatTarget(ClientID, "/help [1-5]: show help topic");
+				SendChatTarget(ClientID, "/info: show info about this mod");
 			}
 			else if(!str_comp_nocase("help 1", pMsg->m_pMessage + 1))
 			{
-				SendChatTarget(ClientID, "--- Help 1 / 4 ---");
+				SendChatTarget(ClientID, "--- Help 1 / 5 ---");
 				SendChatTarget(ClientID, "Players you catch (kill) join again when you die. Catch everyone to win.");
 				SendChatTarget(ClientID, "/kills: list of players you caught");
 				SendChatTarget(ClientID, "/victims: who is waiting for your death");
 			}
 			else if(!str_comp_nocase("help 2", pMsg->m_pMessage + 1))
 			{
-				SendChatTarget(ClientID, "--- Help 2 / 4 ---");
+				SendChatTarget(ClientID, "--- Help 2 / 5 ---");
 				SendChatTarget(ClientID, "On suicide via console the last victim is released instead. You die if there is noone to release. The console command for suicide is 'kill'.");
 			}
 			else if(!str_comp_nocase("help 3", pMsg->m_pMessage + 1))
 			{
-				SendChatTarget(ClientID, "--- Help 3 / 4 ---");
+				SendChatTarget(ClientID, "--- Help 3 / 5 ---");
 				SendChatTarget(ClientID, "You can write private messages:");
 				SendChatTarget(ClientID, "/t <name> <msg>: write PM to <name>");
 				SendChatTarget(ClientID, "/ti <id> <msg>: write PM via ID");
 			}
 			else if(!str_comp_nocase("help 4", pMsg->m_pMessage + 1))
 			{
+				SendChatTarget(ClientID, "--- Help 4 / 5 ---");
 				if (RankingEnabled())
 				{
-					SendChatTarget(ClientID, "--- Help 4 / 4 ---");
 					SendChatTarget(ClientID, "The ranking system saves various stats about players. The stats are updated at the end of a round and on leaving the server.");
 					SendChatTarget(ClientID, "/top [<category>]: display top 5 players");
 					SendChatTarget(ClientID, "/rank [<player>]: display own/players's rank");
 				}
 				else
-				{
-					SendChatTarget(ClientID, "--- Help 4 / 4 ---");
 					SendChatTarget(ClientID, "The ranking system is disabled on this server.");
-				}
+			}
+			else if(!str_comp_nocase("help 5", pMsg->m_pMessage + 1))
+			{
+				SendChatTarget(ClientID, "--- Help 5 / 5 ---");
+				SendChatTarget(ClientID, "The hard mode is an extra challenge for good players. You cannot leave it.");
+				SendChatTarget(ClientID, "/hard: join random mode");
+				SendChatTarget(ClientID, "/hard <modes>: join mode(s)");
+				SendChatTarget(ClientID, "/hard list: list all available modes");
 			}
 			else if(!str_comp_nocase("victims", pMsg->m_pMessage + 1))
 			{
