@@ -129,15 +129,15 @@ void CGameController_zCatch::DoWincheck()
 			{
 				winner->ReleaseZCatchVictim(CPlayer::ZCATCH_RELEASE_ALL);
 				winner->m_HardMode.m_ModeTotalFails.m_Fails = 0;
-				GameServer()->SendChatTarget(-1, "The winner failed the hard mode. All players have been released.");
-				GameServer()->SendBroadcast("The winner failed the hard mode. All players have been released.", -1);
+				GameServer()->SendChatTarget(-1, "The winner failed the hard mode.");
+				GameServer()->SendBroadcast("The winner failed the hard mode.", -1);
 			}
 			else if(lastStandingSituation)
 			{
 				winner->HardModeRestart();
 				winner->m_zCatchNumKillsInARowThisRound = 0;
-				GameServer()->SendChatTarget(-1, "Too few players to end round. All players have been released.");
-				GameServer()->SendBroadcast("Too few players to end round. All players have been released.", -1);
+				GameServer()->SendChatTarget(-1, "Too few players to end round.");
+				GameServer()->SendBroadcast("Too few players to end round.", -1);
 			}
 			else
 			{
