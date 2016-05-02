@@ -1326,7 +1326,7 @@ void CGameContext::OnMessage(int MsgID, CUnpacker *pUnpacker, int ClientID)
 			{
 				SendChatTarget(ClientID, "You can't kick admins");
 				char aBufKick[128];
-				str_format(aBufKick, sizeof(aBufKick), "'%s' called for vote to kick you", Server()->ClientName(ClientID));
+				str_format(aBufKick, sizeof(aBufKick), "'%s' called for vote to kick you (%s)", Server()->ClientName(ClientID), pReason);
 				SendChatTarget(KickID, aBufKick);
 				return;
 			}
