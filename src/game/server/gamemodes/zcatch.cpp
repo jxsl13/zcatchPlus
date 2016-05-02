@@ -329,7 +329,7 @@ void CGameController_zCatch::EndRound()
 				{
 					char aBuf[128];
 					double TimeIngame = (player->m_TicksIngame * 100.0) / (player->m_TicksIngame + player->m_TicksSpec);
-					str_format(aBuf, sizeof(aBuf), "K/D: %d/%d (%.2f%% ingame)", player->m_Kills, player->m_Deaths, TimeIngame);
+					str_format(aBuf, sizeof(aBuf), "K/D: %d/%d, ingame: %.2f%%", player->m_Kills, player->m_Deaths, TimeIngame);
 					GameServer()->SendChatTarget(i, aBuf);
 				}
 				// release all players
