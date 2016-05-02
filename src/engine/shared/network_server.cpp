@@ -75,7 +75,7 @@ int CNetServer::Update()
 		m_aSlots[i].m_Connection.Update();
 		if(m_aSlots[i].m_Connection.State() == NET_CONNSTATE_ERROR)
 		{
-			if(Now - m_aSlots[i].m_Connection.ConnectTime() < time_freq() && NetBan())
+			if((Now - m_aSlots[i].m_Connection.ConnectTime()) < (time_freq() / 3) && NetBan())
 			{
 				if(NetBan()->BanAddr(ClientAddr(i), 60, "Stressing network") == -1)
 					Drop(i, m_aSlots[i].m_Connection.ErrorString());
