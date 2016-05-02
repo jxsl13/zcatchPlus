@@ -38,6 +38,7 @@ CPlayer::CPlayer(CGameContext *pGameServer, int ClientID, int Team)
 	m_ZCatchVictims = NULL;
 	m_zCatchNumVictims = 0;
 	m_zCatchNumKillsInARow = 0;
+	m_zCatchNumKillsInARowThisRound = 0;
 	m_zCatchNumKillsReleased = 0;
 	ResetHardMode();
 	
