@@ -377,11 +377,10 @@ void CGameController_zCatch::RewardWinner(int winnerId) {
 	++winner->m_RankCache.m_NumWins;
 	
 	/* abort if no points */
-	if (points == 0) // logical opposite would be <= 0, but left it as is
+	if (points <= 0)
 	{
 		return;
 	}
-	// you don't need to increment anything if there is nothing to be incremented
 	winner->m_RankCache.m_Points += points;
 	
 	/* saving is done in EndRound() */
