@@ -115,13 +115,12 @@ void CGameController_zCatch::DoWincheck()
 		}
 		else if((Players - Players_Spec) == 1)
 		{
-			bool lastStandingSituation = winner && (winner->m_zCatchNumKillsInARowThisRound + 1) < g_Config.m_SvLastStandingPlayers;
 			for(int i = 0; i < MAX_CLIENTS; i++)
 			{
 				if(GameServer()->m_apPlayers[i] && GameServer()->m_apPlayers[i]->GetTeam() != TEAM_SPECTATORS)
 				{
 					GameServer()->m_apPlayers[i]->m_Score += g_Config.m_SvBonus;
-					if(lastStandingSituation)
+					if(Players_Ingame < g_Config.m_SvLastStandingPlayers)
 						GameServer()->m_apPlayers[i]->ReleaseZCatchVictim(CPlayer::ZCATCH_RELEASE_ALL);
 				}
 			}
@@ -132,10 +131,9 @@ void CGameController_zCatch::DoWincheck()
 				GameServer()->SendChatTarget(-1, "The winner failed the hard mode.");
 				GameServer()->SendBroadcast("The winner failed the hard mode.", -1);
 			}
-			else if(lastStandingSituation)
+			else if(Players_Ingame < g_Config.m_SvLastStandingPlayers)
 			{
 				winner->HardModeRestart();
-				winner->m_zCatchNumKillsInARowThisRound = 0;
 				GameServer()->SendChatTarget(-1, "Too few players to end round.");
 				GameServer()->SendBroadcast("Too few players to end round.", -1);
 			}
@@ -185,7 +183,6 @@ int CGameController_zCatch::OnCharacterDeath(class CCharacter *pVictim, class CP
 		if(pKiller->GetTeam() != TEAM_SPECTATORS && (!pVictim->m_KillerLastDieTickBeforceFiring || pVictim->m_KillerLastDieTickBeforceFiring == pKiller->m_DieTick))
 		{
 			++pKiller->m_zCatchNumKillsInARow;
-			++pKiller->m_zCatchNumKillsInARowThisRound;
 			pKiller->AddZCatchVictim(victim->GetCID(), CPlayer::ZCATCH_CAUGHT_REASON_KILLED);
 			char aBuf[256];
 			str_format(aBuf, sizeof(aBuf), "You are caught until '%s' dies.", Server()->ClientName(pKiller->GetCID()));
@@ -205,7 +202,6 @@ int CGameController_zCatch::OnCharacterDeath(class CCharacter *pVictim, class CP
 	// release all the victim's victims
 	victim->ReleaseZCatchVictim(CPlayer::ZCATCH_RELEASE_ALL);
 	victim->m_zCatchNumKillsInARow = 0;
-	victim->m_zCatchNumKillsInARowThisRound = 0;
 	victim->m_zCatchNumKillsReleased = 0;
 
 	// Update colours
@@ -335,7 +331,6 @@ void CGameController_zCatch::EndRound()
 				// release all players
 				player->ReleaseZCatchVictim(CPlayer::ZCATCH_RELEASE_ALL);
 				player->m_zCatchNumKillsInARow = 0;
-				player->m_zCatchNumKillsInARowThisRound = 0;
 			}
 			
 			// zCatch/TeeVi: hard mode
