@@ -292,6 +292,19 @@ void CGameContext::SendChatTarget(int To, const char *pText)
 }
 
 
+void CGameContext::SendPrivateMessage(int From, int To, const char *pText)
+{
+	// prepare message
+	CNetMsg_Sv_Chat M;
+	M.m_Team = CHAT_SPEC;
+	M.m_ClientID = From;
+	M.m_pMessage = pText;
+	
+	Server()->SendPackMsg(&M, MSGFLAG_VITAL, From);
+	Server()->SendPackMsg(&M, MSGFLAG_VITAL, To);
+}
+
+
 void CGameContext::SendChat(int ChatterClientID, int Team, const char *pText)
 {
 	char aBuf[256];
@@ -1044,14 +1057,11 @@ void CGameContext::OnMessage(int MsgID, CUnpacker *pUnpacker, int ClientID)
 						const char *msgForm = "/PM -> %s / %s";
 						int len = 32 + MAX_NAME_LENGTH + str_length(msgStart);
 						char *msg = (char*)malloc(len * sizeof(char));
-						CNetMsg_Sv_Chat M;
-						M.m_Team = 0;
-						M.m_ClientID = ClientID;
-						// send to sender and recipient
 						str_format(msg, len * sizeof(char), msgForm, Server()->ClientName(recipient), msgStart);
-						M.m_pMessage = msg;
-						Server()->SendPackMsg(&M, MSGFLAG_VITAL, ClientID);
-						Server()->SendPackMsg(&M, MSGFLAG_VITAL, recipient);
+						
+						// send message
+						SendPrivateMessage(ClientID, recipient, msg);
+						
 						// tidy up
 						free(msg);
 					}
