@@ -123,4 +123,9 @@ MACRO_CONFIG_INT(SvBotDetection, sv_bot_detection, 0, 0, 3, CFGFLAG_SERVER, "Bot
 MACRO_CONFIG_INT(SvRanking, sv_ranking, 1, 0, 1, CFGFLAG_SERVER, "Ranking system (0=off, 1=sqlite)")
 MACRO_CONFIG_STR(SvRankingFile, sv_ranking_file, 255, "ranking.db", CFGFLAG_SERVER, "File in which the ranking and scores are saved.")
 MACRO_CONFIG_INT(SvAllowHardMode, sv_allow_hard_mode, 0, 0, 2, CFGFLAG_SERVER, "Allow players to go into hard mode")
+// zCatch jxsl13 added.
+MACRO_CONFIG_INT(SvAllowDynamicCam, sv_allow_dynamic_cam, 1, 0, 2, CFGFLAG_SERVER, "Allow the use and sending of player information in dynamic cam range(allow dynamic cam = 1, else static only (16:9 screen ratio) = 0)")
+MACRO_CONFIG_INT(SvLastStandingDeathmatch, sv_last_standing_deathmatch, 0, 0, 2, CFGFLAG_SERVER, "If the last standing players treshold is not reached, caught people will be released automatically and new people are allowed to join the game directly.")
+MACRO_CONFIG_INT(SvStaticCamAbsolutexDistanceX, sv_static_cam_x, 832, 0, 2000, CFGFLAG_SERVER, "If the dynamic camera is disabled, this is the rendered horizontal distance from a player's current position.")
+MACRO_CONFIG_INT(SvStaticCamAbsolutexDistanceY, sv_static_cam_y, 468, 0, 2000, CFGFLAG_SERVER, "If the dynamic camera is disabled, this is the rendered vertical distance from a player's current position.")
 #endif

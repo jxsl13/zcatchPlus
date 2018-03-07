@@ -161,16 +161,19 @@ public:
 			bool m_Active;
 			CCharacter *m_Character;
 		} m_ModeDoubleKill;
+
 		struct {
 			bool m_Active;
 			int m_TimeSeconds;
 			int m_LastKillTick;
 		} m_ModeKillTimelimit;
 		bool m_ModeHookWhileKilling;
+
 		struct {
 			bool m_Active;
 			unsigned int m_Heat;
 		} m_ModeWeaponOverheats;
+
 		struct {
 			bool m_Active;
 			unsigned int m_Max;
@@ -179,6 +182,7 @@ public:
 		bool m_ModeInvisibleProjectiles; // TODO
 		bool m_ModeInvisiblePlayers; // TODO
 	} m_HardMode;
+	
 	bool AddHardMode(const char*);
 	const char* AddRandomHardMode();
 	void ResetHardMode();

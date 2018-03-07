@@ -11,6 +11,8 @@
 class CGameController_zCatch: public IGameController
 {
 	int m_OldMode;
+	// jxsl13 added
+	int m_OldAllowJoin;
 	
 	void RewardWinner(int winnerId);
 	
@@ -19,6 +21,9 @@ class CGameController_zCatch: public IGameController
 	static void ChatCommandRankFetchDataAndPrint(CGameContext* GameServer, int clientId, char *name);
 	static void SaveScore(CGameContext* GameServer, char *name, int score, int numWins, int numKills, int numKillsWallshot, int numDeaths, int numShots, int highestSpree, int timePlayed);
 	static void FormatRankingColumn(const char* column, char buf[32], int value);
+
+	// jxsl13 added
+	void ToggleLastStandingDeathmatchAndRelease(int Players_Ingame);
 
 public:
 	CGameController_zCatch(class CGameContext *pGameServer);
@@ -33,6 +38,8 @@ public:
 	virtual bool OnEntity(int Index, vec2 Pos);
 	virtual bool CanChangeTeam(CPlayer *pPlayer, int JoinTeam);
 	virtual void EndRound();
+
+
 	
 	/* ranking system */
 	virtual void SaveRanking(CPlayer *player);
