@@ -594,9 +594,14 @@ void CGameContext::OnTick()
 		SendChat(-1, CGameContext::CHAT_ALL, Server()->GetNextInfoText().c_str());
 	}
 
+
+	BotDetection();
+
 	// bot detection
 	// it is based on the behaviour of some bots to shoot at a player's _exact_ position
 	// check each player, check only if an admin is online
+	// old bot detection
+	/*
 	if(g_Config.m_SvBotDetection && Server()->GetNumLoggedInAdmins())
 	{
 		char aBuf[128], bBuf[64];
@@ -698,6 +703,7 @@ void CGameContext::OnTick()
 			}
 		}
 	}
+	*/
 
 #ifdef CONF_DEBUG
 	if(g_Config.m_DbgDummies)
@@ -2400,10 +2406,26 @@ bool CGameContext::IsClientPlayer(int ClientID)
 	return m_apPlayers[ClientID] && m_apPlayers[ClientID]->GetTeam() == TEAM_SPECTATORS ? false : true;
 }
 
+// old bot detection
+	/*
 bool CGameContext::IsClientAimBot(int ClientID)
 {
 	return m_apPlayers[ClientID] && m_apPlayers[ClientID]->m_IsAimBot;
 }
+*/
+
+void CGameContext::BotDetection(){
+
+}
+
+
+
+
+
+
+
+
+
 
 /* wait given ms to lock ranking db, if time is negative wait until database is unlocked */
 bool CGameContext::LockRankingDb(int ms)

@@ -190,6 +190,8 @@ public:
 	void HardModeFailedShot();
 	
 	// bot detection
+	// old bot detection
+	/*
 	int m_IsAimBot;
 	int m_AimBotIndex;
 	int m_AimBotRange;
@@ -199,6 +201,7 @@ public:
 	int m_AimBotLastDetection;
 	vec2 m_AimBotLastDetectionPos;
 	vec2 m_AimBotLastDetectionPosVictim;
+	*/
 	
 private:
 	CCharacter *m_pCharacter;

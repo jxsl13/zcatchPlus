@@ -50,16 +50,22 @@ CCharacter::CCharacter(CGameWorld *pWorld)
 	m_KillerLastDieTickBeforceFiring = 0;
 	
 	// last positions
+	// old bot detection
+	/*
 	m_LastPositionsSize = Server()->TickSpeed() / 4;
 	m_LastPositions = new vec2[m_LastPositionsSize]();
 	for(int i = 0; i < m_LastPositionsSize; ++i)
 		m_LastPositions[i] = vec2(-1000, -1000);
+	*/
 }
 
 CCharacter::~CCharacter()
 {
 	// delete last positions
+	// old bot detection
+	/*
 	delete[] m_LastPositions;
+	*/
 }
 
 void CCharacter::Reset()
@@ -126,6 +132,8 @@ void CCharacter::Destroy()
 }
 
 // checks whether the player has been at those coords recently (like a few ticks ago)
+// old bot detection
+	/*
 bool CCharacter::HasBeenThereRecently(vec2 v, const vec2 *&pos, int firstTick, int lastTick) const
 {
 	// start with the most recent position
@@ -146,8 +154,11 @@ bool CCharacter::HasBeenThereRecently(vec2 v, const vec2 *&pos, int firstTick, i
 	}
 	return false;
 }
+*/
 
 // checks whether the player has been aiming at another character recently (like a few ticks ago)
+// old bot detection
+	/*
 bool CCharacter::AimedAtCharRecently(vec2 v, const CCharacter *c, const vec2 *&pos, const vec2 *&posVictim, int firstTick)
 {
 	// The last few positions of both characters are saved. Since you cannot tell (due to the network) _when_ the player aimed at the other player, or even where he was when he aimed, we need to check each position of the one player against each position of the other player in the time before.
@@ -165,7 +176,12 @@ bool CCharacter::AimedAtCharRecently(vec2 v, const CCharacter *c, const vec2 *&p
 	}
 	return false;
 }
+*/
 
+
+
+// old bot detection
+	/*
 float CCharacter::HowCloseToXRecently(vec2 x, const vec2 *&pos, int firstTick)
 {
 	float lowest = -1.0;
@@ -184,6 +200,7 @@ float CCharacter::HowCloseToXRecently(vec2 x, const vec2 *&pos, int firstTick)
 	}
 	return lowest;
 }
+*/
 
 void CCharacter::SetWeapon(int W)
 {
@@ -719,8 +736,11 @@ void CCharacter::Tick()
 	m_PrevInput = m_Input;
 	
 	// save position
+	// old bot detection
+	/*
 	m_LastPositions[Server()->Tick() % m_LastPositionsSize] = m_Pos;
-	
+	*/
+
 	// zCatch/TeeVi hard mode: weapon overheating
 	if(Server()->Tick() % 2)
 	{

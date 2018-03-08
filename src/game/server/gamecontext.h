@@ -226,13 +226,18 @@ public:
 	virtual const char *NetVersion();
 	
 	// bot detection
+	// old bot detection
+	/*
 	enum
 	{
 		BOT_DETECTION_FAST_AIM=1,
 		BOT_DETECTION_FOLLOW=2,
 	};
 	virtual bool IsClientAimBot(int ClientID);
+	*/
 	
+	virtual void BotDetection();
+
 	/* ranking system */
 	sqlite3* GetRankingDb() { return m_RankingDb; };
 	bool RankingEnabled() { return m_RankingDb != NULL; };

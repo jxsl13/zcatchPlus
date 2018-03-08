@@ -110,8 +110,10 @@ public:
 	virtual const char *Version() = 0;
 	virtual const char *NetVersion() = 0;
 
+	// old bot detection
+	/*
 	virtual bool IsClientAimBot(int ClientID) = 0;
-	
+	*/
 	virtual void InformPlayers(const char *pText) = 0;
 };
 

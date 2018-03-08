@@ -70,10 +70,14 @@ public:
 	int m_FreezeTicks;
 	
 	// bot detection
+	// old bot detection
+	/*
 	bool HasBeenThereRecently(vec2 v, const vec2 *&pos, int firstTick, int lastTick) const;
 	bool AimedAtCharRecently(vec2 v, const CCharacter *c, const vec2 *&pos, const vec2 *&posVictim, int firstTick);
 	float HowCloseToXRecently(vec2 x, const vec2 *&pos, int firstTick);
-	
+	*/
+
+
 	// zCatch
 	int m_KillerLastDieTickBeforceFiring;
 	
@@ -148,8 +152,11 @@ private:
 	CCharacterCore m_ReckoningCore; // the dead reckoning core
 	
 	// bot detection
+	// old bot detection
+	/*
 	vec2 *m_LastPositions;
 	int m_LastPositionsSize;
+	*/
 
 };
 
