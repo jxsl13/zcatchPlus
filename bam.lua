@@ -151,8 +151,13 @@ function build(settings)
 			-- disable visibility attribute support for gcc on windows
 			settings.cc.defines:Add("NO_VIZ")
 		elseif platform == "macosx" then
-			settings.cc.flags:Add("-mmacosx-version-min=10.5")
-			settings.link.flags:Add("-mmacosx-version-min=10.5")
+			settings.cc.flags:Add("-mmacosx-version-min=10.7")
+			settings.link.flags:Add("-mmacosx-version-min=10.7")
+
+			-----jxsl13 was here mac os x thread crap -----
+			settings.cc.flags:Add("--stdlib=libc++")
+			settings.link.flags:Add("--stdlib=libc++")
+			----------
 			if config.minmacosxsdk.value == 1 then
 				settings.cc.flags:Add("-isysroot /Developer/SDKs/MacOSX10.5.sdk")
 				settings.link.flags:Add("-isysroot /Developer/SDKs/MacOSX10.5.sdk")
