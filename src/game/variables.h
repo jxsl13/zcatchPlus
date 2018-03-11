@@ -110,7 +110,7 @@ MACRO_CONFIG_INT(SvAnticamperTime, sv_anticamper_time, 10, 5, 120, CFGFLAG_SERVE
 MACRO_CONFIG_INT(SvAnticamperRange, sv_anticamper_range, 200, 0, 1000, CFGFLAG_SERVER, "Distance how far away the player must move to escape anticamper")
 
 MACRO_CONFIG_INT(SvGrenadeMinDamage, sv_grenade_min_damage, 4, 1, 6, CFGFLAG_SERVER, "How much damage the grenade must do to kill the player (depends how far away it explodes)")
-MACRO_CONFIG_INT(SvGrenadeEndlessAmmo, sv_grenade_endless_ammo, 1, 0, 1, CFGFLAG_SERVER, "Endless ammo for grenade (only mode 4). If not zero, set sv_grenade_bullets for the number of bullets")
+MACRO_CONFIG_INT(SvGrenadeEndlessAmmo, sv_grenade_endless_ammo, 0, 0, 1, CFGFLAG_SERVER, "Endless ammo for grenade (only mode 4). If not zero, set sv_grenade_bullets for the number of bullets")
 MACRO_CONFIG_INT(SvWeaponsAmmo, sv_weapons_ammo, 4, 1, 10, CFGFLAG_SERVER, "Default amount of ammo for all weapons in mode 2 or grenade in mode 4. Your ammo will regenerate after some while")
 
 MACRO_CONFIG_INT(SvVoteForceReason, sv_vote_forcereason, 1, 0, 1, CFGFLAG_SERVER, "Allow only votes with a reason (except settings)")
