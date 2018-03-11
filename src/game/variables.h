@@ -119,13 +119,19 @@ MACRO_CONFIG_INT(SvKillPenalty, sv_kill_penalty, 5, 0, 50, CFGFLAG_SERVER, "The 
 
 // zCatch/TeeVi
 MACRO_CONFIG_INT(SvLastStandingPlayers, sv_last_standing_players, 5, 2, 16, CFGFLAG_SERVER, "How many players are needed to have last standing rounds")
-MACRO_CONFIG_INT(SvBotDetection, sv_bot_detection, 0, 0, 3, CFGFLAG_SERVER, "Bot detection (0=off, 1=fast aim, 2=follow, 3=all)")
+// MACRO_CONFIG_INT(SvBotDetection, sv_bot_detection, 0, 0, 3, CFGFLAG_SERVER, "Bot detection (0=off, 1=fast aim, 2=follow, 3=all)")
 MACRO_CONFIG_INT(SvRanking, sv_ranking, 1, 0, 1, CFGFLAG_SERVER, "Ranking system (0=off, 1=sqlite)")
 MACRO_CONFIG_STR(SvRankingFile, sv_ranking_file, 255, "ranking.db", CFGFLAG_SERVER, "File in which the ranking and scores are saved.")
 MACRO_CONFIG_INT(SvAllowHardMode, sv_allow_hard_mode, 0, 0, 2, CFGFLAG_SERVER, "Allow players to go into hard mode")
 // zCatch jxsl13 added.
 MACRO_CONFIG_INT(SvAllowDynamicCam, sv_allow_dynamic_cam, 1, 0, 2, CFGFLAG_SERVER, "Allow the use and sending of player information in dynamic cam range(allow dynamic cam = 1, else static only (16:9 screen ratio) = 0)")
+MACRO_CONFIG_INT(SvStaticCamAbsolutexDistanceX, sv_static_cam_x, 832, 0, 10000, CFGFLAG_SERVER, "If the dynamic camera is disabled, this is the rendered horizontal distance from a player's current position.")
+MACRO_CONFIG_INT(SvStaticCamAbsolutexDistanceY, sv_static_cam_y, 468, 0, 10000, CFGFLAG_SERVER, "If the dynamic camera is disabled, this is the rendered vertical distance from a player's current position.")
 MACRO_CONFIG_INT(SvLastStandingDeathmatch, sv_last_standing_deathmatch, 0, 0, 2, CFGFLAG_SERVER, "If the last standing players treshold is not reached, caught people will be released automatically and new people are allowed to join the game directly.")
-MACRO_CONFIG_INT(SvStaticCamAbsolutexDistanceX, sv_static_cam_x, 832, 0, 2000, CFGFLAG_SERVER, "If the dynamic camera is disabled, this is the rendered horizontal distance from a player's current position.")
-MACRO_CONFIG_INT(SvStaticCamAbsolutexDistanceY, sv_static_cam_y, 468, 0, 2000, CFGFLAG_SERVER, "If the dynamic camera is disabled, this is the rendered vertical distance from a player's current position.")
+// Adjustable default regeneration time.
+MACRO_CONFIG_INT(SvGunRegenerationTime, sv_gun_regeneration_time, 625, 0, 10000, CFGFLAG_SERVER, "Default: 625 - Time after which the gun's projectiles regenerate.")
+MACRO_CONFIG_INT(SvGrenadeRegenerationTime, sv_grenade_regeneration_time, 1000, 0, 10000, CFGFLAG_SERVER, "Default: 1000 - Time after which the grenade's projectiles regenerate.")
+MACRO_CONFIG_INT(SvRifleRegenerationTime, sv_rifle_regeneration_time, 1200, 0, 10000, CFGFLAG_SERVER, "Default: 1200 - Time after which the laser rifle's projectiles regenerate.")
+MACRO_CONFIG_INT(SvShotgunRegenerationTime, sv_shotgun_regeneration_time, 1000, 0, 10000, CFGFLAG_SERVER, "Default: 1000 - Time after which the shotgun's projectiles regenerate.")
+
 #endif

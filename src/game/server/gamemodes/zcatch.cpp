@@ -14,7 +14,7 @@
 CGameController_zCatch::CGameController_zCatch(class CGameContext *pGameServer) :
 	IGameController(pGameServer)
 {
-	m_pGameType = "zCatch/TeeVi";
+	m_pGameType = "zCatch+";
 	m_OldMode = g_Config.m_SvMode;
 
 	// jxsl13 added to save old server config. Needed for last man

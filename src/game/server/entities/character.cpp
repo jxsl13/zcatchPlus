@@ -565,10 +565,11 @@ void CCharacter::HandleWeapons()
 	{
 		switch(m_ActiveWeapon)
 		{
-			case WEAPON_GUN: AmmoRegenTime = 125*5; break;
-			case WEAPON_GRENADE: AmmoRegenTime = 1000; break;
-			case WEAPON_RIFLE: AmmoRegenTime = 1200; break;
-			case WEAPON_SHOTGUN: AmmoRegenTime = 1000; break;
+			// jxsl13 was here: projectile spam protection adjustable with votes.
+			case WEAPON_GUN: AmmoRegenTime = g_Config.m_SvGunRegenerationTime; break;
+			case WEAPON_GRENADE: AmmoRegenTime = g_Config.m_SvGrenadeRegenerationTime; break;
+			case WEAPON_RIFLE: AmmoRegenTime = g_Config.m_SvRifleRegenerationTime; break;
+			case WEAPON_SHOTGUN: AmmoRegenTime = g_Config.m_SvShotgunRegenerationTime; break;
 		}
 	}
 
