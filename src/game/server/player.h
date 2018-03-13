@@ -6,6 +6,7 @@
 // this include should perhaps be removed
 #include "entities/character.h"
 #include "gamecontext.h"
+#include <vector> // std::vector
 
 // player object
 class CPlayer
@@ -20,7 +21,7 @@ public:
 
 	void TryRespawn();
 	void Respawn();
-	void SetTeam(int Team, bool DoChatMsg=true);
+	void SetTeam(int Team, bool DoChatMsg = true);
 	void SetTeamDirect(int Team); //zCatch
 	int GetTeam() const { return m_Team; };
 	int GetCID() const { return m_ClientID; };
@@ -96,14 +97,14 @@ public:
 		int m_Min;
 		int m_Max;
 	} m_Latency;
-	
+
 	//zCatch:
 	int m_CaughtBy;
 	bool m_SpecExplicit;
 	int m_Deaths;
 	int m_Kills;
 	int m_LastKillTry;
-	
+
 	int m_TicksSpec;
 	int m_TicksIngame;
 	int m_ChatTicks;
@@ -112,7 +113,7 @@ public:
 	bool m_SentCampMsg;
 	int m_CampTick;
 	vec2 m_CampPos;
-	
+
 	// zCatch/TeeVi
 	enum
 	{
@@ -136,7 +137,7 @@ public:
 	void ReleaseZCatchVictim(int ClientID, int limit = 0, bool manual = false);
 	bool HasZCatchVictims() { return (m_ZCatchVictims != NULL); }
 	int LastZCatchVictim() { return HasZCatchVictims() ? m_ZCatchVictims->ClientID : -1; }
-	
+
 	/* ranking system */
 	struct {
 		int m_Points;
@@ -150,7 +151,7 @@ public:
 	} m_RankCache;
 	void RankCacheStartPlaying();
 	void RankCacheStopPlaying();
-	
+
 	// zCatch/TeeVi hard mode
 	struct {
 		bool m_Active;
@@ -182,13 +183,13 @@ public:
 		bool m_ModeInvisibleProjectiles; // TODO
 		bool m_ModeInvisiblePlayers; // TODO
 	} m_HardMode;
-	
+
 	bool AddHardMode(const char*);
 	const char* AddRandomHardMode();
 	void ResetHardMode();
 	void HardModeRestart();
 	void HardModeFailedShot();
-	
+
 	// bot detection
 	// old bot detection
 	/*
@@ -202,7 +203,7 @@ public:
 	vec2 m_AimBotLastDetectionPos;
 	vec2 m_AimBotLastDetectionPosVictim;
 	*/
-	
+
 private:
 	CCharacter *m_pCharacter;
 	CGameContext *m_pGameServer;

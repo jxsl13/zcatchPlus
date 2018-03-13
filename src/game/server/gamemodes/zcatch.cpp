@@ -871,7 +871,7 @@ void CGameController_zCatch::ToggleLastStandingDeathmatchAndRelease(int Players_
 /**
  * @brief Merges two rankings into one TARGET ranking and deletes the SOURCE ranking.
  * @details Warning: Don't get confused if highest spree is not merged, because the highest spree is actually the maximum of both values.
- * 			This function can also merge and create into a not existing TARGET, which is then inserted into the database with the given
+ * 			This function can also merge and create a not existing TARGET, which is then inserted into the database with the given
  * 			trimmed(no whitespaces on both sides) TARGET nickname.
  * 			WARNING: Given parameters: Source and Target are freed after the execution of this function.
  *
