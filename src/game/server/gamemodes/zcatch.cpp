@@ -882,16 +882,16 @@ void CGameController_zCatch::ToggleLastStandingDeathmatchAndRelease(int Players_
 void CGameController_zCatch::MergeRankingIntoTarget(CGameContext* GameServer, char* Source, char* Target)
 {
 
-	int target_score;
-	int target_numWins;
-	int target_numKills;
-	int target_numKillsWallshot;
-	int target_numDeaths;
-	int target_numShots;
-	int target_highestSpree;
-	int target_timePlayed;
-	int target_rank;
-	int target_scoreToNextRank;
+	int target_score = 0;
+	int target_numWins = 0;
+	int target_numKills = 0;
+	int target_numKillsWallshot = 0;
+	int target_numDeaths = 0;
+	int target_numShots = 0;
+	int target_highestSpree = 0;
+	int target_timePlayed = 0;
+	int target_rank = 0;
+	int target_scoreToNextRank = 0;
 
 	/*Sqlite stuff*/
 	/*sqlite statement object*/

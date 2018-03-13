@@ -183,7 +183,6 @@ void CTeeHistorian::WriteHeader(const CGameInfo *pGameInfo)
 	#define MACRO_CONFIG_STR_ACCESSLEVEL(Name,ScriptName,Len,Def,Flags,Desc,AccessLevel) MACRO_CONFIG_STR(Name,ScriptName,Len,Def,Flags,Desc)
 	#include <engine/shared/config_variables.h>
 
-
 	#undef MACRO_CONFIG_INT_ACCESSLEVEL
 	#undef MACRO_CONFIG_STR_ACCESSLEVEL
 
