@@ -218,6 +218,7 @@ public:
 	int MaxClients() const;
 	/*teehistorian*/
 	void GetMapInfo(char *pMapName, int MapNameSize, int *pMapSize, int *pMapCrc);
+	
 
 	virtual int SendMsg(CMsgPacker *pMsg, int Flags, int ClientID);
 	int SendMsgEx(CMsgPacker *pMsg, int Flags, int ClientID, bool System);

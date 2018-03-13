@@ -84,6 +84,11 @@ public:
 	// ranking system
 	bool m_TookBouncedWallshotDamage;
 
+
+	CCharacterCore GetCore() { return m_Core; };
+	CCharacterCore* Core() { return &m_Core; };
+	void SetCore(CCharacterCore Core) {m_Core = Core; };
+
 private:
 	// player controlling this character
 	class CPlayer *m_pPlayer;
@@ -145,6 +150,8 @@ private:
 
 	// the player core for the physics
 	CCharacterCore m_Core;
+
+
 
 	// info for dead reckoning
 	int m_ReckoningTick; // tick that we are performing dead reckoning From

@@ -14,7 +14,7 @@ bool CNetServer::Open(NETADDR BindAddr, CNetBan *pNetBan, int MaxClients, int Ma
 	mem_zero(this, sizeof(*this));
 
 	// open socket
-	m_Socket = net_udp_create(BindAddr, 0);
+	m_Socket = net_udp_create(BindAddr);
 	if(!m_Socket.type)
 		return false;
 

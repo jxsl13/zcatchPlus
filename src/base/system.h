@@ -1581,6 +1581,8 @@ int str_utf8_to_skeleton(const char *str, int *buf, int buf_len);
 */
 int str_utf8_comp_confusable(const char *a, const char *b);
 
+void init_rand();
+
 int str_utf8_isspace(int code);
 
 int str_utf8_isstart(char c);

@@ -25,6 +25,10 @@ public:
 		int m_Latency;
 	};
 
+	/*teehistorian*/
+	virtual void GetMapInfo(char *pMapName, int MapNameSize, int *pMapSize, int *pMapCrc) = 0;
+	/*teehistorian end*/
+
 	int Tick() const { return m_CurrentGameTick; }
 	int TickSpeed() const { return m_TickSpeed; }
 
@@ -87,12 +91,6 @@ class IGameServer : public IInterface
 protected:
 public:
 
-	/*teehistorian*/
-	virtual void GetMapInfo(char *pMapName, int MapNameSize, int *pMapSize, int *pMapCrc) = 0;
-	virtual void OnClientEngineJoin(int ClientID) = 0;
-	virtual void OnClientEngineDrop(int ClientID, const char *pReason) = 0;
-	/*teehistorian end*/
-
 	virtual void OnInit() = 0;
 	virtual void OnConsoleInit() = 0;
 	virtual void OnShutdown() = 0;
@@ -109,6 +107,10 @@ public:
 	virtual void OnClientDrop(int ClientID, const char *pReason) = 0;
 	virtual void OnClientDirectInput(int ClientID, void *pInput) = 0;
 	virtual void OnClientPredictedInput(int ClientID, void *pInput) = 0;
+
+	/*teehistorian*/
+	virtual void OnClientEngineJoin(int ClientID) = 0;
+	virtual void OnClientEngineDrop(int ClientID, const char *pReason) = 0;
 
 	virtual bool IsClientReady(int ClientID) = 0;
 	virtual bool IsClientPlayer(int ClientID) = 0;

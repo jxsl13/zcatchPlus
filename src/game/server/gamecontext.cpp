@@ -6,6 +6,7 @@
 #include <engine/shared/config.h>
 #include <engine/map.h>
 #include <engine/console.h>
+#include <engine/storage.h>
 #include "gamecontext.h"
 #include <game/version.h>
 #include <game/collision.h>
@@ -15,7 +16,7 @@
 #include "gamemodes/ctf.h"
 #include "gamemodes/mod.h"*/
 #include "gamemodes/zcatch.h"
-
+#include "gamecontext.h"
 enum
 {
 	RESET,
