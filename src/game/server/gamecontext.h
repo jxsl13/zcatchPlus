@@ -250,6 +250,8 @@ public:
 	// jxsl13 was here
 	/*zCatch extended features*/
 	static void ConMergeRecords(IConsole::IResult *pResult, void *pUserData);
+	static void ConMergeRecordsId(IConsole::IResult *pResult, void *pUserData);
+
 
 };
 

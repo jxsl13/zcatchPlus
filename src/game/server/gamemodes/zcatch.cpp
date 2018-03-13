@@ -873,6 +873,7 @@ void CGameController_zCatch::ToggleLastStandingDeathmatchAndRelease(int Players_
  * @details Warning: Don't get confused if highest spree is not merged, because the highest spree is actually the maximum of both values.
  * 			This function can also merge and create into a not existing TARGET, which is then inserted into the database with the given
  * 			trimmed(no whitespaces on both sides) TARGET nickname.
+ * 			WARNING: Given parameters: Source and Target are freed after the execution of this function.
  *
  * @param GameServer pointer to the CGameContext /  GameServer, which contains most information about players etc.
  * @param Source char* of the name of the Source player which is deleted at the end of the merge.
@@ -1029,20 +1030,19 @@ void CGameController_zCatch::MergeRankingIntoTarget(CGameContext* GameServer, ch
 	/*Cannot use "Target" variable from here on. */
 	
 	/*Third part: delete Source player records.*/
-	DeleteRanking(GameServer, Source);
-
-	sqlite3_finalize(pStmt);
-	// freed in this function because this function is executed as a detached thread.
-	// and you cannot know when this could be executed in the main thread.
-	free(Source);
+	
 	// Target has been freed in SaveScore already !!
-	//free(Target);
+	DeleteRanking(GameServer, Source);
+	// Source has been freed in DeleteRanking!
+	sqlite3_finalize(pStmt);
+	// Freeing allocated memory is done in these functions, because they are executed as detached threads.
 }
 
 
 /**
  * @brief Delete the ranking of given player name.
  * @details This function deletes the ranking of the given player represented by his/her nickname.
+ * 			WARNING: This function frees the allocated memory of the "Name" parameter.
  *
  * @param GameServer Is a CGameContext Object, which hold the information about out sqlite3 database handle.
  * 					That handle is needed here to execute queries on the database. 
@@ -1071,7 +1071,9 @@ void CGameController_zCatch::DeleteRanking(CGameContext* GameServer, char* Name)
 		switch (sqlite3_step(pStmt))
 		{
 		case SQLITE_DONE:
-			/* nothing */
+			/* Print deletion success message to rcon */
+			str_format(aBuf, sizeof(aBuf), "Deleting records of '%s'" , Name);
+			GameServer->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "ranking", aBuf);
 			break;
 		case SQLITE_BUSY:
 
@@ -1095,6 +1097,7 @@ void CGameController_zCatch::DeleteRanking(CGameContext* GameServer, char* Name)
 	}
 
 	sqlite3_finalize(pStmt);
+	free(Name);
 }
 
 /**

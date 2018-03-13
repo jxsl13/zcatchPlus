@@ -2260,6 +2260,60 @@ void CGameContext::ConMergeRecords(IConsole::IResult *pResult, void *pUserData) 
 	delete t;
 }
 
+
+/**
+ * @brief Merges records of two players using their current ingame client IDs
+ * @details  \see{CGameContext::ConMergeRecords}
+ * 
+ * @param pResult Console Input
+ * @param pUserData Context data(?)
+ */
+void CGameContext::ConMergeRecordsId(IConsole::IResult *pResult, void *pUserData){
+	CGameContext *pSelf = (CGameContext *)pUserData;
+	// Get IDs
+	int Source(pResult->GetInteger(0));
+	int Target(pResult->GetInteger(1));
+
+	/*Invalid input handling */
+	if(Source == Target ||
+		Source < 0 ||
+		Target < 0 || 
+		Source >= MAX_CLIENTS ||
+		Target >= MAX_CLIENTS){
+		/* print info */
+		char aBuf[64];
+		str_format(aBuf, sizeof(aBuf), "Merging was not successful, because either both IDs are equal or ID's are not valid.");
+		pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "ranking", aBuf);
+		return;
+	}
+
+	char* source = (char*)malloc(sizeof(char)*MAX_NAME_LENGTH);
+	char* target = (char*)malloc(sizeof(char)*MAX_NAME_LENGTH);
+
+	str_copy(source, pSelf->Server()->ClientName(Source), MAX_NAME_LENGTH);
+	str_copy(target, pSelf->Server()->ClientName(Target), MAX_NAME_LENGTH);
+	
+	/*More invalid input handling depending on what ClientName() returned*/
+	if(str_comp(source, "(invalid)") == 0 || 
+		str_comp(target, "(invalid)") == 0 ||
+		str_comp(source, "(connecting)") == 0 ||
+		str_comp(target, "(connecting)") == 0){
+		char aBuf[64];
+		str_format(aBuf, sizeof(aBuf), "Merging was not successful, because either both one or both IDs are invalid or one of them has not connected to the server yet. Please try again.");
+		pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "ranking", aBuf);
+		return;
+	}
+
+	std::thread *t = new std::thread(&CGameController_zCatch::MergeRankingIntoTarget, pSelf, source, target);
+	// source and target are freed after execution of the thread within the function MergeRankingIntoTarget
+	t->detach();
+
+	delete t;
+
+} 
+
+
+
 void CGameContext::OnConsoleInit()
 {
 	m_pServer = Kernel()->RequestInterface<IServer>();
@@ -2297,8 +2351,8 @@ void CGameContext::OnConsoleInit()
 	Console()->Chain("sv_motd", ConchainSpecialMotdupdate, this);
 
 	// jxsl13 was here. Console Commands
-	Console()->Register("merge_records", "ss", CFGFLAG_SERVER, ConMergeRecords, this, "Merge two records into the target username and delete source: merge_records <source nickname> <target nickname>", IConsole::ACCESS_LEVEL_ADMIN);
-
+	Console()->Register("merge_records", "ss", CFGFLAG_SERVER, ConMergeRecords, this, "Merge two records into the target username and delete source records: merge_records <source nickname> <target nickname>", IConsole::ACCESS_LEVEL_ADMIN);
+	Console()->Register("merge_records_id", "ii", CFGFLAG_SERVER, ConMergeRecordsId, this, "Merge two records into the target ID and delete source ID's records: merge_records <source ID> <target ID>", IConsole::ACCESS_LEVEL_ADMIN);
 }
 
 void CGameContext::OnInit(/*class IKernel *pKernel*/)
