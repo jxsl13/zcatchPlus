@@ -882,22 +882,20 @@ void CGameController_zCatch::ToggleLastStandingDeathmatchAndRelease(int Players_
 void CGameController_zCatch::MergeRankingIntoTarget(CGameContext* GameServer, char* Source, char* Target)
 {
 
-	int target_score = 0;
-	int target_numWins = 0;
-	int target_numKills = 0;
-	int target_numKillsWallshot = 0;
-	int target_numDeaths = 0;
-	int target_numShots = 0;
-	int target_highestSpree = 0;
-	int target_timePlayed = 0;
-	int target_rank = 0;
-	int target_scoreToNextRank = 0;
-
+	int source_score = 0;
+	int source_numWins = 0;
+	int source_numKills = 0;
+	int source_numKillsWallshot = 0;
+	int source_numDeaths = 0;
+	int source_numShots = 0;
+	int source_highestSpree = 0;
+	int source_timePlayed = 0;
+	
 	/*Sqlite stuff*/
 	/*sqlite statement object*/
 	sqlite3_stmt *pStmt;
-	int target_rc;
-	int target_row;
+	int source_rc;
+	int source_row;
 
 	/*error handling*/
 	int err = 0;
@@ -914,9 +912,7 @@ void CGameController_zCatch::MergeRankingIntoTarget(CGameContext* GameServer, ch
 			a.numDeaths, \
 			a.numShots, \
 			a.highestSpree, \
-			a.timePlayed, \
-			(SELECT COUNT(*) FROM zCatch b WHERE b.score > a.score) + 1, \
-			MAX(0, (SELECT MIN(b.score) FROM zCatch b WHERE b.score > a.score) - a.score) \
+			a.timePlayed \
 		FROM zCatch a \
 		WHERE username = trim(?1)\
 		;";
@@ -924,9 +920,9 @@ void CGameController_zCatch::MergeRankingIntoTarget(CGameContext* GameServer, ch
 
 	/* First part: fetch all data from Source player*/
 	/*check if query is ok and create statement object pStmt*/
-	target_rc = sqlite3_prepare_v2(GameServer->GetRankingDb(), zSql, strlen(zSql), &pStmt, &zTail);
+	source_rc = sqlite3_prepare_v2(GameServer->GetRankingDb(), zSql, strlen(zSql), &pStmt, &zTail);
 
-	if (target_rc == SQLITE_OK)
+	if (source_rc == SQLITE_OK)
 	{
 		/* bind parameters in query */
 		sqlite3_bind_text(pStmt, 1, Source, strlen(Source), 0);
@@ -939,25 +935,23 @@ void CGameController_zCatch::MergeRankingIntoTarget(CGameContext* GameServer, ch
 			sqlite3_busy_timeout(GameServer->GetRankingDb(), 1000);
 
 			/* fetch from database */
-			target_row = sqlite3_step(pStmt);
+			source_row = sqlite3_step(pStmt);
 
 			/* unlock database access */
 			GameServer->UnlockRankingDb();
 
 			/* result row was fetched */
-			if (target_row == SQLITE_ROW)
+			if (source_row == SQLITE_ROW)
 			{
 				/*get results from columns*/
-				target_score = sqlite3_column_int(pStmt, 0);
-				target_numWins = sqlite3_column_int(pStmt, 1);
-				target_numKills = sqlite3_column_int(pStmt, 2);
-				target_numKillsWallshot = sqlite3_column_int(pStmt, 3);
-				target_numDeaths = sqlite3_column_int(pStmt, 4);
-				target_numShots = sqlite3_column_int(pStmt, 5);
-				target_highestSpree = sqlite3_column_int(pStmt, 6);
-				target_timePlayed = sqlite3_column_int(pStmt, 7);
-				target_rank = sqlite3_column_int(pStmt, 8);
-				target_scoreToNextRank = sqlite3_column_int(pStmt, 9);
+				source_score = sqlite3_column_int(pStmt, 0);
+				source_numWins = sqlite3_column_int(pStmt, 1);
+				source_numKills = sqlite3_column_int(pStmt, 2);
+				source_numKillsWallshot = sqlite3_column_int(pStmt, 3);
+				source_numDeaths = sqlite3_column_int(pStmt, 4);
+				source_numShots = sqlite3_column_int(pStmt, 5);
+				source_highestSpree = sqlite3_column_int(pStmt, 6);
+				source_timePlayed = sqlite3_column_int(pStmt, 7);
 
 				char aBuf[64];
 				str_format(aBuf, sizeof(aBuf), "Fetched data of '%s'", Source);
@@ -966,7 +960,7 @@ void CGameController_zCatch::MergeRankingIntoTarget(CGameContext* GameServer, ch
 			}
 
 			/* database is locked */
-			else if (target_row == SQLITE_BUSY)
+			else if (source_row == SQLITE_BUSY)
 			{
 				/* print error */
 				char aBuf[64];
@@ -976,7 +970,7 @@ void CGameController_zCatch::MergeRankingIntoTarget(CGameContext* GameServer, ch
 			}
 
 			/* no result found */
-			else if (target_row == SQLITE_DONE)
+			else if (source_row == SQLITE_DONE)
 			{
 				/* print information */
 				char aBuf[64];
@@ -999,7 +993,7 @@ void CGameController_zCatch::MergeRankingIntoTarget(CGameContext* GameServer, ch
 	{
 		/* print error */
 		char aBuf[512];
-		str_format(aBuf, sizeof(aBuf), "SQL error (#%d): %s", target_rc, sqlite3_errmsg(GameServer->GetRankingDb()));
+		str_format(aBuf, sizeof(aBuf), "SQL error (#%d): %s", source_rc, sqlite3_errmsg(GameServer->GetRankingDb()));
 		GameServer->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "ranking", aBuf);
 		err++;
 
@@ -1017,14 +1011,14 @@ void CGameController_zCatch::MergeRankingIntoTarget(CGameContext* GameServer, ch
 	/* give the points to Target player*/
 	CGameController_zCatch::SaveScore(GameServer, // gamecontext
 	                                 Target, // username ---> is freed!!
-	                                 target_score, // score
-	                                 target_numWins, // numWins
-	                                 target_numKills, // numKills
-	                                 target_numKillsWallshot, // numKillsWallshot
-	                                 target_numDeaths, // numDeaths
-	                                 target_numShots, // numShots
-	                                 target_highestSpree, // highestSpree
-	                                 target_timePlayed // timePlayed
+	                                 source_score, // score
+	                                 source_numWins, // numWins
+	                                 source_numKills, // numKills
+	                                 source_numKillsWallshot, // numKillsWallshot
+	                                 source_numDeaths, // numDeaths
+	                                 source_numShots, // numShots
+	                                 source_highestSpree, // highestSpree
+	                                 source_timePlayed // timePlayed
 	                                 );
 	
 	/*Cannot use "Target" variable from here on. */
