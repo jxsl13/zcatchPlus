@@ -806,6 +806,9 @@ int CServer::NewClientCallback(int ClientID, void *pUser)
 	pThis->m_aClients[ClientID].m_AuthTries = 0;
 	pThis->m_aClients[ClientID].m_pRconCmdToSend = 0;
 	pThis->m_aClients[ClientID].Reset();
+
+	/*teehistorian*/
+	pThis->GameServer()->OnClientEngineJoin(ClientID);
 	return 0;
 }
 
@@ -834,8 +837,28 @@ int CServer::DelClientCallback(int ClientID, const char *pReason, void *pUser)
 	
 	// could have been an admin
 	pThis->UpdateLoggedInAdmins();
-	
+
+	/*teehistorian*/
+	pThis->GameServer()->OnClientEngineDrop(ClientID, pReason);
+
 	return 0;
+}
+
+/**
+ * teehistorian
+ * @brief Teehistorian Map Information
+ * @details [long description]
+ * 
+ * @param pMapName pointer where to store MapName
+ * @param MapNameSize 
+ * @param pMapSize pointer where to store MapSize
+ * @param pMapCrc pointer where to store MapCRC
+ */
+void CServer::GetMapInfo(char *pMapName, int MapNameSize, int *pMapSize, int *pMapCrc)
+{
+	str_copy(pMapName, GetMapName(), MapNameSize);
+	*pMapSize = m_CurrentMapSize;
+	*pMapCrc = m_CurrentMapCrc;
 }
 
 void CServer::SendMap(int ClientID)
@@ -2337,4 +2360,7 @@ int main(int argc, const char **argv) // ignore_convention
 	delete pConfig;
 	return 0;
 }
+
+
+
 

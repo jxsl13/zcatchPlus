@@ -206,6 +206,19 @@ void CConsole::Print(int Level, const char *pFrom, const char *pStr)
 	}
 }
 
+/**
+ * @brief teehistorian stuff.
+ * @details [long description]
+ * 
+ * @param pfnCallback [description]
+ * @param pUser [description]
+ */
+void CConsole::SetTeeHistorianCommandCallback(FTeeHistorianCommandCallback pfnCallback, void *pUser)
+{
+	m_pfnTeeHistorianCommandCallback = pfnCallback;
+	m_pTeeHistorianCommandUserdata = pUser;
+}
+
 bool CConsole::LineIsValid(const char *pStr)
 {
 	if(!pStr || *pStr == 0)
@@ -657,6 +670,10 @@ CConsole::CConsole(int FlagMask)
 	m_pFirstExec = 0;
 	mem_zero(m_aPrintCB, sizeof(m_aPrintCB));
 	m_NumPrintCB = 0;
+
+	/*teehistorian*/
+	m_pfnTeeHistorianCommandCallback = 0;
+	m_pTeeHistorianCommandUserdata = 0;
 
 	m_pStorage = 0;
 

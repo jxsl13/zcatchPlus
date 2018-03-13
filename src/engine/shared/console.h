@@ -70,6 +70,10 @@ class CConsole : public IConsole
 	} m_aPrintCB[MAX_PRINT_CB];
 	int m_NumPrintCB;
 
+	/*teehistorian*/
+	FTeeHistorianCommandCallback m_pfnTeeHistorianCommandCallback;
+	void *m_pTeeHistorianCommandUserdata;
+
 	enum
 	{
 		CONSOLE_MAX_STR_LENGTH = 1024,
@@ -177,7 +181,9 @@ public:
 	virtual int RegisterPrintCallback(int OutputLevel, FPrintCallback pfnPrintCallback, void *pUserData);
 	virtual void SetPrintOutputLevel(int Index, int OutputLevel);
 	virtual void Print(int Level, const char *pFrom, const char *pStr);
-
+	/*teehistorian*/
+	virtual void SetTeeHistorianCommandCallback(FTeeHistorianCommandCallback pfnCallback, void *pUser);
+	
 	void SetAccessLevel(int AccessLevel) { m_AccessLevel = clamp(AccessLevel, (int)(ACCESS_LEVEL_ADMIN), (int)(ACCESS_LEVEL_MOD)); }
 };
 

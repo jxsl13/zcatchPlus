@@ -21,6 +21,8 @@
 #include <vector>
 #include <mutex>
 #include <chrono>
+/*teehistorian*/
+#include "teehistorian.h"
 
 #define MAX_MUTES 35
 #define ZCATCH_VERSION "0.4.8"
@@ -55,6 +57,16 @@ class CGameContext : public IGameServer
 	CCollision m_Collision;
 	CNetObjHandler m_NetObjHandler;
 	CTuningParams m_Tuning;
+
+	/*teehistrorian*/
+	bool m_TeeHistorianActive;
+	CTeeHistorian m_TeeHistorian;
+	IOHANDLE m_TeeHistorianFile;
+	CUuid m_GameUuid;
+
+	static void CommandCallback(int ClientID, int FlagMask, const char *pCmd, IConsole::IResult *pResult, void *pUser);
+	static void TeeHistorianWrite(const void *pData, int DataSize, void *pUser);
+	/*teehistorian end*/
 
 	static void ConTuneParam(IConsole::IResult *pResult, void *pUserData);
 	static void ConTuneReset(IConsole::IResult *pResult, void *pUserData);
@@ -216,6 +228,11 @@ public:
 	virtual void OnClientDrop(int ClientID, const char *pReason);
 	virtual void OnClientDirectInput(int ClientID, void *pInput);
 	virtual void OnClientPredictedInput(int ClientID, void *pInput);
+
+	/*teehistorian*/
+	virtual void OnClientEngineJoin(int ClientID);
+	virtual void OnClientEngineDrop(int ClientID, const char *pReason);
+	/*teehistorian end*/
 
 	virtual bool IsClientReady(int ClientID);
 	virtual bool IsClientPlayer(int ClientID);
