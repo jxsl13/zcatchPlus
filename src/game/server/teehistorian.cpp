@@ -1,5 +1,5 @@
-#include "teehistorian.h"
 
+#include "teehistorian.h"
 #include <engine/shared/config.h>
 #include <engine/shared/snapshot.h>
 #include <game/gamecore.h>
@@ -178,10 +178,14 @@ void CTeeHistorian::WriteHeader(const CGameInfo *pGameInfo)
 		First = false; \
 	}
 
+	
+	#define MACRO_CONFIG_INT_ACCESSLEVEL(Name,ScriptName,Def,Min,Max,Flags,Desc,AccessLevel) MACRO_CONFIG_INT(Name,ScriptName,Def,Min,Max,Flags,Desc)
+	#define MACRO_CONFIG_STR_ACCESSLEVEL(Name,ScriptName,Len,Def,Flags,Desc,AccessLevel) MACRO_CONFIG_STR(Name,ScriptName,Len,Def,Flags,Desc)
 	#include <engine/shared/config_variables.h>
 
-	#undef MACRO_CONFIG_INT
-	#undef MACRO_CONFIG_STR
+
+	#undef MACRO_CONFIG_INT_ACCESSLEVEL
+	#undef MACRO_CONFIG_STR_ACCESSLEVEL
 
 	str_format(aJson, sizeof(aJson), "},\"tuning\":{");
 	Write(aJson, str_length(aJson));
@@ -189,7 +193,8 @@ void CTeeHistorian::WriteHeader(const CGameInfo *pGameInfo)
 	First = true;
 
 	static const float TicksPerSecond = 50.0f;
-	#define MACRO_TUNING_PARAM(Name,ScriptName,Value,Description) \
+
+	#define MACRO_TUNING_PARAM(Name,ScriptName,Value) \
 	if(pGameInfo->m_pTuning->m_##Name.Get() != (int)((Value)*100)) \
 	{ \
 		str_format(aJson, sizeof(aJson), "%s\"%s\":\"%d\"", \
