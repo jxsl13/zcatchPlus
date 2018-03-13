@@ -24,6 +24,7 @@ class CGameController_zCatch: public IGameController
 
 	// jxsl13 added
 	void ToggleLastStandingDeathmatchAndRelease(int Players_Ingame);
+	static char* GetGameModeTableName();
 
 public:
 	CGameController_zCatch(class CGameContext *pGameServer);
