@@ -31,3 +31,5 @@ banmaster*
 
 /ranking.db
 /ranking.db-journal
+
+.DS_Store

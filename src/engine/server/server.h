@@ -259,6 +259,9 @@ public:
 	static void ConchainModCommandUpdate(IConsole::IResult *pResult, void *pUserData, IConsole::FCommandCallback pfnCallback, void *pCallbackUserData);
 	static void ConchainConsoleOutputLevelUpdate(IConsole::IResult *pResult, void *pUserData, IConsole::FCommandCallback pfnCallback, void *pCallbackUserData);
 
+
+
+
 	void RegisterCommands();
 
 
@@ -299,6 +302,8 @@ public:
 	static void ConVotebans(IConsole::IResult *pResult, void *pUser);
 	static void ConAddLogin(IConsole::IResult *pResult, void *pUser);
 	static void ConRemoveLogin(IConsole::IResult *pResult, void *pUser);
+
+	
 	
 	// info messages
 	static void ConAddInfo(IConsole::IResult *pResult, void *pUser);

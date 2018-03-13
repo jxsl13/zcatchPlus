@@ -47,6 +47,10 @@ public:
 	virtual void OnChatCommandTop(CPlayer *pPlayer, const char *category = "");
 	virtual void OnChatCommandOwnRank(CPlayer *pPlayer);
 	virtual void OnChatCommandRank(CPlayer *pPlayer, const char *name);
+
+	// jxsl13 was here
+	static void MergeRankingIntoTarget(CGameContext* GameServer, char* Source, char *Target);
+	static void DeleteRanking(CGameContext* GameServer, char* Name);
 };
 
 #endif

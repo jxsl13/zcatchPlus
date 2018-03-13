@@ -92,7 +92,6 @@ class CGameContext : public IGameServer
 	
 	/* ranking system: sqlite connection */
 	sqlite3 *m_RankingDb;
-	std::vector<std::thread*> m_RankingThreads;
 	std::timed_mutex m_RankingDbMutex;
 	
 	// zCatch/TeeVi: hard mode
@@ -243,10 +242,15 @@ public:
 	bool RankingEnabled() { return m_RankingDb != NULL; };
 	bool LockRankingDb(int ms = -1);
 	void UnlockRankingDb();
-	void AddRankingThread(std::thread *thread) { m_RankingThreads.push_back(thread); };
 	
 	// zCatch/TeeVi: hard mode
 	std::vector<HardMode> GetHardModes() { return std::vector<HardMode>(m_HardModes.begin(), m_HardModes.end()); };
+
+
+	// jxsl13 was here
+	/*zCatch extended features*/
+	static void ConMergeRecords(IConsole::IResult *pResult, void *pUserData);
+
 };
 
 inline int CmaskAll() { return -1; }

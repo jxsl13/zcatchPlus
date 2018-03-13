@@ -162,14 +162,14 @@ void CGameController_zCatch::DoWincheck()
 				EndRound();
 			}
 			// checks release game stuff before the last man standing treshold is reached.
-		} else{
+		} else {
 			ToggleLastStandingDeathmatchAndRelease(Players_Ingame);
 		}
 
 		IGameController::DoWincheck(); //do also usual wincheck
 	}
 }
- 
+
 int CGameController_zCatch::OnCharacterDeath(class CCharacter *pVictim, class CPlayer *pKiller, int WeaponID)
 {
 	if (!pKiller)
@@ -439,8 +439,8 @@ void CGameController_zCatch::SaveRanking(CPlayer *player)
 	str_copy(name, GameServer()->Server()->ClientName(player->GetCID()), MAX_NAME_LENGTH);
 
 	/* give the points */
-	GameServer()->AddRankingThread(new std::thread(&CGameController_zCatch::SaveScore,
-	                               GameServer(), // username
+	/*GameServer()->AddRankingThread(new std::thread(&CGameController_zCatch::SaveScore,
+	                               GameServer(), // gamecontext
 	                               name, // username
 	                               player->m_RankCache.m_Points, // score
 	                               player->m_RankCache.m_NumWins, // numWins
@@ -450,7 +450,22 @@ void CGameController_zCatch::SaveRanking(CPlayer *player)
 	                               player->m_RankCache.m_NumShots, // numShots
 	                               player->m_zCatchNumKillsInARow, // highestSpree
 	                               player->m_RankCache.m_TimePlayed / Server()->TickSpeed() // timePlayed
-	                                              ));
+	                                              ));*/
+
+	std::thread *t = new std::thread(&CGameController_zCatch::SaveScore,
+	                                 GameServer(), // gamecontext
+	                                 name, // username
+	                                 player->m_RankCache.m_Points, // score
+	                                 player->m_RankCache.m_NumWins, // numWins
+	                                 player->m_RankCache.m_NumKills, // numKills
+	                                 player->m_RankCache.m_NumKillsWallshot, // numKillsWallshot
+	                                 player->m_RankCache.m_NumDeaths, // numDeaths
+	                                 player->m_RankCache.m_NumShots, // numShots
+	                                 player->m_zCatchNumKillsInARow, // highestSpree
+	                                 player->m_RankCache.m_TimePlayed / Server()->TickSpeed() // timePlayed
+	                                );
+	t->detach();
+	delete t;
 
 	/* clean rank cache */
 	player->m_RankCache.m_Points = 0;
@@ -461,10 +476,24 @@ void CGameController_zCatch::SaveRanking(CPlayer *player)
 	player->m_RankCache.m_NumShots = 0;
 	player->m_RankCache.m_TimePlayed = 0;
 	player->RankCacheStartPlaying();
-
 }
 
 /* adds the score to the player */
+/**
+ * @brief Saves given score for given unique name to the database.
+ * @details [long description]
+ *
+ * @param GameServer [description]
+ * @param name Because this function is executed within a thread, the free(name) is used at the end of this function.
+ * @param score [description]
+ * @param numWins [description]
+ * @param numKills [description]
+ * @param numKillsWallshot [description]
+ * @param numDeaths [description]
+ * @param numShots [description]
+ * @param highestSpree [description]
+ * @param timePlayed [description]
+ */
 void CGameController_zCatch::SaveScore(CGameContext* GameServer, char *name, int score, int numWins, int numKills, int numKillsWallshot, int numDeaths, int numShots, int highestSpree, int timePlayed) {
 
 	/* debug */
@@ -489,7 +518,7 @@ void CGameController_zCatch::SaveScore(CGameContext* GameServer, char *name, int
 			MAX(COALESCE(old.highestSpree, 0), ?8), \
 			COALESCE(old.timePlayed, 0) + ?9 \
 		FROM ( \
-			SELECT ?1 as username \
+			SELECT trim(?1) as username \
 		) new \
 		LEFT JOIN ( \
 			SELECT * \
@@ -592,7 +621,10 @@ void CGameController_zCatch::OnChatCommandTop(CPlayer *pPlayer, const char *cate
 		return;
 	}
 
-	GameServer()->AddRankingThread(new std::thread(&CGameController_zCatch::ChatCommandTopFetchDataAndPrint, GameServer(), pPlayer->GetCID(), column));
+	/*GameServer()->AddRankingThread(new std::thread(&CGameController_zCatch::ChatCommandTopFetchDataAndPrint, GameServer(), pPlayer->GetCID(), column));*/
+	std::thread *t = new std::thread(&CGameController_zCatch::ChatCommandTopFetchDataAndPrint, GameServer(), pPlayer->GetCID(), column);
+	t->detach();
+	delete t;
 }
 
 /* get the top players */
@@ -673,10 +705,13 @@ void CGameController_zCatch::OnChatCommandRank(CPlayer *pPlayer, const char *nam
 {
 	char *queryName = (char*)malloc(MAX_NAME_LENGTH);
 	str_copy(queryName, name, MAX_NAME_LENGTH);
-	GameServer()->AddRankingThread(new std::thread(&CGameController_zCatch::ChatCommandRankFetchDataAndPrint, GameServer(), pPlayer->GetCID(), queryName));
+	/*GameServer()->AddRankingThread(new std::thread(&CGameController_zCatch::ChatCommandRankFetchDataAndPrint, GameServer(), pPlayer->GetCID(), queryName));*/
+	std::thread *t = new std::thread(&CGameController_zCatch::ChatCommandRankFetchDataAndPrint, GameServer(), pPlayer->GetCID(), queryName);
+	t->detach();
+	delete t;
 }
 
-/* get the top players */
+/* Fetch Rank of player name and send to clientId */
 void CGameController_zCatch::ChatCommandRankFetchDataAndPrint(CGameContext* GameServer, int clientId, char *name)
 {
 
@@ -791,13 +826,17 @@ void CGameController_zCatch::FormatRankingColumn(const char* column, char buf[32
 		str_format(buf, sizeof(buf), "%d", value);
 }
 
+
 /**
-Depending on the SvLastManStandingDeathmatch aka Release Game setting, the AllowJoin settings are changed so that everyone can join a
-running release game as long as the sv_last_standing_deathmatch option is enabled.
-This sfunction toggles between the state before the release game and the state while the release game is running, changing SvAllowJoin to 1
-and changing it back to its previous setting if the SvLastManStandingDeathmatch setting is disabled(see in variables.h).
-*/
-void CGameController_zCatch::ToggleLastStandingDeathmatchAndRelease(int Players_Ingame){
+ * @brief Toggles the Release game option
+ * @details Depending on the SvLastManStandingDeathmatch aka Release Game setting, the AllowJoin settings are changed so that everyone can join a
+ * running release game as long as the sv_last_standing_deathmatch option is enabled.
+ * This sfunction toggles between the state before the release game and the state while the release game is running, changing SvAllowJoin to 1
+ * and changing it back to its previous setting if the SvLastManStandingDeathmatch setting is disabled(see in variables.h).
+ *
+ * @param Players_Ingame [description]
+ */
+void CGameController_zCatch::ToggleLastStandingDeathmatchAndRelease(int Players_Ingame) {
 	if (g_Config.m_SvLastStandingDeathmatch == 1 && Players_Ingame < g_Config.m_SvLastStandingPlayers) {
 
 		// old Joining settings are the same as the current ones and not the allow everyone to join option.
@@ -827,3 +866,243 @@ void CGameController_zCatch::ToggleLastStandingDeathmatchAndRelease(int Players_
 		g_Config.m_SvAllowJoin = m_OldAllowJoin;
 	}
 }
+
+
+/**
+ * @brief Merges two rankings into one TARGET ranking and resets or deletes the source ranking.
+ * @details Don't get confused if highest spree is not merged, because the highest spre is actually the maximum of both values.
+ *
+ * @param GameServer pointer to the CGameContext /  GameServer, which contains most information about players etc.
+ * @param Source String of the name of the Source player
+ * @param Target Target player, which receives all of the Source player's achievements and is deleted/ reset afterwards from
+ * 				 the database.
+ */
+void CGameController_zCatch::MergeRankingIntoTarget(CGameContext* GameServer, char* Source, char *Target)
+{
+
+	int target_score;
+	int target_numWins;
+	int target_numKills;
+	int target_numKillsWallshot;
+	int target_numDeaths;
+	int target_numShots;
+	int target_highestSpree;
+	int target_timePlayed;
+	int target_rank;
+	int target_scoreToNextRank;
+
+	/*Sqlite stuff*/
+	/*sqlite statement object*/
+	sqlite3_stmt *pStmt;
+	int target_rc;
+	int target_row;
+
+	/*error handling*/
+	int err = 0;
+
+
+	/* prepare */
+	const char *zTail;
+	const char *zSql = "\
+		SELECT \
+			a.score, \
+			a.numWins, \
+			a.numKills, \
+			a.numKillsWallshot, \
+			a.numDeaths, \
+			a.numShots, \
+			a.highestSpree, \
+			a.timePlayed, \
+			(SELECT COUNT(*) FROM zCatch b WHERE b.score > a.score) + 1, \
+			MAX(0, (SELECT MIN(b.score) FROM zCatch b WHERE b.score > a.score) - a.score) \
+		FROM zCatch a \
+		WHERE username = trim(?1)\
+		;";
+
+
+	/* First part: fetch all data from Source player*/
+	/*check if query is ok and create statement object pStmt*/
+	target_rc = sqlite3_prepare_v2(GameServer->GetRankingDb(), zSql, strlen(zSql), &pStmt, &zTail);
+
+	if (target_rc == SQLITE_OK)
+	{
+		/* bind parameters in query */
+		sqlite3_bind_text(pStmt, 1, Source, strlen(Source), 0);
+
+		/* lock database access in this process, but wait maximum 1 second */
+		if (GameServer->LockRankingDb(1000))
+		{
+
+			/* when another process uses the database, wait up to 1 second */
+			sqlite3_busy_timeout(GameServer->GetRankingDb(), 1000);
+
+			/* fetch from database */
+			target_row = sqlite3_step(pStmt);
+
+			/* unlock database access */
+			GameServer->UnlockRankingDb();
+
+			/* result row was fetched */
+			if (target_row == SQLITE_ROW)
+			{
+
+				target_score = sqlite3_column_int(pStmt, 0);
+				target_numWins = sqlite3_column_int(pStmt, 1);
+				target_numKills = sqlite3_column_int(pStmt, 2);
+				target_numKillsWallshot = sqlite3_column_int(pStmt, 3);
+				target_numDeaths = sqlite3_column_int(pStmt, 4);
+				target_numShots = sqlite3_column_int(pStmt, 5);
+				target_highestSpree = sqlite3_column_int(pStmt, 6);
+				target_timePlayed = sqlite3_column_int(pStmt, 7);
+				target_rank = sqlite3_column_int(pStmt, 8);
+				target_scoreToNextRank = sqlite3_column_int(pStmt, 9);
+
+				char aBuf[64];
+				str_format(aBuf, sizeof(aBuf), "Fetched data of '%s'", Source);
+				GameServer->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "ranking", aBuf);
+
+			}
+
+			/* database is locked */
+			else if (target_row == SQLITE_BUSY)
+			{
+				char aBuf[64];
+				str_format(aBuf, sizeof(aBuf), "Could not get rank of '%s'. Try again later.", Source);
+				GameServer->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "ranking", aBuf);
+				err++;
+			}
+
+			/* no result found */
+			else if (target_row == SQLITE_DONE)
+			{
+				char aBuf[64];
+				str_format(aBuf, sizeof(aBuf), "'%s' has no rank", Source);
+				GameServer->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "ranking", aBuf);
+				err++;
+			}
+
+		}
+		else
+		{
+			char aBuf[64];
+			str_format(aBuf, sizeof(aBuf), "Could not get rank of '%s'. Try again later.", Source);
+			GameServer->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "ranking", aBuf);
+			err++;
+		}
+	}
+	else
+	{
+		/* print error */
+		char aBuf[512];
+		str_format(aBuf, sizeof(aBuf), "SQL error (#%d): %s", target_rc, sqlite3_errmsg(GameServer->GetRankingDb()));
+		GameServer->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "ranking", aBuf);
+		err++;
+
+	}
+
+
+	if (err > 0 ) {
+		sqlite3_finalize(pStmt);
+		free(Source);
+		free(Target);
+		return;
+	}
+
+	/*Second part: add fetched data to Target player*/
+	/* give the points to Target player*/
+	CGameController_zCatch::SaveScore(GameServer, // gamecontext
+	                                 Target, // username ---> if freed!!
+	                                 target_score, // score
+	                                 target_numWins, // numWins
+	                                 target_numKills, // numKills
+	                                 target_numKillsWallshot, // numKillsWallshot
+	                                 target_numDeaths, // numDeaths
+	                                 target_numShots, // numShots
+	                                 target_highestSpree, // highestSpree
+	                                 target_timePlayed // timePlayed
+	                                 );
+	
+	
+	/*Third part: delete Source player records.*/
+	DeleteRanking(GameServer, Source);
+
+	sqlite3_finalize(pStmt);
+	// freed in this function because this function is executed as a detached thread.
+	// and you cannot know when this could be executed in the main thread.
+	free(Source);
+	// Target has been freed in SaveScore already !!
+	//free(Target);
+}
+
+
+/**
+ * @brief Delete the ranking of given player name.
+ * @details [long description]
+ *
+ * @param GameServer GameServer Context
+ * @param Name Name of the player whose ranking score should be deleted.
+ */
+void CGameController_zCatch::DeleteRanking(CGameContext* GameServer, char* Name) {
+	const char *zTail;
+	const char *zSql = "DELETE FROM zCatch WHERE username = trim(?1);";
+	sqlite3_stmt * pStmt;
+	int rc = sqlite3_prepare_v2(GameServer->GetRankingDb(), zSql, strlen(zSql), &pStmt, &zTail);
+	if (rc == SQLITE_OK) {
+
+		/* bind parameters in query */
+		sqlite3_bind_text(pStmt, 1, Name, strlen(Name), 0);
+
+		/* lock database access in this process */
+		GameServer->LockRankingDb();
+
+		/* when another process uses the database, wait up to 1 minute */
+		sqlite3_busy_timeout(GameServer->GetRankingDb(), 60000);
+
+		char aBuf[512];
+
+		/* save to database */
+		switch (sqlite3_step(pStmt))
+		{
+		case SQLITE_DONE:
+			/* nothing */
+			break;
+		case SQLITE_BUSY:
+
+			str_format(aBuf, sizeof(aBuf), "Error: could not delete records of '%s'(timeout)." , Name);
+			GameServer->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "ranking", aBuf);
+			break;
+		default:
+			str_format(aBuf, sizeof(aBuf), "SQL error (#%d): %s", rc, sqlite3_errmsg(GameServer->GetRankingDb()));
+			GameServer->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "ranking", aBuf);
+		}
+
+		/* unlock database access */
+		GameServer->UnlockRankingDb();
+	}
+	else
+	{
+		/* print error */
+		char aBuf[512];
+		str_format(aBuf, sizeof(aBuf), "SQL error (#%d): %s", rc, sqlite3_errmsg(GameServer->GetRankingDb()));
+		GameServer->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "ranking", aBuf);
+	}
+
+	sqlite3_finalize(pStmt);
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

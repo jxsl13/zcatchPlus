@@ -35,6 +35,7 @@
 #include <string>
 #include <map>
 
+
 #if defined(CONF_FAMILY_WINDOWS)
 	#define _WIN32_WINNT 0x0501
 	#define WIN32_LEAN_AND_MEAN
@@ -2175,6 +2176,8 @@ void CServer::ConchainConsoleOutputLevelUpdate(IConsole::IResult *pResult, void 
 	}
 }
 
+
+
 void CServer::RegisterCommands()
 {
 	m_pConsole = Kernel()->RequestInterface<IConsole>();
@@ -2212,6 +2215,8 @@ void CServer::RegisterCommands()
 	Console()->Register("add_info", "is", CFGFLAG_SERVER, ConAddInfo, this, "Add a info text that is printed in the chat repeatedly in the given interval of minutes.");
 	Console()->Register("remove_info", "i", CFGFLAG_SERVER, ConRemoveInfo, this, "Remove a info text");
 	Console()->Register("list_info", "", CFGFLAG_SERVER, ConListInfo, this, "Show all info texts");
+
+	
 
 	// register console commands in sub parts
 	m_ServerBan.InitServerBan(Console(), Storage(), this);
