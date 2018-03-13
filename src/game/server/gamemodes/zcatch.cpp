@@ -831,7 +831,7 @@ void CGameController_zCatch::FormatRankingColumn(const char* column, char buf[32
  * @brief Toggles the Release game option
  * @details Depending on the SvLastManStandingDeathmatch aka Release Game setting, the AllowJoin settings are changed so that everyone can join a
  * running release game as long as the sv_last_standing_deathmatch option is enabled.
- * This sfunction toggles between the state before the release game and the state while the release game is running, changing SvAllowJoin to 1
+ * This function toggles between the state before the release game and the state while the release game is running, changing SvAllowJoin to 1
  * and changing it back to its previous setting if the SvLastManStandingDeathmatch setting is disabled(see in variables.h).
  *
  * @param Players_Ingame Count of players actually playing without those, which are explicidly spectating.
@@ -879,7 +879,7 @@ void CGameController_zCatch::ToggleLastStandingDeathmatchAndRelease(int Players_
  * @param Source char* of the name of the Source player which is deleted at the end of the merge.
  * @param Target Target player, which receives all of the Source player's achievements.
  */
-void CGameController_zCatch::MergeRankingIntoTarget(CGameContext* GameServer, char* Source, char *Target)
+void CGameController_zCatch::MergeRankingIntoTarget(CGameContext* GameServer, char* Source, char* Target)
 {
 
 	int target_score;
@@ -1101,7 +1101,7 @@ void CGameController_zCatch::DeleteRanking(CGameContext* GameServer, char* Name)
 }
 
 /**
- * @brief Returns the mode specific name. Do not forget to free the returned pointer after usage.
+ * @brief Returns the mode specific name. WARNING: Do not forget to free the returned pointer after usage.
  * @details Depending on the current game mode e.g. Laser, Grenade, etc. this function returns a pointer to a
  * 			string with the name of specified mode. This is needed to constuct sqlite queries with the mode specific tables
  * 			in the database.
