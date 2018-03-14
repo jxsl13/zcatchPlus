@@ -2501,6 +2501,7 @@ void CGameContext::OnInit(/*class IKernel *pKernel*/)
 	m_Events.SetGameServer(this);
 
 	/*teehistorian*/
+	m_GameUuid = RandomUuid();
 	Console()->SetTeeHistorianCommandCallback(CommandCallback, this);
 
 
@@ -2593,11 +2594,11 @@ void CGameContext::OnInit(/*class IKernel *pKernel*/)
 
 	if (m_TeeHistorianActive)
 	{
+		char aGameUuid[UUID_MAXSTRSIZE];
+		FormatUuid(m_GameUuid, aGameUuid, sizeof(aGameUuid));
 
-		char aFilename[128];
-		char aDate[20];
-		str_timestamp(aDate, sizeof(aDate));
-		str_format(aFilename, sizeof(aFilename), "teehistorian/%s.teehistorian", aDate);
+		char aFilename[64];
+		str_format(aFilename, sizeof(aFilename), "teehistorian/%s.teehistorian", aGameUuid);
 
 		IOHANDLE File = Storage()->OpenFile(aFilename, IOFLAG_WRITE, IStorage::TYPE_SAVE);
 		if (!File)
@@ -2612,10 +2613,11 @@ void CGameContext::OnInit(/*class IKernel *pKernel*/)
 		}
 		m_pTeeHistorianFile = aio_new(File);
 
-		char aVersion[128];
+		CUuidManager Empty;
 
 		CTeeHistorian::CGameInfo GameInfo;
-		GameInfo.m_pServerVersion = aVersion;
+		GameInfo.m_GameUuid = m_GameUuid;
+		GameInfo.m_pServerVersion = "jsxl's zcatch " GAME_VERSION;
 		GameInfo.m_StartTime = time(0);
 
 		GameInfo.m_pServerName = g_Config.m_SvName;
@@ -2624,6 +2626,7 @@ void CGameContext::OnInit(/*class IKernel *pKernel*/)
 
 		GameInfo.m_pConfig = &g_Config;
 		GameInfo.m_pTuning = Tuning();
+		GameInfo.m_pUuids = &Empty;
 
 		char aMapName[128];
 		Server()->GetMapInfo(aMapName, sizeof(aMapName), &GameInfo.m_MapSize, &GameInfo.m_MapCrc);

@@ -3,9 +3,10 @@
 #ifndef GAME_SERVER_GAMECONTEXT_H
 #define GAME_SERVER_GAMECONTEXT_H
 
-#include <engine/server.h>
 #include <engine/console.h>
+#include <engine/server.h>
 #include <engine/shared/memheap.h>
+#include <engine/shared/uuid_manager.h>
 
 #include <game/layers.h>
 #include <game/voting.h>
@@ -67,6 +68,7 @@ class CGameContext : public IGameServer
 	bool m_TeeHistorianActive;
 	CTeeHistorian m_TeeHistorian;
 	ASYNCIO *m_pTeeHistorianFile;
+	CUuid m_GameUuid;
 
 	static void CommandCallback(int ClientID, int FlagMask, const char *pCmd, IConsole::IResult *pResult, void *pUser);
 	static void TeeHistorianWrite(const void *pData, int DataSize, void *pUser);

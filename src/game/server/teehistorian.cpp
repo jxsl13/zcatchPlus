@@ -1,12 +1,16 @@
-
 #include "teehistorian.h"
+
 #include <engine/shared/config.h>
 #include <engine/shared/snapshot.h>
 #include <game/gamecore.h>
 
 static const char TEEHISTORIAN_NAME[] = "teehistorian@ddnet.tw";
+static const CUuid TEEHISTORIAN_UUID = CalculateUuid(TEEHISTORIAN_NAME);
 static const char TEEHISTORIAN_VERSION[] = "2";
 
+#define UUID(id, name) static const CUuid UUID_ ## id = CalculateUuid(name);
+#include <engine/shared/teehistorian_ex_chunks.h>
+#undef UUID
 
 enum
 {
@@ -115,10 +119,12 @@ void CTeeHistorian::Reset(const CGameInfo *pGameInfo, WRITE_CALLBACK pfnWriteCal
 
 void CTeeHistorian::WriteHeader(const CGameInfo *pGameInfo)
 {
+	Write(&TEEHISTORIAN_UUID, sizeof(TEEHISTORIAN_UUID));
 
-	
+	char aGameUuid[UUID_MAXSTRSIZE];
 	char aStartTime[128];
 
+	FormatUuid(pGameInfo->m_GameUuid, aGameUuid, sizeof(aGameUuid));
 	str_timestamp_ex(pGameInfo->m_StartTime, aStartTime, sizeof(aStartTime), "%Y-%m-%dT%H:%M:%S%z");
 
 	char aCommentBuffer[128];
@@ -132,9 +138,10 @@ void CTeeHistorian::WriteHeader(const CGameInfo *pGameInfo)
 
 	#define E(buf, str) EscapeJson(buf, sizeof(buf), str)
 
-	str_format(aJson, sizeof(aJson), "{\"comment\":\"%s\",\"version\":\"%s\",\"server_version\":\"%s\",\"start_time\":\"%s\",\"server_name\":\"%s\",\"server_port\":\"%d\",\"game_type\":\"%s\",\"map_name\":\"%s\",\"map_size\":\"%d\",\"map_crc\":\"%08x\",\"config\":{",
+	str_format(aJson, sizeof(aJson), "{\"comment\":\"%s\",\"version\":\"%s\",\"game_uuid\":\"%s\",\"server_version\":\"%s\",\"start_time\":\"%s\",\"server_name\":\"%s\",\"server_port\":\"%d\",\"game_type\":\"%s\",\"map_name\":\"%s\",\"map_size\":\"%d\",\"map_crc\":\"%08x\",\"config\":{",
 		E(aCommentBuffer, TEEHISTORIAN_NAME),
 		TEEHISTORIAN_VERSION,
+		aGameUuid,
 		E(aServerVersionBuffer, pGameInfo->m_pServerVersion),
 		E(aStartTimeBuffer, aStartTime),
 		E(aServerNameBuffer, pGameInfo->m_pServerName),
@@ -171,13 +178,14 @@ void CTeeHistorian::WriteHeader(const CGameInfo *pGameInfo)
 		First = false; \
 	}
 
-	
 	#define MACRO_CONFIG_INT_ACCESSLEVEL(Name,ScriptName,Def,Min,Max,Flags,Desc,AccessLevel) MACRO_CONFIG_INT(Name,ScriptName,Def,Min,Max,Flags,Desc)
 	#define MACRO_CONFIG_STR_ACCESSLEVEL(Name,ScriptName,Len,Def,Flags,Desc,AccessLevel) MACRO_CONFIG_STR(Name,ScriptName,Len,Def,Flags,Desc)
 	#include <engine/shared/config_variables.h>
 
 	#undef MACRO_CONFIG_INT_ACCESSLEVEL
 	#undef MACRO_CONFIG_STR_ACCESSLEVEL
+	#undef MACRO_CONFIG_INT
+	#undef MACRO_CONFIG_STR
 
 	str_format(aJson, sizeof(aJson), "},\"tuning\":{");
 	Write(aJson, str_length(aJson));
@@ -199,12 +207,34 @@ void CTeeHistorian::WriteHeader(const CGameInfo *pGameInfo)
 	#include <game/tuning.h>
 	#undef MACRO_TUNING_PARAM
 
+	str_format(aJson, sizeof(aJson), "},\"uuids\":[");
+	Write(aJson, str_length(aJson));
 
-	str_format(aJson, sizeof(aJson), "}");
+	for(int i = 0; i < pGameInfo->m_pUuids->NumUuids(); i++)
+	{
+		str_format(aJson, sizeof(aJson), "%s\"%s\"",
+			i == 0 ? "" : ",",
+			E(aBuffer1, pGameInfo->m_pUuids->GetName(OFFSET_UUID + i)));
+		Write(aJson, str_length(aJson));
+	}
+
+	str_format(aJson, sizeof(aJson), "]}");
 	Write(aJson, str_length(aJson));
 	Write("", 1); // Null termination.
 }
 
+void CTeeHistorian::WriteExtra(CUuid Uuid, const void *pData, int DataSize)
+{
+	EnsureTickWritten();
+
+	CPacker Ex;
+	Ex.Reset();
+	Ex.AddInt(-TEEHISTORIAN_EX);
+	Ex.AddRaw(&Uuid, sizeof(Uuid));
+	Ex.AddInt(DataSize);
+	Write(Ex.Data(), Ex.Size());
+	Write(pData, DataSize);
+}
 
 
 void CTeeHistorian::BeginTick(int Tick)
@@ -489,6 +519,15 @@ void CTeeHistorian::RecordConsoleCommand(int ClientID, int FlagMask, const char 
 	Write(Buffer.Data(), Buffer.Size());
 }
 
+void CTeeHistorian::RecordTestExtra()
+{
+	if(m_Debug)
+	{
+		dbg_msg("teehistorian", "test");
+	}
+
+	WriteExtra(UUID_TEEHISTORIAN_TEST, "", 0);
+}
 
 void CTeeHistorian::EndInputs()
 {
@@ -516,6 +555,7 @@ void CTeeHistorian::RecordAuthInitial(int ClientID, int Level, const char *pAuth
 		dbg_msg("teehistorian", "auth_init cid=%d level=%d auth_name=%s", ClientID, Level, pAuthName);
 	}
 
+	WriteExtra(UUID_TEEHISTORIAN_AUTH_INIT, Buffer.Data(), Buffer.Size());
 }
 
 void CTeeHistorian::RecordAuthLogin(int ClientID, int Level, const char *pAuthName)
@@ -531,6 +571,7 @@ void CTeeHistorian::RecordAuthLogin(int ClientID, int Level, const char *pAuthNa
 		dbg_msg("teehistorian", "auth_login cid=%d level=%d auth_name=%s", ClientID, Level, pAuthName);
 	}
 
+	WriteExtra(UUID_TEEHISTORIAN_AUTH_LOGIN, Buffer.Data(), Buffer.Size());
 }
 
 void CTeeHistorian::RecordAuthLogout(int ClientID)
@@ -544,6 +585,7 @@ void CTeeHistorian::RecordAuthLogout(int ClientID)
 		dbg_msg("teehistorian", "auth_logout cid=%d", ClientID);
 	}
 
+	WriteExtra(UUID_TEEHISTORIAN_AUTH_LOGOUT, Buffer.Data(), Buffer.Size());
 }
 
 void CTeeHistorian::Finish()
