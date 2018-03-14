@@ -1443,6 +1443,7 @@ void CServer::InitRegister(CNetServer *pNetServer, IEngineMasterServer *pMasterS
 	m_Register.Init(pNetServer, pMasterServer, pConsole);
 }
 
+static volatile int s_SignalHandlerShutdown = 0;
 int CServer::Run()
 {
 	//
@@ -1509,7 +1510,7 @@ int CServer::Run()
 			Console()->Print(IConsole::OUTPUT_LEVEL_DEBUG, "server", aBuf);
 		}
 
-		while (m_RunServer)
+		while (m_RunServer && !s_SignalHandlerShutdown)
 		{
 			int64 t = time_get();
 			int NewTicks = 0;
@@ -2307,10 +2308,8 @@ static CServer *CreateServer() { return new CServer(); }
  * @param s [description]
  */
 void ErrorSignalHandler(int s){
-	GLOBAL_SERVER->OnShutdown();
+	s_SignalHandlerShutdown = 1;
 	dbg_msg("SHUTDOWN", "Shutting down due to kill signal or CTRL-C");
-    exit(1);
-
 }
 
 
@@ -2397,12 +2396,12 @@ int main(int argc, const char **argv) // ignore_convention
 	pEngine->InitLogfile();
 
 
-   // unexpected shotdown with ctrl-c handling
-   struct sigaction sigIntHandler;
-   sigIntHandler.sa_handler = ErrorSignalHandler;
-   sigemptyset(&sigIntHandler.sa_mask);
-   sigIntHandler.sa_flags = 0;
-   sigaction(SIGINT, &sigIntHandler, NULL);
+	// unexpected shotdown with ctrl-c handling
+	struct sigaction sigIntHandler;
+	sigIntHandler.sa_handler = ErrorSignalHandler;
+	sigemptyset(&sigIntHandler.sa_mask);
+	sigIntHandler.sa_flags = 0;
+	sigaction(SIGINT, &sigIntHandler, NULL);
 
 
 	// run the server
