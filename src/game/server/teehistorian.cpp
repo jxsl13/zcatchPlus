@@ -5,7 +5,7 @@
 #include <game/gamecore.h>
 
 static const char TEEHISTORIAN_NAME[] = "teehistorian@ddnet.tw";
-static const char TEEHISTORIAN_VERSION[] = "2.5zCatch";
+static const char TEEHISTORIAN_VERSION[] = "2";
 
 
 enum
