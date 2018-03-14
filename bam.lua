@@ -281,12 +281,8 @@ function build(settings)
 		client_link_other, client_osxlaunch)
 
 	server_exe = Link(server_settings, "zcatch_srv", engine, server,
-		game_shared, game_server, zlib, sqlite, server_link_other, md5)
+		game_shared, game_server, zlib, sqlite, server_link_other)
 
-	serverlaunch = {}
-	if platform == "macosx" then
-		serverlaunch = Link(launcher_settings, "serverlaunch", server_osxlaunch)
-	end
 
 	versionserver_exe = Link(server_settings, "versionsrv", versionserver,
 		engine, zlib)

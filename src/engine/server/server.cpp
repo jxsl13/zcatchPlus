@@ -834,7 +834,7 @@ int CServer::DelClientCallback(int ClientID, const char *pReason, void *pUser)
 	pThis->m_aClients[ClientID].m_AuthTries = 0;
 	pThis->m_aClients[ClientID].m_pRconCmdToSend = 0;
 	pThis->m_aClients[ClientID].m_Snapshots.PurgeAll();
-	
+
 	// could have been an admin
 	pThis->UpdateLoggedInAdmins();
 
@@ -848,9 +848,9 @@ int CServer::DelClientCallback(int ClientID, const char *pReason, void *pUser)
  * teehistorian
  * @brief Teehistorian Map Information
  * @details [long description]
- * 
+ *
  * @param pMapName pointer where to store MapName
- * @param MapNameSize 
+ * @param MapNameSize
  * @param pMapSize pointer where to store MapSize
  * @param pMapCrc pointer where to store MapCRC
  */
@@ -2209,10 +2209,10 @@ void CServer::RegisterCommands()
 	m_pStorage = Kernel()->RequestInterface<IStorage>();
 
 	// register console commands
-	Console()->Register("kick", "i?r", CFGFLAG_SERVER, ConKick, this, "Kick player with specified id for any reason");
+	Console()->Register("kick", "i?r", CFGFLAG_SERVER|CFGFLAG_NONTEEHISTORIC, ConKick, this, "Kick player with specified id for any reason");
 	Console()->Register("status", "", CFGFLAG_SERVER, ConStatus, this, "List players");
-	Console()->Register("shutdown", "", CFGFLAG_SERVER, ConShutdown, this, "Shut down");
-	Console()->Register("logout", "", CFGFLAG_SERVER, ConLogout, this, "Logout of rcon");
+	Console()->Register("shutdown", "", CFGFLAG_SERVER|CFGFLAG_NONTEEHISTORIC, ConShutdown, this, "Shut down");
+	Console()->Register("logout", "", CFGFLAG_SERVER|CFGFLAG_NONTEEHISTORIC, ConLogout, this, "Logout of rcon");
 
 	Console()->Register("record", "?s", CFGFLAG_SERVER|CFGFLAG_STORE, ConRecord, this, "Record to a file");
 	Console()->Register("stoprecord", "", CFGFLAG_SERVER, ConStopRecord, this, "Stop recording");
@@ -2226,20 +2226,20 @@ void CServer::RegisterCommands()
 	Console()->Chain("sv_max_clients_per_ip", ConchainMaxclientsperipUpdate, this);
 	Console()->Chain("mod_command", ConchainModCommandUpdate, this);
 	Console()->Chain("console_output_level", ConchainConsoleOutputLevelUpdate, this);
-	
-	Console()->Register("voteban", "i?i", CFGFLAG_SERVER, ConVoteban, this, "Voteban a player by id");
-	Console()->Register("unvoteban", "i", CFGFLAG_SERVER, ConUnvoteban, this, "Remove voteban by index in list votebans");
-	Console()->Register("unvoteban_client", "i", CFGFLAG_SERVER, ConUnvotebanClient, this, "Remove voteban by player id");
+
+	Console()->Register("voteban", "i?i", CFGFLAG_SERVER|CFGFLAG_NONTEEHISTORIC, ConVoteban, this, "Voteban a player by id");
+	Console()->Register("unvoteban", "i", CFGFLAG_SERVER|CFGFLAG_NONTEEHISTORIC, ConUnvoteban, this, "Remove voteban by index in list votebans");
+	Console()->Register("unvoteban_client", "i", CFGFLAG_SERVER|CFGFLAG_NONTEEHISTORIC, ConUnvotebanClient, this, "Remove voteban by player id");
 	Console()->Register("votebans", "", CFGFLAG_SERVER, ConVotebans, this, "Show all votebans");
-	
-	Console()->Register("add_login", "ss", CFGFLAG_SERVER, ConAddLogin, this, "Add a subadmin login. The rcon password will be user:pass with no additional spaces.", IConsole::ACCESS_LEVEL_ADMIN);
-	Console()->Register("remove_login", "s", CFGFLAG_SERVER, ConRemoveLogin, this, "Remove a subadmin login", IConsole::ACCESS_LEVEL_ADMIN);
-	
-	Console()->Register("add_info", "is", CFGFLAG_SERVER, ConAddInfo, this, "Add a info text that is printed in the chat repeatedly in the given interval of minutes.");
-	Console()->Register("remove_info", "i", CFGFLAG_SERVER, ConRemoveInfo, this, "Remove a info text");
+
+	Console()->Register("add_login", "ss", CFGFLAG_SERVER|CFGFLAG_NONTEEHISTORIC, ConAddLogin, this, "Add a subadmin login. The rcon password will be user:pass with no additional spaces.", IConsole::ACCESS_LEVEL_ADMIN);
+	Console()->Register("remove_login", "s", CFGFLAG_SERVER|CFGFLAG_NONTEEHISTORIC, ConRemoveLogin, this, "Remove a subadmin login", IConsole::ACCESS_LEVEL_ADMIN);
+
+	Console()->Register("add_info", "is", CFGFLAG_SERVER|CFGFLAG_NONTEEHISTORIC, ConAddInfo, this, "Add a info text that is printed in the chat repeatedly in the given interval of minutes.");
+	Console()->Register("remove_info", "i", CFGFLAG_SERVER|CFGFLAG_NONTEEHISTORIC, ConRemoveInfo, this, "Remove a info text");
 	Console()->Register("list_info", "", CFGFLAG_SERVER, ConListInfo, this, "Show all info texts");
 
-	
+
 
 	// register console commands in sub parts
 	m_ServerBan.InitServerBan(Console(), Storage(), this);

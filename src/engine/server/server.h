@@ -69,11 +69,11 @@ class CServer : public IServer
 	class IGameServer *m_pGameServer;
 	class IConsole *m_pConsole;
 	class IStorage *m_pStorage;
-	
+
 	// keep track of how many admins are logged in
 	int m_numLoggedInAdmins;
 	void UpdateLoggedInAdmins();
-	
+
 	// info messages
 	void UpdateInfoTexts();
 	struct CInfoText
@@ -217,9 +217,9 @@ public:
 	int ClientCountry(int ClientID);
 	bool ClientIngame(int ClientID);
 	int MaxClients() const;
+
 	/*teehistorian*/
 	void GetMapInfo(char *pMapName, int MapNameSize, int *pMapSize, int *pMapCrc);
-	
 
 	virtual int SendMsg(CMsgPacker *pMsg, int Flags, int ClientID);
 	int SendMsgEx(CMsgPacker *pMsg, int Flags, int ClientID, bool System);

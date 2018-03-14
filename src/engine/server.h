@@ -25,9 +25,7 @@ public:
 		int m_Latency;
 	};
 
-	/*teehistorian*/
-	virtual void GetMapInfo(char *pMapName, int MapNameSize, int *pMapSize, int *pMapCrc) = 0;
-	/*teehistorian end*/
+
 
 	int Tick() const { return m_CurrentGameTick; }
 	int TickSpeed() const { return m_TickSpeed; }
@@ -57,6 +55,10 @@ public:
 	virtual void SetClientCountry(int ClientID, int Country) = 0;
 	virtual void SetClientScore(int ClientID, int Score) = 0;
 
+	/*teehistorian*/
+	virtual void GetMapInfo(char *pMapName, int MapNameSize, int *pMapSize, int *pMapCrc) = 0;
+	/*teehistorian end*/
+
 	virtual int SnapNewID() = 0;
 	virtual void SnapFreeID(int ID) = 0;
 	virtual void *SnapNewItem(int Type, int ID, int Size) = 0;
@@ -76,12 +78,12 @@ public:
 	virtual bool DemoRecorder_IsRecording() = 0;
 	//zCatch
 	virtual void MapReload() = 0;
-	
+
 	virtual int GetInfoTextIntervalPause() = 0;
 	virtual int GetInfoTextMsgInterval() = 0;
 	virtual int GetInfoTextInterval() = 0;
 	virtual std::string GetNextInfoText() = 0;
-	
+
 	virtual int GetNumLoggedInAdmins() = 0;
 };
 
@@ -108,10 +110,6 @@ public:
 	virtual void OnClientDirectInput(int ClientID, void *pInput) = 0;
 	virtual void OnClientPredictedInput(int ClientID, void *pInput) = 0;
 
-	/*teehistorian*/
-	virtual void OnClientEngineJoin(int ClientID) = 0;
-	virtual void OnClientEngineDrop(int ClientID, const char *pReason) = 0;
-
 	virtual bool IsClientReady(int ClientID) = 0;
 	virtual bool IsClientPlayer(int ClientID) = 0;
 
@@ -124,6 +122,10 @@ public:
 	virtual bool IsClientAimBot(int ClientID) = 0;
 	*/
 	virtual void InformPlayers(const char *pText) = 0;
+
+	/*teehistorian*/
+	virtual void OnClientEngineJoin(int ClientID) = 0;
+	virtual void OnClientEngineDrop(int ClientID, const char *pReason) = 0;
 };
 
 extern IGameServer *CreateGameServer();

@@ -67,7 +67,9 @@ public:
 			fs_makedir(GetPath(TYPE_SAVE, "demos/auto", aPath, sizeof(aPath)));
 
 			/*teehistorian*/
+			dbg_msg("storage", "before teehistorian directory creation");
 			fs_makedir(GetPath(TYPE_SAVE, "teehistorian", aPath, sizeof(aPath)));
+			dbg_msg("storage", "after teehistorian directory creation");
 
 		}
 
