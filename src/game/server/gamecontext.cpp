@@ -2588,11 +2588,16 @@ void CGameContext::OnInit(/*class IKernel *pKernel*/)
 	//game.world.insert_entity(game.Controller);
 
 	// after everything else is ready? teehistorian
+	m_TeeHistorianActive = g_Config.m_SvTeeHistorian;
+	dbg_msg("teehistorian", "Configuration of sv_tee_historian='%d'", m_TeeHistorianActive);
+
 	if (m_TeeHistorianActive)
 	{
 
-		char aFilename[64];
-		str_format(aFilename, sizeof(aFilename), "teehistorian/%s.teehistorian", g_Config.m_SvTeehistorianFile);
+		char aFilename[128];
+		char aDate[20];
+		str_timestamp(aDate, sizeof(aDate));
+		str_format(aFilename, sizeof(aFilename), "teehistorian/%s.teehistorian", aDate);
 
 		IOHANDLE File = Storage()->OpenFile(aFilename, IOFLAG_WRITE, IStorage::TYPE_SAVE);
 		if (!File)
@@ -2625,7 +2630,7 @@ void CGameContext::OnInit(/*class IKernel *pKernel*/)
 		GameInfo.m_pMapName = aMapName;
 
 		m_TeeHistorian.Reset(&GameInfo, TeeHistorianWrite, this);
-		dbg_msg("teehistorian", "initialized tee historian");
+		dbg_msg("teehistorian", "Initialization done.");
 
 		for(int i = 0; i < MAX_CLIENTS; i++)
 		{
