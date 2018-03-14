@@ -205,16 +205,6 @@ void CTeeHistorian::WriteHeader(const CGameInfo *pGameInfo)
 	Write("", 1); // Null termination.
 }
 
-void CTeeHistorian::WriteExtra(const void *pData, int DataSize)
-{
-	EnsureTickWritten();
-	CPacker Ex;
-	Ex.Reset();
-	Ex.AddInt(-TEEHISTORIAN_EX);
-	Ex.AddInt(DataSize);
-	Write(Ex.Data(), Ex.Size());
-	Write(pData, DataSize);
-}
 
 
 void CTeeHistorian::BeginTick(int Tick)
@@ -499,15 +489,6 @@ void CTeeHistorian::RecordConsoleCommand(int ClientID, int FlagMask, const char 
 	Write(Buffer.Data(), Buffer.Size());
 }
 
-void CTeeHistorian::RecordTestExtra()
-{
-	if(m_Debug)
-	{
-		dbg_msg("teehistorian", "test");
-	}
-
-	WriteExtra("", 0);
-}
 
 void CTeeHistorian::EndInputs()
 {
@@ -535,7 +516,6 @@ void CTeeHistorian::RecordAuthInitial(int ClientID, int Level, const char *pAuth
 		dbg_msg("teehistorian", "auth_init cid=%d level=%d auth_name=%s", ClientID, Level, pAuthName);
 	}
 
-	WriteExtra(Buffer.Data(), Buffer.Size());
 }
 
 void CTeeHistorian::RecordAuthLogin(int ClientID, int Level, const char *pAuthName)
@@ -551,7 +531,6 @@ void CTeeHistorian::RecordAuthLogin(int ClientID, int Level, const char *pAuthNa
 		dbg_msg("teehistorian", "auth_login cid=%d level=%d auth_name=%s", ClientID, Level, pAuthName);
 	}
 
-	WriteExtra(Buffer.Data(), Buffer.Size());
 }
 
 void CTeeHistorian::RecordAuthLogout(int ClientID)
@@ -565,7 +544,6 @@ void CTeeHistorian::RecordAuthLogout(int ClientID)
 		dbg_msg("teehistorian", "auth_logout cid=%d", ClientID);
 	}
 
-	WriteExtra(Buffer.Data(), Buffer.Size());
 }
 
 void CTeeHistorian::Finish()

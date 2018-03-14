@@ -514,7 +514,7 @@ void CGameContext::OnTick()
 	if (m_TeeHistorianActive)
 	{
 		int Error = aio_error(m_pTeeHistorianFile);
-		if(Error)
+		if (Error)
 		{
 			dbg_msg("teehistorian", "error writing to file, err=%d", Error);
 			Server()->SetErrorShutdown("teehistorian io error");
@@ -961,9 +961,13 @@ void CGameContext::OnMessage(int MsgID, CUnpacker *pUnpacker, int ClientID)
 	/*teehistorian*/
 	if (m_TeeHistorianActive)
 	{
-		m_TeeHistorian.RecordPlayerMessage(ClientID, pUnpacker->CompleteData(), pUnpacker->CompleteSize());
+		if (m_NetObjHandler.TeeHistorianRecordMsg(MsgID))
+		{
+			m_TeeHistorian.RecordPlayerMessage(ClientID, pUnpacker->CompleteData(), pUnpacker->CompleteSize());
+		}
 	}
 	/*teehistorian end*/
+
 	if (!pRawMsg)
 	{
 		if (g_Config.m_Debug)
@@ -2613,13 +2617,13 @@ void CGameContext::OnInit(/*class IKernel *pKernel*/)
 void CGameContext::OnShutdown()
 {
 	/*teehistorian*/
-	if(m_TeeHistorianActive)
+	if (m_TeeHistorianActive)
 	{
 		m_TeeHistorian.Finish();
 		aio_close(m_pTeeHistorianFile);
 		aio_wait(m_pTeeHistorianFile);
 		int Error = aio_error(m_pTeeHistorianFile);
-		if(Error)
+		if (Error)
 		{
 			dbg_msg("teehistorian", "error closing file, err=%d", Error);
 			Server()->SetErrorShutdown("teehistorian close error");
