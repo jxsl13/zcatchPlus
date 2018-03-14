@@ -2307,9 +2307,8 @@ static CServer *CreateServer() { return new CServer(); }
  * @param s [description]
  */
 void ErrorSignalHandler(int s){
-
 	GLOBAL_SERVER->OnShutdown();
-	dbg_msg("SHUTDOWN", "UNEXPECTED SHUTDOWN");
+	dbg_msg("SHUTDOWN", "Shutting down due to kill signal or CTRL-C");
     exit(1);
 
 }
