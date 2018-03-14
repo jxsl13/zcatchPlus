@@ -55,6 +55,9 @@ public:
 	virtual void SetClientCountry(int ClientID, int Country) = 0;
 	virtual void SetClientScore(int ClientID, int Score) = 0;
 
+	virtual const char* GetAuthName(int ClientID) = 0;
+	virtual int GetAuthLevel(int ClientID) = 0;
+
 	/*teehistorian*/
 	virtual void GetMapInfo(char *pMapName, int MapNameSize, int *pMapSize, int *pMapCrc) = 0;
 	/*teehistorian end*/
@@ -119,6 +122,8 @@ public:
 	virtual const char *GameType() = 0;
 	virtual const char *Version() = 0;
 	virtual const char *NetVersion() = 0;
+
+	virtual void OnSetAuthed(int ClientID, int Level) = 0;
 
 	// old bot detection
 	/*

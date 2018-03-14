@@ -163,6 +163,8 @@ public:
 		VOTE_ENFORCE_UNKNOWN=0,
 		VOTE_ENFORCE_NO,
 		VOTE_ENFORCE_YES,
+		// ddnet
+		VOTE_ENFORCE_NO_ADMIN,
 	};
 	CHeap *m_pVoteOptionHeap;
 	CVoteOptionServer *m_pVoteOptionFirst;
@@ -233,6 +235,8 @@ public:
 	virtual void OnClientDrop(int ClientID, const char *pReason);
 	virtual void OnClientDirectInput(int ClientID, void *pInput);
 	virtual void OnClientPredictedInput(int ClientID, void *pInput);
+
+	virtual void OnSetAuthed(int ClientID, int Level);
 
 	/*teehistorian*/
 	virtual void OnClientEngineJoin(int ClientID);

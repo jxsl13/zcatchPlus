@@ -1772,6 +1772,32 @@ void CGameContext::OnMessage(int MsgID, CUnpacker *pUnpacker, int ClientID)
 	}
 }
 
+void CGameContext::OnSetAuthed(int ClientID, int Level)
+{
+	if(m_apPlayers[ClientID])
+	{
+		char aBuf[512], aIP[NETADDR_MAXSTRSIZE];
+		Server()->GetClientAddr(ClientID, aIP, sizeof(aIP));
+		str_format(aBuf, sizeof(aBuf), "ban %s %d Banned by vote", aIP, g_Config.m_SvVoteKickBantime);
+		if(!str_comp_nocase(m_aVoteCommand, aBuf) && Level > 0)
+		{
+			m_VoteEnforce = CGameContext::VOTE_ENFORCE_NO_ADMIN;
+			Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "CGameContext", "Aborted vote by admin login.");
+		}
+	}
+	if(m_TeeHistorianActive)
+	{
+		if(Level)
+		{
+			m_TeeHistorian.RecordAuthLogin(ClientID, Level, Server()->GetAuthName(ClientID));
+		}
+		else
+		{
+			m_TeeHistorian.RecordAuthLogout(ClientID);
+		}
+	}
+}
+
 void CGameContext::AddMute(const char* pIP, int Secs)
 {
 	int Pos = Muted(pIP);
@@ -2600,6 +2626,15 @@ void CGameContext::OnInit(/*class IKernel *pKernel*/)
 
 		m_TeeHistorian.Reset(&GameInfo, TeeHistorianWrite, this);
 		dbg_msg("teehistorian", "initialized tee historian");
+
+		for(int i = 0; i < MAX_CLIENTS; i++)
+		{
+
+			if(Server()->IsAuthed(i))
+			{
+				m_TeeHistorian.RecordAuthInitial(i, Server()->GetAuthLevel(i), Server()->GetAuthName(i));
+			}
+		}
 	}
 
 

@@ -550,6 +550,7 @@ bool CServer::IsAuthed(int ClientID)
 	return m_aClients[ClientID].m_Authed;
 }
 
+
 int CServer::GetClientInfo(int ClientID, CClientInfo *pInfo)
 {
 	dbg_assert(ClientID >= 0 && ClientID < MAX_CLIENTS, "client_id is not valid");
@@ -2155,6 +2156,8 @@ void CServer::rconLogClientOut(int ClientID, const char *msg)
 		m_aClients[ClientID].m_Authed = AUTHED_NO;
 		m_aClients[ClientID].m_AuthTries = 0;
 		m_aClients[ClientID].m_pRconCmdToSend = 0;
+		m_aClients[ClientID].m_Authed = IConsole::ACCESS_LEVEL_NO;
+
 		SendRconLine(ClientID, msg);
 		char aBuf[32];
 		str_format(aBuf, sizeof(aBuf), "ClientID=%d logged out", ClientID);
