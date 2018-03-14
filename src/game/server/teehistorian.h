@@ -2,12 +2,10 @@
 #include <engine/shared/packer.h>
 #include <engine/shared/protocol.h>
 #include <game/generated/protocol.h>
-#include <engine/shared/uuid_manager.h>
 #include <time.h>
 
 struct CConfiguration;
 class CTuningParams;
-class CUuidManager;
 
 class CTeeHistorian
 {
@@ -16,7 +14,6 @@ public:
 
 	struct CGameInfo
 	{
-		CUuid m_GameUuid;
 		const char *m_pServerVersion;
 		time_t m_StartTime;
 
@@ -30,7 +27,6 @@ public:
 
 		CConfiguration *m_pConfig;
 		CTuningParams *m_pTuning;
-		CUuidManager *m_pUuids;
 	};
 
 	CTeeHistorian();
@@ -66,7 +62,7 @@ public:
 
 private:
 	void WriteHeader(const CGameInfo *pGameInfo);
-	void WriteExtra(CUuid Uuid, const void *pData, int DataSize);
+	void WriteExtra(const void *pData, int DataSize);
 	void EnsureTickWrittenPlayerData(int ClientID);
 	void EnsureTickWritten();
 	void WriteTick();

@@ -2502,11 +2502,9 @@ void CGameContext::OnInit(/*class IKernel *pKernel*/)
 
 	if (m_TeeHistorianActive)
 	{
-		char aGameUuid[UUID_MAXSTRSIZE];
-		FormatUuid(m_GameUuid, aGameUuid, sizeof(aGameUuid));
-
+		
 		char aFilename[64];
-		str_format(aFilename, sizeof(aFilename), "teehistorian/%s.teehistorian", aGameUuid);
+		str_format(aFilename, sizeof(aFilename), "teehistorian/%d.teehistorian", time_timestamp());
 
 		m_TeeHistorianFile = Kernel()->RequestInterface<IStorage>()->OpenFile(aFilename, IOFLAG_WRITE, IStorage::TYPE_SAVE);
 		if (!m_TeeHistorianFile)
@@ -2522,7 +2520,6 @@ void CGameContext::OnInit(/*class IKernel *pKernel*/)
 		char aVersion[128];
 
 		CTeeHistorian::CGameInfo GameInfo;
-		GameInfo.m_GameUuid = m_GameUuid;
 		GameInfo.m_pServerVersion = aVersion;
 		GameInfo.m_StartTime = time(0);
 

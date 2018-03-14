@@ -4,7 +4,6 @@
 #define ENGINE_MESSAGE_H
 
 #include <engine/shared/packer.h>
-#include <engine/shared/uuid_manager.h>
 
 class CMsgPacker : public CPacker
 {
@@ -12,15 +11,7 @@ public:
 	CMsgPacker(int Type)
 	{
 		Reset();
-		if(Type < OFFSET_UUID)
-		{
-			AddInt(Type);
-		}
-		else
-		{
-			AddInt(0); // NETMSG_EX, NETMSGTYPE_EX
-			g_UuidManager.PackUuid(Type, this);
-		}
+		AddInt(Type);
 	}
 };
 
