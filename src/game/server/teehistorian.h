@@ -3,7 +3,6 @@
 #include <engine/shared/protocol.h>
 #include <game/generated/protocol.h>
 #include <engine/shared/uuid_manager.h>
-
 #include <time.h>
 
 struct CConfiguration;

@@ -211,6 +211,9 @@ function build(settings)
 	-- build sqlite
 	sqlite = Compile(settings, Collect("src/engine/external/sqlite/sqlite3.c"))
 
+	-- build md5 --
+	md5 = Compile(settings, Collect("src/engine/external/md5/md5.c"))
+
 	-- build game components
 	engine_settings = settings:Copy()
 	server_settings = engine_settings:Copy()
@@ -278,7 +281,7 @@ function build(settings)
 		client_link_other, client_osxlaunch)
 
 	server_exe = Link(server_settings, "zcatch_srv", engine, server,
-		game_shared, game_server, zlib, sqlite, server_link_other)
+		game_shared, game_server, zlib, sqlite, server_link_other, md5)
 
 	serverlaunch = {}
 	if platform == "macosx" then

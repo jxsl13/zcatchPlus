@@ -5,6 +5,8 @@
 #define ENGINE_SERVER_SERVER_H
 
 #include <engine/server.h>
+#include <engine/shared/uuid_manager.h>
+
 
 #include <string>
 #include <map>

@@ -2,6 +2,7 @@
 #define ENGINE_SHARED_UUID_MANAGER_H
 
 #include <base/tl/array.h>
+
 enum
 {
 	UUID_MAXSTRSIZE = 37, // 12345678-0123-5678-0123-567890123456

@@ -31,6 +31,8 @@ class CSnapshot
 public:
 	enum
 	{
+		OFFSET_UUID_TYPE=0x4000,
+		MAX_TYPE=0x7fff,
 		MAX_SIZE=64*1024
 	};
 
@@ -39,9 +41,11 @@ public:
 	CSnapshotItem *GetItem(int Index);
 	int GetItemSize(int Index);
 	int GetItemIndex(int Key);
+	int GetItemType(int Index);
 
 	int Crc();
 	void DebugDump();
+	static void RemoveExtraInfo(unsigned char *pData);
 };
 
 
@@ -108,14 +112,15 @@ public:
 	void PurgeAll();
 	void PurgeUntil(int Tick);
 	void Add(int Tick, int64 Tagtime, int DataSize, void *pData, int CreateAlt);
-	int Get(int Tick, int64 *pTagtime, CSnapshot **ppData, CSnapshot **ppAltData);
+	int Get(int Tick, int64 *Tagtime, CSnapshot **pData, CSnapshot **ppAltData);
 };
 
 class CSnapshotBuilder
 {
 	enum
 	{
-		MAX_ITEMS = 1024
+		MAX_ITEMS = 1024,
+		MAX_EXTENDED_ITEM_TYPES = 64,
 	};
 
 	char m_aData[CSnapshot::MAX_SIZE];
@@ -124,7 +129,15 @@ class CSnapshotBuilder
 	int m_aOffsets[MAX_ITEMS];
 	int m_NumItems;
 
+	int m_aExtendedItemTypes[MAX_EXTENDED_ITEM_TYPES];
+	int m_NumExtendedItemTypes;
+
+	void AddExtendedItemType(int Index);
+	int GetExtendedItemTypeIndex(int TypeID);
+
 public:
+	CSnapshotBuilder();
+
 	void Init();
 
 	void *NewItem(int Type, int ID, int Size);
@@ -132,7 +145,7 @@ public:
 	CSnapshotItem *GetItem(int Index);
 	int *GetItemData(int Key);
 
-	int Finish(void *pSnapdata);
+	int Finish(void *Snapdata);
 };
 
 
