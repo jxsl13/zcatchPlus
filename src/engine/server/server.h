@@ -10,6 +10,8 @@
 #include <string>
 #include <map>
 
+ IGameServer* GLOBAL_SERVER;
+
 
 class CSnapIDPool
 {

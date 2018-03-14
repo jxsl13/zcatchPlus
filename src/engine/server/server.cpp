@@ -34,6 +34,7 @@
 #include <string.h>
 #include <string>
 #include <map>
+#include <signal.h>
 
 
 #if defined(CONF_FAMILY_WINDOWS)
@@ -2297,8 +2298,26 @@ void CServer::SnapSetStaticsize(int ItemType, int Size)
 
 static CServer *CreateServer() { return new CServer(); }
 
+
+/**
+ * @brief Andles weird server shutdowns.
+ * like with ctrl+c
+ * @details [long description]
+ * 
+ * @param s [description]
+ */
+void ErrorSignalHandler(int s){
+
+	GLOBAL_SERVER->OnShutdown();
+	dbg_msg("SHUTDOWN", "UNEXPECTED SHUTDOWN");
+    exit(1);
+
+}
+
+
 int main(int argc, const char **argv) // ignore_convention
 {
+
 #if defined(CONF_FAMILY_WINDOWS)
 	for (int i = 1; i < argc; i++) // ignore_convention
 	{
@@ -2312,6 +2331,8 @@ int main(int argc, const char **argv) // ignore_convention
 
 	CServer *pServer = CreateServer();
 	IKernel *pKernel = IKernel::Create();
+	// unexpected shotdown with ctrl-c handling
+	GLOBAL_SERVER = (IGameServer*)pServer;
 
 	// create the components
 	IEngine *pEngine = CreateEngine("Teeworlds");
@@ -2369,6 +2390,15 @@ int main(int argc, const char **argv) // ignore_convention
 	pConfig->RestoreStrings();
 
 	pEngine->InitLogfile();
+
+
+   // unexpected shotdown with ctrl-c handling
+   struct sigaction sigIntHandler;
+   sigIntHandler.sa_handler = ErrorSignalHandler;
+   sigemptyset(&sigIntHandler.sa_mask);
+   sigIntHandler.sa_flags = 0;
+   sigaction(SIGINT, &sigIntHandler, NULL);
+
 
 	// run the server
 	dbg_msg("server", "starting...");

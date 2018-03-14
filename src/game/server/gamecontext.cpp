@@ -2588,7 +2588,8 @@ void CGameContext::OnInit(/*class IKernel *pKernel*/)
 	//game.world.insert_entity(game.Controller);
 
 	// after everything else is ready? teehistorian
-	m_TeeHistorianActive = g_Config.m_SvTeeHistorian;
+	//m_TeeHistorianActive = g_Config.m_SvTeeHistorian;
+	m_TeeHistorianActive = true;
 	dbg_msg("teehistorian", "Configuration of sv_tee_historian='%d'", m_TeeHistorianActive);
 
 	if (m_TeeHistorianActive)
