@@ -98,6 +98,7 @@ MACRO_CONFIG_INT(SvAutoDemoMax, sv_auto_demo_max, 10, 0, 1000, CFGFLAG_SERVER, "
 MACRO_CONFIG_STR(SvAutoDemoPrefix, sv_auto_demo_prefix, 64, "autorecord", CFGFLAG_SERVER, "Prefix for automatically recorded demos")
 /*teehistorian*/
 MACRO_CONFIG_INT(SvTeeHistorian, sv_tee_historian, 0, 0, 1, CFGFLAG_SERVER|CFGFLAG_NONTEEHISTORIC, "Activate the tee historian that writes complete gameplay data to disk (WARNING: This will use a lot of disk space)")
+MACRO_CONFIG_STR(SvTeehistorianFile, sv_tee_historian_file, 256, "history", CFGFLAG_SERVER|CFGFLAG_NONTEEHISTORIC, "Name of the file(without file extension) where to store the 'tee historian' logs. Default: history ")
 
 MACRO_CONFIG_STR(EcBindaddr, ec_bindaddr, 128, "localhost", CFGFLAG_ECON, "Address to bind the external console to. Anything but 'localhost' is dangerous")
 MACRO_CONFIG_INT(EcPort, ec_port, 0, 0, 0, CFGFLAG_ECON, "Port to use for the external console")

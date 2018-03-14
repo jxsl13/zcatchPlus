@@ -2558,7 +2558,7 @@ void CGameContext::OnInit(/*class IKernel *pKernel*/)
 	{
 
 		char aFilename[64];
-		str_format(aFilename, sizeof(aFilename), "teehistorian/%d.teehistorian", time_timestamp());
+		str_format(aFilename, sizeof(aFilename), "teehistorian/%s.teehistorian", g_Config.m_SvTeehistorianFile);
 
 		m_TeeHistorianFile = Kernel()->RequestInterface<IStorage>()->OpenFile(aFilename, IOFLAG_WRITE, IStorage::TYPE_SAVE);
 		if (!m_TeeHistorianFile)
