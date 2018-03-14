@@ -15,7 +15,7 @@ class CSnapIDPool
 {
 	enum
 	{
-		MAX_IDS = 16*1024,
+		MAX_IDS = 16 * 1024,
 	};
 
 	class CID
@@ -88,7 +88,7 @@ class CServer : public IServer
 	int m_InfoTextInterval;
 	int m_InfoTextMsgInterval;
 	int m_InfoTextIntervalPause;
-	
+
 public:
 	class IGameServer *GameServer() { return m_pGameServer; }
 	class IConsole *Console() { return m_pConsole; }
@@ -96,12 +96,12 @@ public:
 
 	enum
 	{
-		AUTHED_NO=0,
+		AUTHED_NO = 0,
 		AUTHED_MOD,
 		AUTHED_SUBADMIN,
 		AUTHED_ADMIN,
 
-		MAX_RCONCMD_SEND=16,
+		MAX_RCONCMD_SEND = 16,
 	};
 
 	class CClient
@@ -116,7 +116,7 @@ public:
 			STATE_READY,
 			STATE_INGAME,
 
-			SNAPRATE_INIT=0,
+			SNAPRATE_INIT = 0,
 			SNAPRATE_FULL,
 			SNAPRATE_RECOVER
 		};
@@ -186,6 +186,9 @@ public:
 	CDemoRecorder m_DemoRecorder;
 	CRegister m_Register;
 	CMapChecker m_MapChecker;
+
+	/*teehistorian*/
+	char m_aErrorShutdownReason[128];
 
 	CServer();
 	~CServer();
@@ -268,20 +271,23 @@ public:
 
 	void RegisterCommands();
 
+	/*teehistorian*/
+	bool ErrorShutdown() const { return m_aErrorShutdownReason[0] != 0; }
+	void SetErrorShutdown(const char *pReason);
 
 	virtual int SnapNewID();
 	virtual void SnapFreeID(int ID);
 	virtual void *SnapNewItem(int Type, int ID, int Size);
 	void SnapSetStaticsize(int ItemType, int Size);
-	
+
 	//zCatch
 	virtual void MapReload();
-	
+
 	// voteban system
 	// struct CVotebanAddr
 	// {
-		// unsigned char ip[16];
-		// unsigned int type;
+	// unsigned char ip[16];
+	// unsigned int type;
 	// };
 	struct CVoteban
 	{
@@ -307,8 +313,8 @@ public:
 	static void ConAddLogin(IConsole::IResult *pResult, void *pUser);
 	static void ConRemoveLogin(IConsole::IResult *pResult, void *pUser);
 
-	
-	
+
+
 	// info messages
 	static void ConAddInfo(IConsole::IResult *pResult, void *pUser);
 	static void ConRemoveInfo(IConsole::IResult *pResult, void *pUser);
@@ -317,13 +323,13 @@ public:
 	int GetInfoTextMsgInterval() { return m_InfoTextMsgInterval; }
 	int GetInfoTextInterval() { return m_InfoTextInterval; }
 	std::string GetNextInfoText();
-	
+
 	virtual int GetNumLoggedInAdmins() { return m_numLoggedInAdmins; }
-	
+
 	// logins
-	typedef std::map<std::string,std::string>::iterator loginiterator;
-	std::map<std::string,std::string> logins;
-	
+	typedef std::map<std::string, std::string>::iterator loginiterator;
+	std::map<std::string, std::string> logins;
+
 	// log some client out of the rcon
 	void rconLogClientOut(int ClientID, const char *msg = "Logout successful.");
 };

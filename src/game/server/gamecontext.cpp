@@ -129,7 +129,7 @@ void CGameContext::Clear()
 void CGameContext::TeeHistorianWrite(const void *pData, int DataSize, void *pUser)
 {
 	CGameContext *pSelf = (CGameContext *)pUser;
-	io_write(pSelf->m_TeeHistorianFile, pData, DataSize);
+	aio_write(pSelf->m_pTeeHistorianFile, pData, DataSize);
 }
 
 void CGameContext::CommandCallback(int ClientID, int FlagMask, const char *pCmd, IConsole::IResult *pResult, void *pUser)
@@ -513,6 +513,13 @@ void CGameContext::OnTick()
 	/*teehistorian*/
 	if (m_TeeHistorianActive)
 	{
+		int Error = aio_error(m_pTeeHistorianFile);
+		if(Error)
+		{
+			dbg_msg("teehistorian", "error writing to file, err=%d", Error);
+			Server()->SetErrorShutdown("teehistorian io error");
+		}
+
 		if (!m_TeeHistorian.Starting())
 		{
 			m_TeeHistorian.EndInputs();
@@ -882,11 +889,6 @@ void CGameContext::OnClientConnected(int ClientID)
 
 void CGameContext::OnClientDrop(int ClientID, const char *pReason)
 {
-	/*teehistorian*/
-	if (m_TeeHistorianActive)
-	{
-		io_flush(m_TeeHistorianFile);
-	}
 
 	if (m_apPlayers[ClientID]->m_CaughtBy > CPlayer::ZCATCH_NOT_CAUGHT)
 		m_apPlayers[m_apPlayers[ClientID]->m_CaughtBy]->ReleaseZCatchVictim(ClientID);
@@ -2422,6 +2424,7 @@ void CGameContext::OnConsoleInit()
 {
 	m_pServer = Kernel()->RequestInterface<IServer>();
 	m_pConsole = Kernel()->RequestInterface<IConsole>();
+	m_pStorage = Kernel()->RequestInterface<IStorage>();
 
 	Console()->Register("tune", "si", CFGFLAG_SERVER, ConTuneParam, this, "Tune variable to value");
 	Console()->Register("tune_reset", "", CFGFLAG_SERVER, ConTuneReset, this, "Reset tuning");
@@ -2463,6 +2466,7 @@ void CGameContext::OnInit(/*class IKernel *pKernel*/)
 {
 	m_pServer = Kernel()->RequestInterface<IServer>();
 	m_pConsole = Kernel()->RequestInterface<IConsole>();
+	m_pStorage = Kernel()->RequestInterface<IStorage>();
 	m_World.SetGameServer(this);
 	m_Events.SetGameServer(this);
 
@@ -2560,16 +2564,18 @@ void CGameContext::OnInit(/*class IKernel *pKernel*/)
 		char aFilename[64];
 		str_format(aFilename, sizeof(aFilename), "teehistorian/%s.teehistorian", g_Config.m_SvTeehistorianFile);
 
-		m_TeeHistorianFile = Kernel()->RequestInterface<IStorage>()->OpenFile(aFilename, IOFLAG_WRITE, IStorage::TYPE_SAVE);
-		if (!m_TeeHistorianFile)
+		IOHANDLE File = Storage()->OpenFile(aFilename, IOFLAG_WRITE, IStorage::TYPE_SAVE);
+		if (!File)
 		{
 			dbg_msg("teehistorian", "failed to open '%s'", aFilename);
-			exit(1);
+			Server()->SetErrorShutdown("teehistorian open error");
+			return;
 		}
 		else
 		{
 			dbg_msg("teehistorian", "recording to '%s'", aFilename);
 		}
+		m_pTeeHistorianFile = aio_new(File);
 
 		char aVersion[128];
 
@@ -2589,7 +2595,6 @@ void CGameContext::OnInit(/*class IKernel *pKernel*/)
 		GameInfo.m_pMapName = aMapName;
 
 		m_TeeHistorian.Reset(&GameInfo, TeeHistorianWrite, this);
-		io_flush(m_TeeHistorianFile);
 		dbg_msg("teehistorian", "initialized tee historian");
 	}
 
@@ -2611,7 +2616,15 @@ void CGameContext::OnShutdown()
 	if(m_TeeHistorianActive)
 	{
 		m_TeeHistorian.Finish();
-		io_close(m_TeeHistorianFile);
+		aio_close(m_pTeeHistorianFile);
+		aio_wait(m_pTeeHistorianFile);
+		int Error = aio_error(m_pTeeHistorianFile);
+		if(Error)
+		{
+			dbg_msg("teehistorian", "error closing file, err=%d", Error);
+			Server()->SetErrorShutdown("teehistorian close error");
+		}
+		aio_free(m_pTeeHistorianFile);
 	}
 
 	delete m_pController;

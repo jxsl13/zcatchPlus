@@ -74,6 +74,9 @@ public:
 	virtual bool IsAuthed(int ClientID) = 0;
 	virtual void Kick(int ClientID, const char *pReason) = 0;
 
+	/*teehistorian*/
+	virtual void SetErrorShutdown(const char *pReason) = 0;
+
 	virtual void DemoRecorder_HandleAutoStart() = 0;
 	virtual bool DemoRecorder_IsRecording() = 0;
 	//zCatch
