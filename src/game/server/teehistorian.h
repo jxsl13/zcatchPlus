@@ -69,7 +69,7 @@ public:
 	int CreatePlayerMovementTable();
 	int CreatePlayerInputTable();
 
-	int InsertIntoRconActivityTable(char NickName[MAX_NAME_LENGTH], char TimeStamp[20], char *Command, char *Arguments);
+	int InsertIntoRconActivityTable(const char NickName[MAX_NAME_LENGTH], const char TimeStamp[20], const char *Command, const char *Arguments);
 	int InsertIntoPlayerMovementTable(char NickName[MAX_NAME_LENGTH], char TimeStamp[20], int Tick, int x, int y, int old_x, int old_y);
 	int InsertIntoPlayerInputTable(char NickName[MAX_NAME_LENGTH], char TimeStamp[20], int Tick, int Direction, int TargetX, int TargetY, int Jump, int Fire, int Hook, int PlayerFlags, int WantedWeapon, int NextWeapon, int PrevWeapon);
 

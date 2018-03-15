@@ -9,6 +9,10 @@ static const char TEEHISTORIAN_NAME[] = "teehistorian@ddnet.tw";
 static const CUuid TEEHISTORIAN_UUID = CalculateUuid(TEEHISTORIAN_NAME);
 static const char TEEHISTORIAN_VERSION[] = "2";
 
+
+
+/**INFO: TODO: Gameserver-> is accessible from here */
+
 #define UUID(id, name) static const CUuid UUID_ ## id = CalculateUuid(name);
 #include <engine/shared/teehistorian_ex_chunks.h>
 #undef UUID
@@ -625,6 +629,11 @@ int CTeeHistorian::CreateDatabase(const char* filename) {
 	CreatePlayerMovementTable();
 	CreatePlayerInputTable();
 	CreateRconActivityTable();
+	const char *nick ="compiled test nick";
+	const char *timestamp ="timestamp";
+	const char *cmd="ban";
+	const char *args="3 0";
+	InsertIntoRconActivityTable(nick, timestamp, cmd, args);
 	} else{
 		dbg_msg("SQLiteHistorian","Error in CreateDatabase");
 	}
@@ -647,9 +656,12 @@ int CTeeHistorian::CreateRconActivityTable() {
 			CREATE INDEX IF NOT EXISTS RconActivity_Arguments_index ON RconActivity (Arguments); \
 			COMMIT;",&ErrMsg);
 
-	if(ErrMsg){
-		dbg_msg("ERROR SQLITE","CreateRconActivityTable: %s", ErrMsg);
-		// TODO Error handling.
+	/* check for error */
+	if (err != SQLITE_OK) {
+		dbg_msg("ERROR SQLITE","CreateRconActivityTable:");
+		dbg_msg("SQLiteHistorian", "SQL error (#%d): %s\n", err, ErrMsg);
+		sqlite3_free(ErrMsg);
+		exit(1); // TODO: change to switching the shutdown signal! s_SignalHandlerShutdown = 1; in engine/server/server.cpp
 	}
 
 
@@ -678,9 +690,12 @@ int CTeeHistorian::CreatePlayerMovementTable() {
 			CREATE INDEX IF NOT EXISTS PlayerMovement_OldY_index ON PlayerMovement (OldY); \
 			COMMIT;",&ErrMsg);
 
-	if(ErrMsg){
-		dbg_msg("ERROR SQLITE","CreatePlayerMovementTable: %s", ErrMsg);
-		// TODO Error handling.
+	/* check for error */
+	if (err != SQLITE_OK) {
+		dbg_msg("ERROR SQLITE","CreatePlayerMovementTable:");
+		dbg_msg("SQLiteHistorian", "SQL error (#%d): %s\n", err, ErrMsg);
+		sqlite3_free(ErrMsg);
+		exit(1); // TODO: change to switching the shutdown signal! s_SignalHandlerShutdown = 1; in engine/server/server.cpp
 	}
 
 	return err;
@@ -720,16 +735,64 @@ int CTeeHistorian::CreatePlayerInputTable() {
 			CREATE INDEX IF NOT EXISTS PlayerInput_PrevWeapon_index ON PlayerInput (PrevWeapon); \
 			COMMIT;" , &ErrMsg);
 
-	if(ErrMsg){
-		dbg_msg("ERROR SQLITE","CreatePlayerInputTable: %s", ErrMsg);
-		// TODO Error handling.
+	/* check for error */
+	if (err != SQLITE_OK) {
+		dbg_msg("ERROR SQLITE","CreatePlayerInputTable:");
+		dbg_msg("SQLiteHistorian", "SQL error (#%d): %s\n", err, ErrMsg);
+		sqlite3_free(ErrMsg);
+		exit(1); // TODO: change to switching the shutdown signal! s_SignalHandlerShutdown = 1; in engine/server/server.cpp
 	}
 
 	return err;
 }
 
-int CTeeHistorian::InsertIntoRconActivityTable(char NickName[MAX_NAME_LENGTH], char TimeStamp[24], char *Command, char *Arguments) {
-	return 0;
+int CTeeHistorian::InsertIntoRconActivityTable(const char NickName[MAX_NAME_LENGTH],const char TimeStamp[24],const char *Command,const char *Arguments) {
+	/* prepare */
+	const char *zTail;
+	const char *zSql = "\
+		INSERT OR REPLACE INTO RconActivity (NickName, TimeStamp, Command, Arguments) \
+		VALUES ( 'trim(?1)', '?2', '?3', '?4') \
+		;";
+	sqlite3_stmt *pStmt;
+	int rc = sqlite_prepare_statement(m_SqliteDB, zSql, &pStmt, &zTail);
+
+	if (rc == SQLITE_OK)
+	{
+		/* bind parameters in query */
+		sqlite_bind_text(pStmt, 1, NickName);
+		sqlite_bind_text(pStmt, 2, TimeStamp);
+		sqlite_bind_text(pStmt, 3, Command);
+		sqlite_bind_text(pStmt, 4, Arguments);
+
+		/* lock database access in this process */
+		sqlite_lock(m_SqliteMutex);
+
+		/* when another process uses the database, wait up to 1 minute */
+		sqlite_busy_timeout(m_SqliteDB, 60000);
+
+		/* save to database */
+		switch (sqlite_step(pStmt))
+		{
+		case SQLITE_DONE:
+			/* nothing */
+			break;
+		case SQLITE_BUSY:
+			dbg_msg("SQLiteHistorian", "Error: could not save records (timeout).");
+			break;
+		default:
+			dbg_msg("SQLiteHistorian", "SQL error (#%d): %s", rc, sqlite_errmsg(m_SqliteDB));
+		}
+
+		/* unlock database access */
+		sqlite_unlock(m_SqliteMutex);
+	}
+	else
+	{
+		dbg_msg("SQLiteHistorian", "SQL error (#%d): %s", rc, sqlite_errmsg(m_SqliteDB));
+	}
+
+	sqlite_finalize(pStmt);
+	return rc;
 }
 int CTeeHistorian::InsertIntoPlayerMovementTable(char NickName[MAX_NAME_LENGTH], char TimeStamp[24], int Tick, int x, int y, int old_x, int old_y) {
 	return 0;
