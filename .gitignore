@@ -33,3 +33,5 @@ banmaster*
 /ranking.db-journal
 
 .DS_Store
+
+teehistorian/*
