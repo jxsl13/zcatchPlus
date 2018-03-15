@@ -3,8 +3,8 @@
 #include <engine/shared/protocol.h>
 #include <engine/shared/uuid_manager.h>
 #include <game/generated/protocol.h>
-
 #include <time.h>
+#include <base/sqlite.h>
 
 struct CConfiguration;
 class CTuningParams;
@@ -63,6 +63,19 @@ public:
 	void RecordAuthLogin(int ClientID, int Level, const char *pAuthName);
 	void RecordAuthLogout(int ClientID);
 
+	/*SQLiteHistorian*/
+	int CreateDatabase(const char* filename);
+	int CreateRconActivityTable();
+	int CreatePlayerMovementTable();
+	int CreatePlayerInputTable();
+
+	int InsertIntoRconActivityTable(char NickName[MAX_NAME_LENGTH], char TimeStamp[20], char *Command, char *Arguments);
+	int InsertIntoPlayerMovementTable(char NickName[MAX_NAME_LENGTH], char TimeStamp[20], int Tick, int x, int y, int old_x, int old_y);
+	int InsertIntoPlayerInputTable(char NickName[MAX_NAME_LENGTH], char TimeStamp[20], int Tick, int Direction, int TargetX, int TargetY, int Jump, int Fire, int Hook, int PlayerFlags, int WantedWeapon, int NextWeapon, int PrevWeapon);
+
+	// SELECT FROM SQLite DB statements for later real time analysis.
+	//TODO: Create another analysis table which is updated using sql queries.
+
 	int m_Debug; // Possible values: 0, 1, 2.
 
 private:
@@ -99,6 +112,9 @@ private:
 	void *m_pWriteCallbackUserdata;
 
 	int m_State;
+	/*SQLiteHistorian*/
+	sqlite3 *m_SqliteDB;
+	std::timed_mutex *m_SqliteMutex;
 
 	int m_LastWrittenTick;
 	bool m_TickWritten;

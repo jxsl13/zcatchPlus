@@ -66,6 +66,7 @@ class CGameContext : public IGameServer
 
 	/*teehistrorian*/
 	bool m_TeeHistorianActive;
+	bool m_SqliteHistorianActive;
 	CTeeHistorian m_TeeHistorian;
 	ASYNCIO *m_pTeeHistorianFile;
 	CUuid m_GameUuid;

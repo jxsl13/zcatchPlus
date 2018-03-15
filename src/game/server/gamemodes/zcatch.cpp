@@ -693,7 +693,7 @@ void CGameController_zCatch::OnChatCommandRank(CPlayer *pPlayer, const char *nam
 {
 	char *queryName = (char*)malloc(MAX_NAME_LENGTH);
 	str_copy(queryName, name, MAX_NAME_LENGTH);
-	
+
 	// executes function with the parameters given afterwards
 	std::thread *t = new std::thread(&CGameController_zCatch::ChatCommandRankFetchDataAndPrint, GameServer(), pPlayer->GetCID(), queryName);
 	// detaches thread, meaning that the thread can outlive the main thread.
@@ -703,9 +703,9 @@ void CGameController_zCatch::OnChatCommandRank(CPlayer *pPlayer, const char *nam
 }
 
 /**
- * @brief Fetch ranking records of player "name" and send to requesting player with ID clientId 
- * @details Fetch ranking records of player "name" and send to requesting player with ID clientId 
- * 
+ * @brief Fetch ranking records of player "name" and send to requesting player with ID clientId
+ * @details Fetch ranking records of player "name" and send to requesting player with ID clientId
+ *
  * @param GameServer CGameContext is needed in order to fetch most player info, e.g. ID, name, etc.
  * @param clientId Requesting player's clientId
  * @param name Unique name of the player whose rank is being requested by the player "clientId"
@@ -769,11 +769,11 @@ void CGameController_zCatch::ChatCommandRankFetchDataAndPrint(CGameContext* Game
 				char aBuf[512];
 				if (g_Config.m_SvMode == 1) // laser
 				{
-					str_format(aBuf, sizeof(aBuf), "'%s' is rank %d with a score of %.*f points (%d wins, %d kills (%d wallshot), %d deaths, %d shots, spree of %d, %d:%02dh played, %.*f points for next rank)", name, rank, score % 100 ? 2 : 0, score / 100.0, numWins, numKills, numKillsWallshot, numDeaths, numShots, highestSpree, timePlayed / 3600, timePlayed / 60 % 60, scoreToNextRank % 100 ? 2 : 0, scoreToNextRank / 100.0);
+					str_format(aBuf, sizeof(aBuf), "'%s' is rank %d with a score of %.*f points and %d wins (%d kills (%d wallshot), %d deaths, %d shots, spree of %d, %d:%02dh played, %.*f points for next rank)", name, rank, score % 100 ? 2 : 0, score / 100.0, numWins, numKills, numKillsWallshot, numDeaths, numShots, highestSpree, timePlayed / 3600, timePlayed / 60 % 60, scoreToNextRank % 100 ? 2 : 0, scoreToNextRank / 100.0);
 				}
 				else
 				{
-					str_format(aBuf, sizeof(aBuf), "'%s' is rank %d with a score of %.*f points (%d wins, %d kills, %d deaths, %d shots, spree of %d, %d:%02dh played, %.*f points for next rank)", name, rank, score % 100 ? 2 : 0, score / 100.0, numWins, numKills, numDeaths, numShots, highestSpree, timePlayed / 3600, timePlayed / 60 % 60, scoreToNextRank % 100 ? 2 : 0, scoreToNextRank / 100.0);
+					str_format(aBuf, sizeof(aBuf), "'%s' is rank %d with a score of %.*f points and %d wins (%d kills, %d deaths, %d shots, spree of %d, %d:%02dh played, %.*f points for next rank)", name, rank, score % 100 ? 2 : 0, score / 100.0, numWins, numKills, numDeaths, numShots, highestSpree, timePlayed / 3600, timePlayed / 60 % 60, scoreToNextRank % 100 ? 2 : 0, scoreToNextRank / 100.0);
 				}
 				GameServer->SendChatTarget(clientId, aBuf);
 			}

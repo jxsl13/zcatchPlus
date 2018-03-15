@@ -135,7 +135,7 @@ MACRO_CONFIG_INT(SvRifleRegenerationTime, sv_rifle_regeneration_time, 1200, 0, 1
 MACRO_CONFIG_INT(SvShotgunRegenerationTime, sv_shotgun_regeneration_time, 1000, 0, 10000, CFGFLAG_SERVER, "Default: 1000 - Time after which the shotgun's projectiles regenerate.")
 
 
-MACRO_CONFIG_INT(SvActivityLogging, sv_activity_logging, 0, 0, 1, CFGFLAG_SERVER, "Enable player activity logging for later analysis.")
-MACRO_CONFIG_STR(SvActivityFile, sv_activity_file, 255, "activity.db", CFGFLAG_SERVER|CFGFLAG_NONTEEHISTORIC, "File in which the player activity is stored.")
+MACRO_CONFIG_INT(SvSqliteLogging, sv_sqlite_logging, 0, 0, 1, CFGFLAG_SERVER, "Enable SQLite logging.")
+MACRO_CONFIG_STR(SvSqliteLogfile, sv_sqlite_logfile, 255, "logfile.db", CFGFLAG_SERVER|CFGFLAG_NONTEEHISTORIC, "File in which the player activity is stored.")
 
 #endif

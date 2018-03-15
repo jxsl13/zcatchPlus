@@ -1774,20 +1774,20 @@ void CGameContext::OnMessage(int MsgID, CUnpacker *pUnpacker, int ClientID)
 
 void CGameContext::OnSetAuthed(int ClientID, int Level)
 {
-	if(m_apPlayers[ClientID])
+	if (m_apPlayers[ClientID])
 	{
 		char aBuf[512], aIP[NETADDR_MAXSTRSIZE];
 		Server()->GetClientAddr(ClientID, aIP, sizeof(aIP));
 		str_format(aBuf, sizeof(aBuf), "ban %s %d Banned by vote", aIP, g_Config.m_SvVoteKickBantime);
-		if(!str_comp_nocase(m_aVoteCommand, aBuf) && Level > 0)
+		if (!str_comp_nocase(m_aVoteCommand, aBuf) && Level > 0)
 		{
 			m_VoteEnforce = CGameContext::VOTE_ENFORCE_NO_ADMIN;
 			Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "CGameContext", "Aborted vote by admin login.");
 		}
 	}
-	if(m_TeeHistorianActive)
+	if (m_TeeHistorianActive)
 	{
-		if(Level)
+		if (Level)
 		{
 			m_TeeHistorian.RecordAuthLogin(ClientID, Level, Server()->GetAuthName(ClientID));
 		}
@@ -2501,6 +2501,8 @@ void CGameContext::OnInit(/*class IKernel *pKernel*/)
 	m_Events.SetGameServer(this);
 
 	/*teehistorian*/
+
+
 	m_GameUuid = RandomUuid();
 	Console()->SetTeeHistorianCommandCallback(CommandCallback, this);
 
@@ -2590,57 +2592,69 @@ void CGameContext::OnInit(/*class IKernel *pKernel*/)
 
 	// after everything else is ready? teehistorian
 	m_TeeHistorianActive = g_Config.m_SvTeeHistorian;
-	dbg_msg("teehistorian", "Configuration of sv_tee_historian='%d'", m_TeeHistorianActive);
+	m_SqliteHistorianActive = g_Config.m_SvSqliteLogging;
+	if (m_TeeHistorianActive && m_SqliteHistorianActive) {
+		dbg_msg("TeeHistorian", "Is Active");
+	} else if (m_TeeHistorianActive) {
+		dbg_msg("SQLiteHistorian", "Is Active");
+	}
 
 	if (m_TeeHistorianActive)
 	{
-		char aGameUuid[UUID_MAXSTRSIZE];
-		FormatUuid(m_GameUuid, aGameUuid, sizeof(aGameUuid));
 
-		char aFilename[64];
-		str_format(aFilename, sizeof(aFilename), "teehistorian/%s.teehistorian", aGameUuid);
 
-		IOHANDLE File = Storage()->OpenFile(aFilename, IOFLAG_WRITE, IStorage::TYPE_SAVE);
-		if (!File)
-		{
-			dbg_msg("teehistorian", "failed to open '%s'", aFilename);
-			Server()->SetErrorShutdown("teehistorian open error");
-			return;
-		}
-		else
-		{
-			dbg_msg("teehistorian", "recording to '%s'", aFilename);
-		}
-		m_pTeeHistorianFile = aio_new(File);
+		if (m_SqliteHistorianActive) {
 
-		CUuidManager Empty;
+		} else {
 
-		CTeeHistorian::CGameInfo GameInfo;
-		GameInfo.m_GameUuid = m_GameUuid;
-		GameInfo.m_pServerVersion = "jsxl's zcatch " GAME_VERSION;
-		GameInfo.m_StartTime = time(0);
+			char aGameUuid[UUID_MAXSTRSIZE];
+			FormatUuid(m_GameUuid, aGameUuid, sizeof(aGameUuid));
+			char aFilename[64];
+			str_format(aFilename, sizeof(aFilename), "teehistorian/%s.teehistorian", aGameUuid);
 
-		GameInfo.m_pServerName = g_Config.m_SvName;
-		GameInfo.m_ServerPort = g_Config.m_SvPort;
-		GameInfo.m_pGameType = m_pController->m_pGameType;
-
-		GameInfo.m_pConfig = &g_Config;
-		GameInfo.m_pTuning = Tuning();
-		GameInfo.m_pUuids = &Empty;
-
-		char aMapName[128];
-		Server()->GetMapInfo(aMapName, sizeof(aMapName), &GameInfo.m_MapSize, &GameInfo.m_MapCrc);
-		GameInfo.m_pMapName = aMapName;
-
-		m_TeeHistorian.Reset(&GameInfo, TeeHistorianWrite, this);
-		dbg_msg("teehistorian", "Initialization done.");
-
-		for(int i = 0; i < MAX_CLIENTS; i++)
-		{
-
-			if(Server()->IsAuthed(i))
+			IOHANDLE File = Storage()->OpenFile(aFilename, IOFLAG_WRITE, IStorage::TYPE_SAVE);
+			if (!File)
 			{
-				m_TeeHistorian.RecordAuthInitial(i, Server()->GetAuthLevel(i), Server()->GetAuthName(i));
+				dbg_msg("teehistorian", "failed to open '%s'", aFilename);
+				Server()->SetErrorShutdown("teehistorian open error");
+				return;
+			}
+			else
+			{
+				dbg_msg("teehistorian", "recording to '%s'", aFilename);
+			}
+
+			m_pTeeHistorianFile = aio_new(File);
+
+			CUuidManager Empty;
+
+			CTeeHistorian::CGameInfo GameInfo;
+			GameInfo.m_GameUuid = m_GameUuid;
+			GameInfo.m_pServerVersion = "jsxl's zcatch " GAME_VERSION;
+			GameInfo.m_StartTime = time(0);
+
+			GameInfo.m_pServerName = g_Config.m_SvName;
+			GameInfo.m_ServerPort = g_Config.m_SvPort;
+			GameInfo.m_pGameType = m_pController->m_pGameType;
+
+			GameInfo.m_pConfig = &g_Config;
+			GameInfo.m_pTuning = Tuning();
+			GameInfo.m_pUuids = &Empty;
+
+			char aMapName[128];
+			Server()->GetMapInfo(aMapName, sizeof(aMapName), &GameInfo.m_MapSize, &GameInfo.m_MapCrc);
+			GameInfo.m_pMapName = aMapName;
+
+			m_TeeHistorian.Reset(&GameInfo, TeeHistorianWrite, this);
+			dbg_msg("teehistorian", "Initialization done.");
+
+			for (int i = 0; i < MAX_CLIENTS; i++)
+			{
+
+				if (Server()->IsAuthed(i))
+				{
+					m_TeeHistorian.RecordAuthInitial(i, Server()->GetAuthLevel(i), Server()->GetAuthName(i));
+				}
 			}
 		}
 	}
