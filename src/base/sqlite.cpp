@@ -1,5 +1,4 @@
 #include "sqlite.h"
-#include "system.h"
 
 
 /**
