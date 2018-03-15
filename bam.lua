@@ -209,6 +209,7 @@ function build(settings)
 
 	-- build sqlite
 	sqlite = Compile(settings, Collect("src/engine/external/sqlite/sqlite3.c"))
+	
 
 	-- build md5 --
 	md5 = Compile(settings, Collect("src/engine/external/md5/md5.c"))
@@ -243,7 +244,7 @@ function build(settings)
 	-- apply freetype settings
 	config.freetype:Apply(client_settings)
 
-	engine = Compile(engine_settings, Collect("src/engine/shared/*.cpp", "src/base/*.c"))
+	engine = Compile(engine_settings, Collect("src/engine/shared/*.cpp", "src/base/*.c", "src/base/*.cpp"))
 	client = Compile(client_settings, Collect("src/engine/client/*.cpp"))
 
 	-- we need threads in the server

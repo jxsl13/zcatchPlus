@@ -616,7 +616,7 @@ void CTeeHistorian::Finish()
 
 
 int CTeeHistorian::CreateDatabase(const char* filename) {
-	return sqlite_open(filename, m_SqliteDB);
+	return sqlite_open(filename, &m_SqliteDB);
 }
 int CTeeHistorian::CreateRconActivityTable() {
 
@@ -640,4 +640,9 @@ int CTeeHistorian::InsertIntoPlayerMovementTable(char NickName[MAX_NAME_LENGTH],
 int CTeeHistorian::InsertIntoPlayerInputTable(char NickName[MAX_NAME_LENGTH], char TimeStamp[20], int Tick, int Direction, int TargetX, int TargetY, int Jump, int Fire, int Hook, int PlayerFlags, int WantedWeapon, int NextWeapon, int PrevWeapon) {
 	return 0;
 }
+
+void CTeeHistorian::CloseDatabase() {
+	sqlite_close(m_SqliteDB);
+}
+
 

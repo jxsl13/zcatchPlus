@@ -1,4 +1,5 @@
 #include "sqlite.h"
+#include "system.h"
 
 
 /**
@@ -10,8 +11,8 @@
  *
  * @return [description]
  */
-int sqlite_open(const char *filename, sqlite3 *DbHandle){
-  return sqlite3_open(filename, &DbHandle);
+int sqlite_open(const char *filename, sqlite3 **DbHandle){
+  return sqlite3_open(filename, DbHandle);
 }
 
 /**
@@ -81,7 +82,7 @@ void sqlite_unlock(std::timed_mutex *MutexForDB)
  */
 int sqlite_prepare_statement(sqlite3 *DbHandle, const char *zSqlQuery, sqlite3_stmt **ppStatement, const char **pzTail)
 {
-	return sqlite3_prepare_v2(DbHandle, zSqlQuery, strlen(zSqlQuery), ppStatement, pzTail);
+	return sqlite3_prepare_v2(DbHandle, zSqlQuery, str_length(zSqlQuery), ppStatement, pzTail);
 }
 
 /**
@@ -153,7 +154,7 @@ int sqlite_bind_int(sqlite3_stmt *SqlStatement, int pos, int value)
  */
 int sqlite_bind_text(sqlite3_stmt *SqlStatement, int pos, const char *value)
 {
-	return sqlite3_bind_text(SqlStatement, pos, value, strlen(value), 0);
+	return sqlite3_bind_text(SqlStatement, pos, value, str_length(value), 0);
 }
 
 /**

@@ -73,6 +73,7 @@ public:
 	int InsertIntoPlayerMovementTable(char NickName[MAX_NAME_LENGTH], char TimeStamp[20], int Tick, int x, int y, int old_x, int old_y);
 	int InsertIntoPlayerInputTable(char NickName[MAX_NAME_LENGTH], char TimeStamp[20], int Tick, int Direction, int TargetX, int TargetY, int Jump, int Fire, int Hook, int PlayerFlags, int WantedWeapon, int NextWeapon, int PrevWeapon);
 
+	void CloseDatabase();
 	// SELECT FROM SQLite DB statements for later real time analysis.
 	//TODO: Create another analysis table which is updated using sql queries.
 

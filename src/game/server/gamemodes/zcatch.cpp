@@ -819,11 +819,11 @@ void CGameController_zCatch::ChatCommandRankFetchDataAndPrint(CGameContext* Game
 void CGameController_zCatch::FormatRankingColumn(const char* column, char buf[32], int value)
 {
 	if (!str_comp_nocase("score", column))
-		str_format(buf, sizeof(buf), "%.*f", value % 100 ? 2 : 0, value / 100.0);
+		str_format(buf, strlen(buf), "%.*f", value % 100 ? 2 : 0, value / 100.0);
 	else if (!str_comp_nocase("timePlayed", column))
-		str_format(buf, sizeof(buf), "%d:%02dh", value / 3600, value / 60 % 60);
+		str_format(buf, strlen(buf), "%d:%02dh", value / 3600, value / 60 % 60);
 	else
-		str_format(buf, sizeof(buf), "%d", value);
+		str_format(buf, strlen(buf), "%d", value);
 }
 
 
