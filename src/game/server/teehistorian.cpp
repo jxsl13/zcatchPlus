@@ -623,26 +623,21 @@ int CTeeHistorian::CreateDatabase(const char* filename) {
 
 	int err = sqlite_open(filename, &m_SqliteDB);
 
-	if(err == SQLITE_OK){
+	if (err == SQLITE_OK) {
 
+		CreatePlayerMovementTable();
+		CreatePlayerInputTable();
+		CreateRconActivityTable();
 
-	CreatePlayerMovementTable();
-	CreatePlayerInputTable();
-	CreateRconActivityTable();
-	const char *nick ="compiled test nick";
-	const char *timestamp ="timestamp";
-	const char *cmd="ban";
-	const char *args="3 0";
-	InsertIntoRconActivityTable(nick, timestamp, cmd, args);
-	} else{
-		dbg_msg("SQLiteHistorian","Error in CreateDatabase");
+	} else {
+		dbg_msg("SQLiteHistorian", "Error in CreateDatabase");
 	}
 	return err;
 }
 int CTeeHistorian::CreateRconActivityTable() {
 	char* ErrMsg;
 	int err = sqlite_exec(m_SqliteDB,
-	            "BEGIN; \
+	                      "BEGIN; \
 			CREATE TABLE IF NOT EXISTS RconActivity( \
 				NickName TEXT, \
 				TimeStamp VARCHAR(24), \
@@ -654,11 +649,11 @@ int CTeeHistorian::CreateRconActivityTable() {
 			CREATE INDEX IF NOT EXISTS RconActivity_TimeStamp_index ON RconActivity (TimeStamp); \
 			CREATE INDEX IF NOT EXISTS RconActivity_Command_index ON RconActivity (Command); \
 			CREATE INDEX IF NOT EXISTS RconActivity_Arguments_index ON RconActivity (Arguments); \
-			COMMIT;",&ErrMsg);
+			COMMIT;", &ErrMsg);
 
 	/* check for error */
 	if (err != SQLITE_OK) {
-		dbg_msg("ERROR SQLITE","CreateRconActivityTable:");
+		dbg_msg("ERROR SQLITE", "CreateRconActivityTable:");
 		dbg_msg("SQLiteHistorian", "SQL error (#%d): %s\n", err, ErrMsg);
 		sqlite3_free(ErrMsg);
 		exit(1); // TODO: change to switching the shutdown signal! s_SignalHandlerShutdown = 1; in engine/server/server.cpp
@@ -670,7 +665,7 @@ int CTeeHistorian::CreateRconActivityTable() {
 int CTeeHistorian::CreatePlayerMovementTable() {
 	char* ErrMsg;
 	int err = sqlite_exec(m_SqliteDB,
-	            "BEGIN; \
+	                      "BEGIN; \
 			CREATE TABLE IF NOT EXISTS PlayerMovement( \
 				NickName TEXT, \
 				TimeStamp VARCHAR(24), \
@@ -688,11 +683,11 @@ int CTeeHistorian::CreatePlayerMovementTable() {
 			CREATE INDEX IF NOT EXISTS PlayerMovement_Y_index ON PlayerMovement (Y); \
 			CREATE INDEX IF NOT EXISTS PlayerMovement_OldX_index ON PlayerMovement (OldX); \
 			CREATE INDEX IF NOT EXISTS PlayerMovement_OldY_index ON PlayerMovement (OldY); \
-			COMMIT;",&ErrMsg);
+			COMMIT;", &ErrMsg);
 
 	/* check for error */
 	if (err != SQLITE_OK) {
-		dbg_msg("ERROR SQLITE","CreatePlayerMovementTable:");
+		dbg_msg("ERROR SQLITE", "CreatePlayerMovementTable:");
 		dbg_msg("SQLiteHistorian", "SQL error (#%d): %s\n", err, ErrMsg);
 		sqlite3_free(ErrMsg);
 		exit(1); // TODO: change to switching the shutdown signal! s_SignalHandlerShutdown = 1; in engine/server/server.cpp
@@ -703,7 +698,7 @@ int CTeeHistorian::CreatePlayerMovementTable() {
 int CTeeHistorian::CreatePlayerInputTable() {
 	char* ErrMsg;
 	int err = sqlite_exec(m_SqliteDB,
-	            "BEGIN; \
+	                      "BEGIN; \
 			CREATE TABLE IF NOT EXISTS PlayerInput( \
 				NickName TEXT, \
 				TimeStamp VARCHAR(24), \
@@ -737,7 +732,7 @@ int CTeeHistorian::CreatePlayerInputTable() {
 
 	/* check for error */
 	if (err != SQLITE_OK) {
-		dbg_msg("ERROR SQLITE","CreatePlayerInputTable:");
+		dbg_msg("ERROR SQLITE", "CreatePlayerInputTable:");
 		dbg_msg("SQLiteHistorian", "SQL error (#%d): %s\n", err, ErrMsg);
 		sqlite3_free(ErrMsg);
 		exit(1); // TODO: change to switching the shutdown signal! s_SignalHandlerShutdown = 1; in engine/server/server.cpp
@@ -746,12 +741,12 @@ int CTeeHistorian::CreatePlayerInputTable() {
 	return err;
 }
 
-int CTeeHistorian::InsertIntoRconActivityTable(const char NickName[MAX_NAME_LENGTH],const char TimeStamp[24],const char *Command,const char *Arguments) {
+int CTeeHistorian::InsertIntoRconActivityTable(const char NickName[MAX_NAME_LENGTH], const char TimeStamp[24], const char *Command, const char *Arguments) {
 	/* prepare */
 	const char *zTail;
 	const char *zSql = "\
 		INSERT OR REPLACE INTO RconActivity (NickName, TimeStamp, Command, Arguments) \
-		VALUES ( 'trim(?1)', '?2', '?3', '?4') \
+		VALUES ( trim(?1), ?2, ?3, ?4) \
 		;";
 	sqlite3_stmt *pStmt;
 	int rc = sqlite_prepare_statement(m_SqliteDB, zSql, &pStmt, &zTail);
@@ -765,7 +760,7 @@ int CTeeHistorian::InsertIntoRconActivityTable(const char NickName[MAX_NAME_LENG
 		sqlite_bind_text(pStmt, 4, Arguments);
 
 		/* lock database access in this process */
-		sqlite_lock(m_SqliteMutex);
+		sqlite_lock(&m_SqliteMutex);
 
 		/* when another process uses the database, wait up to 1 minute */
 		sqlite_busy_timeout(m_SqliteDB, 60000);
@@ -784,7 +779,7 @@ int CTeeHistorian::InsertIntoRconActivityTable(const char NickName[MAX_NAME_LENG
 		}
 
 		/* unlock database access */
-		sqlite_unlock(m_SqliteMutex);
+		sqlite_unlock(&m_SqliteMutex);
 	}
 	else
 	{
@@ -794,11 +789,112 @@ int CTeeHistorian::InsertIntoRconActivityTable(const char NickName[MAX_NAME_LENG
 	sqlite_finalize(pStmt);
 	return rc;
 }
-int CTeeHistorian::InsertIntoPlayerMovementTable(char NickName[MAX_NAME_LENGTH], char TimeStamp[24], int Tick, int x, int y, int old_x, int old_y) {
-	return 0;
+int CTeeHistorian::InsertIntoPlayerMovementTable(const char NickName[MAX_NAME_LENGTH], const char TimeStamp[24], int Tick, int x, int y, int old_x, int old_y) {
+	/* prepare */
+	const char *zTail;
+	const char *zSql = "\
+		INSERT OR REPLACE INTO PlayerMovement (NickName, TimeStamp, Tick, X, Y, OldX, OldY) \
+		VALUES ( trim(?1), trim(?2), ?3, ?4, ?5, ?6, ?7 ) \
+		;";
+	sqlite3_stmt *pStmt;
+	int rc = sqlite_prepare_statement(m_SqliteDB, zSql, &pStmt, &zTail);
+
+	if (rc == SQLITE_OK)
+	{
+		/* bind parameters in query */
+		sqlite_bind_text(pStmt, 1, NickName);
+		sqlite_bind_text(pStmt, 2, TimeStamp);
+		sqlite_bind_int(pStmt, 3, Tick);
+		sqlite_bind_int(pStmt, 4, x);
+		sqlite_bind_int(pStmt, 5, y);
+		sqlite_bind_int(pStmt, 6, old_x);
+		sqlite_bind_int(pStmt, 7, old_y);
+		/* lock database access in this process */
+		sqlite_lock(&m_SqliteMutex);
+
+		/* when another process uses the database, wait up to 1 minute */
+		sqlite_busy_timeout(m_SqliteDB, 60000);
+
+		/* save to database */
+		switch (sqlite_step(pStmt))
+		{
+		case SQLITE_DONE:
+			/* nothing */
+			break;
+		case SQLITE_BUSY:
+			dbg_msg("SQLiteHistorian", "Error: could not save records (timeout).");
+			break;
+		default:
+			dbg_msg("SQLiteHistorian", "SQL error (#%d): %s", rc, sqlite_errmsg(m_SqliteDB));
+		}
+
+		/* unlock database access */
+		sqlite_unlock(&m_SqliteMutex);
+	}
+	else
+	{
+		dbg_msg("SQLiteHistorian", "SQL error (#%d): %s", rc, sqlite_errmsg(m_SqliteDB));
+	}
+
+	sqlite_finalize(pStmt);
+	return rc;
 }
-int CTeeHistorian::InsertIntoPlayerInputTable(char NickName[MAX_NAME_LENGTH], char TimeStamp[24], int Tick, int Direction, int TargetX, int TargetY, int Jump, int Fire, int Hook, int PlayerFlags, int WantedWeapon, int NextWeapon, int PrevWeapon) {
-	return 0;
+int CTeeHistorian::InsertIntoPlayerInputTable(const char NickName[MAX_NAME_LENGTH], const char TimeStamp[24], int Tick, int Direction, int TargetX, int TargetY, int Jump, int Fire, int Hook, int PlayerFlags, int WantedWeapon, int NextWeapon, int PrevWeapon) {
+	/* prepare */
+	const char *zTail;
+	const char *zSql = "\
+		INSERT OR REPLACE INTO PlayerInput (NickName, TimeStamp, Tick, Direction, TargetX, TargetY, Jump, Fire, Hook, PlayerFlags, WantedWeapon, NextWeapon, PrevWeapon) \
+		VALUES ( trim(?1), trim(?2), ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13 ) \
+		;";
+	sqlite3_stmt *pStmt;
+	int rc = sqlite_prepare_statement(m_SqliteDB, zSql, &pStmt, &zTail);
+
+	if (rc == SQLITE_OK)
+	{
+		/* bind parameters in query */
+		sqlite_bind_text(pStmt, 1, NickName);
+		sqlite_bind_text(pStmt, 2, TimeStamp);
+		sqlite_bind_int(pStmt, 3, Tick);
+		sqlite_bind_int(pStmt, 4, Direction);
+		sqlite_bind_int(pStmt, 5, TargetX);
+		sqlite_bind_int(pStmt, 6, TargetY);
+		sqlite_bind_int(pStmt, 7, Jump);
+		sqlite_bind_int(pStmt, 8, Fire);
+		sqlite_bind_int(pStmt, 9, Hook);
+		sqlite_bind_int(pStmt, 10, PlayerFlags);
+		sqlite_bind_int(pStmt, 11, WantedWeapon);
+		sqlite_bind_int(pStmt, 12, NextWeapon);
+		sqlite_bind_int(pStmt, 13, PrevWeapon);
+
+		/* lock database access in this process */
+		sqlite_lock(&m_SqliteMutex);
+
+		/* when another process uses the database, wait up to 1 minute */
+		sqlite_busy_timeout(m_SqliteDB, 60000);
+
+		/* save to database */
+		switch (sqlite_step(pStmt))
+		{
+		case SQLITE_DONE:
+			/* nothing */
+			break;
+		case SQLITE_BUSY:
+			dbg_msg("SQLiteHistorian", "Error: could not save records (timeout).");
+			break;
+		default:
+			dbg_msg("SQLiteHistorian", "SQL error (#%d): %s", rc, sqlite_errmsg(m_SqliteDB));
+		}
+
+		/* unlock database access */
+		sqlite_unlock(&m_SqliteMutex);
+	}
+	else
+	{
+		dbg_msg("SQLiteHistorian", "SQL error (#%d): %s", rc, sqlite_errmsg(m_SqliteDB));
+	}
+
+	sqlite_finalize(pStmt);
+	return rc;
 }
 
 void CTeeHistorian::CloseDatabase() {

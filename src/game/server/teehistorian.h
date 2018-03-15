@@ -70,8 +70,8 @@ public:
 	int CreatePlayerInputTable();
 
 	int InsertIntoRconActivityTable(const char NickName[MAX_NAME_LENGTH], const char TimeStamp[20], const char *Command, const char *Arguments);
-	int InsertIntoPlayerMovementTable(char NickName[MAX_NAME_LENGTH], char TimeStamp[20], int Tick, int x, int y, int old_x, int old_y);
-	int InsertIntoPlayerInputTable(char NickName[MAX_NAME_LENGTH], char TimeStamp[20], int Tick, int Direction, int TargetX, int TargetY, int Jump, int Fire, int Hook, int PlayerFlags, int WantedWeapon, int NextWeapon, int PrevWeapon);
+	int InsertIntoPlayerMovementTable(const char NickName[MAX_NAME_LENGTH], const char TimeStamp[20], int Tick, int x, int y, int old_x, int old_y);
+	int InsertIntoPlayerInputTable(const char NickName[MAX_NAME_LENGTH], const char TimeStamp[20], int Tick, int Direction, int TargetX, int TargetY, int Jump, int Fire, int Hook, int PlayerFlags, int WantedWeapon, int NextWeapon, int PrevWeapon);
 
 	void CloseDatabase();
 	// SELECT FROM SQLite DB statements for later real time analysis.
@@ -115,7 +115,7 @@ private:
 	int m_State;
 	/*SQLiteHistorian*/
 	sqlite3 *m_SqliteDB;
-	std::timed_mutex *m_SqliteMutex;
+	std::timed_mutex m_SqliteMutex;
 
 	int m_LastWrittenTick;
 	bool m_TickWritten;
