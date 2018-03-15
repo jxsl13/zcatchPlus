@@ -616,28 +616,125 @@ void CTeeHistorian::Finish()
 
 
 int CTeeHistorian::CreateDatabase(const char* filename) {
-	return sqlite_open(filename, &m_SqliteDB);
+
+	int err = sqlite_open(filename, &m_SqliteDB);
+
+	if(err == SQLITE_OK){
+
+
+	CreatePlayerMovementTable();
+	CreatePlayerInputTable();
+	CreateRconActivityTable();
+	} else{
+		dbg_msg("SQLiteHistorian","Error in CreateDatabase");
+	}
+	return err;
 }
 int CTeeHistorian::CreateRconActivityTable() {
+	char* ErrMsg;
+	int err = sqlite_exec(m_SqliteDB,
+	            "BEGIN; \
+			CREATE TABLE IF NOT EXISTS RconActivity( \
+				NickName TEXT, \
+				TimeStamp VARCHAR(24), \
+				Command VARCHAR(128), \
+				Arguments VARCHAR(512), \
+				PRIMARY KEY (NickName, TimeStamp) \
+			); \
+			CREATE INDEX IF NOT EXISTS RconActivity_NickName_index ON RconActivity (NickName); \
+			CREATE INDEX IF NOT EXISTS RconActivity_TimeStamp_index ON RconActivity (TimeStamp); \
+			CREATE INDEX IF NOT EXISTS RconActivity_Command_index ON RconActivity (Command); \
+			CREATE INDEX IF NOT EXISTS RconActivity_Arguments_index ON RconActivity (Arguments); \
+			COMMIT;",&ErrMsg);
+
+	if(ErrMsg){
+		dbg_msg("ERROR SQLITE","CreateRconActivityTable: %s", ErrMsg);
+		// TODO Error handling.
+	}
 
 
-
-	return 0;
+	return err;
 }
 int CTeeHistorian::CreatePlayerMovementTable() {
-	return 0;
+	char* ErrMsg;
+	int err = sqlite_exec(m_SqliteDB,
+	            "BEGIN; \
+			CREATE TABLE IF NOT EXISTS PlayerMovement( \
+				NickName TEXT, \
+				TimeStamp VARCHAR(24), \
+				Tick UNSIGNED BIG INT, \
+				X INT, \
+				Y INT, \
+				OldX INT, \
+				OldY INT, \
+				PRIMARY KEY (NickName, TimeStamp) \
+			); \
+			CREATE INDEX IF NOT EXISTS PlayerMovement_NickName_index ON PlayerMovement (NickName); \
+			CREATE INDEX IF NOT EXISTS PlayerMovement_TimeStamp_index ON PlayerMovement (TimeStamp); \
+			CREATE INDEX IF NOT EXISTS PlayerMovement_Tick_index ON PlayerMovement (Tick); \
+			CREATE INDEX IF NOT EXISTS PlayerMovement_X_index ON PlayerMovement (X); \
+			CREATE INDEX IF NOT EXISTS PlayerMovement_Y_index ON PlayerMovement (Y); \
+			CREATE INDEX IF NOT EXISTS PlayerMovement_OldX_index ON PlayerMovement (OldX); \
+			CREATE INDEX IF NOT EXISTS PlayerMovement_OldY_index ON PlayerMovement (OldY); \
+			COMMIT;",&ErrMsg);
+
+	if(ErrMsg){
+		dbg_msg("ERROR SQLITE","CreatePlayerMovementTable: %s", ErrMsg);
+		// TODO Error handling.
+	}
+
+	return err;
 }
 int CTeeHistorian::CreatePlayerInputTable() {
-	return 0;
+	char* ErrMsg;
+	int err = sqlite_exec(m_SqliteDB,
+	            "BEGIN; \
+			CREATE TABLE IF NOT EXISTS PlayerInput( \
+				NickName TEXT, \
+				TimeStamp VARCHAR(24), \
+				Tick UNSIGNED BIG INT, \
+				Direction SMALLINT, \
+				TargetX INT, \
+				TargetY INT, \
+				Jump SMALLINT, \
+				Fire SMALLINT, \
+				Hook SMALLINT, \
+				PlayerFlags INT, \
+				WantedWeapon SMALLINT, \
+				NextWeapon SMALLINT, \
+				PrevWeapon SMALLINT, \
+				PRIMARY KEY (NickName, TimeStamp) \
+			); \
+			CREATE INDEX IF NOT EXISTS PlayerInput_NickName_index ON PlayerInput (NickName); \
+			CREATE INDEX IF NOT EXISTS PlayerInput_TimeStamp_index ON PlayerInput (TimeStamp); \
+			CREATE INDEX IF NOT EXISTS PlayerInput_Tick_index ON PlayerInput (Tick); \
+			CREATE INDEX IF NOT EXISTS PlayerInput_Direction_index ON PlayerInput (Direction); \
+			CREATE INDEX IF NOT EXISTS PlayerInput_TargetX_index ON PlayerInput (TargetX); \
+			CREATE INDEX IF NOT EXISTS PlayerInput_TargetY_index ON PlayerInput (TargetY); \
+			CREATE INDEX IF NOT EXISTS PlayerInput_Jump_index ON PlayerInput (Jump); \
+			CREATE INDEX IF NOT EXISTS PlayerInput_Fire_index ON PlayerInput (Fire); \
+			CREATE INDEX IF NOT EXISTS PlayerInput_Hook_index ON PlayerInput (Hook); \
+			CREATE INDEX IF NOT EXISTS PlayerInput_PlayerFlags_index ON PlayerInput (PlayerFlags); \
+			CREATE INDEX IF NOT EXISTS PlayerInput_WantedWeapon_index ON PlayerInput (WantedWeapon); \
+			CREATE INDEX IF NOT EXISTS PlayerInput_NextWeapon_index ON PlayerInput (NextWeapon); \
+			CREATE INDEX IF NOT EXISTS PlayerInput_PrevWeapon_index ON PlayerInput (PrevWeapon); \
+			COMMIT;" , &ErrMsg);
+
+	if(ErrMsg){
+		dbg_msg("ERROR SQLITE","CreatePlayerInputTable: %s", ErrMsg);
+		// TODO Error handling.
+	}
+
+	return err;
 }
 
-int CTeeHistorian::InsertIntoRconActivityTable(char NickName[MAX_NAME_LENGTH], char TimeStamp[20], char *Command, char *Arguments) {
+int CTeeHistorian::InsertIntoRconActivityTable(char NickName[MAX_NAME_LENGTH], char TimeStamp[24], char *Command, char *Arguments) {
 	return 0;
 }
-int CTeeHistorian::InsertIntoPlayerMovementTable(char NickName[MAX_NAME_LENGTH], char TimeStamp[20], int Tick, int x, int y, int old_x, int old_y) {
+int CTeeHistorian::InsertIntoPlayerMovementTable(char NickName[MAX_NAME_LENGTH], char TimeStamp[24], int Tick, int x, int y, int old_x, int old_y) {
 	return 0;
 }
-int CTeeHistorian::InsertIntoPlayerInputTable(char NickName[MAX_NAME_LENGTH], char TimeStamp[20], int Tick, int Direction, int TargetX, int TargetY, int Jump, int Fire, int Hook, int PlayerFlags, int WantedWeapon, int NextWeapon, int PrevWeapon) {
+int CTeeHistorian::InsertIntoPlayerInputTable(char NickName[MAX_NAME_LENGTH], char TimeStamp[24], int Tick, int Direction, int TargetX, int TargetY, int Jump, int Fire, int Hook, int PlayerFlags, int WantedWeapon, int NextWeapon, int PrevWeapon) {
 	return 0;
 }
 

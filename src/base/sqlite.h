@@ -12,7 +12,7 @@
  *
  * @return [description]
  */
-static int sqlite_open(const char *filename, sqlite3 **DbHandle);
+ int sqlite_open(const char *filename, sqlite3 **DbHandle);
 
 /**
  * @brief closes database connection.
@@ -21,7 +21,7 @@ static int sqlite_open(const char *filename, sqlite3 **DbHandle);
  * @param DbHandle database handle
  * @return [description]
  */
-static int sqlite_close(sqlite3* DbHandle);
+ int sqlite_close(sqlite3* DbHandle);
 
 /**
  * @brief Lock a mutex assiciated to a sqlite database
@@ -33,7 +33,7 @@ static int sqlite_close(sqlite3* DbHandle);
  *
  * @return [description]
  */
-static bool sqlite_lock(std::timed_mutex* MutexForDB, int MiliSecondsToLock = -1);
+ bool sqlite_lock(std::timed_mutex* MutexForDB, int MiliSecondsToLock = -1);
 
 
 /**
@@ -42,7 +42,7 @@ static bool sqlite_lock(std::timed_mutex* MutexForDB, int MiliSecondsToLock = -1
  *
  * @param MutexForDB [description]
  */
-static void sqlite_unlock(std::timed_mutex* MutexForDB);
+ void sqlite_unlock(std::timed_mutex* MutexForDB);
 
 /**
  * @brief checks if given statement can be applied to given database handle.
@@ -63,7 +63,7 @@ static void sqlite_unlock(std::timed_mutex* MutexForDB);
  * 		   SQLITE_EMPTY Database is empty
  * 		   SQLITE_NOTADB File opened that is not a database file
  */
-static int sqlite_prepare_statement(sqlite3* DbHandle, const char* zSqlQuery, sqlite3_stmt **ppStatement, const char **pzTail);
+ int sqlite_prepare_statement(sqlite3* DbHandle, const char* zSqlQuery, sqlite3_stmt **ppStatement, const char **pzTail);
 
 /**
  * @brief Executes the statement, which has to be prepared before execution.
@@ -75,7 +75,7 @@ static int sqlite_prepare_statement(sqlite3* DbHandle, const char* zSqlQuery, sq
  * 		   SQLITE_ROW when the query executed successfully and the database returns a row with data(while loop through it)
  * 		   Else: Error state or look into sqlite3.h
  */
-static int sqlite_step(sqlite3_stmt* Statement);
+ int sqlite_step(sqlite3_stmt* Statement);
 
 /**
  * @brief Directly executes a query on given database through handle
@@ -86,7 +86,7 @@ static int sqlite_step(sqlite3_stmt* Statement);
  * @param ErrMsg pointer where to write the error message to.
  * @return [description]
  */
-static int sqlite_exec(sqlite3* DbHandle, const char* SqlStatement, char** ErrMsg);
+ int sqlite_exec(sqlite3* DbHandle, const char* SqlStatement, char** ErrMsg);
 
 /**
  * @brief
@@ -97,7 +97,7 @@ static int sqlite_exec(sqlite3* DbHandle, const char* SqlStatement, char** ErrMs
  *
  * @return [description]
  */
-static int sqlite_busy_timeout(sqlite3* DbHandle, int ms);
+ int sqlite_busy_timeout(sqlite3* DbHandle, int ms);
 
 /**
  * @brief Bind text to statement using ?1 ?2 ?3 ... in the statement
@@ -108,7 +108,7 @@ static int sqlite_busy_timeout(sqlite3* DbHandle, int ms);
  * @param value integer to insert.
  * @return [description]
  */
-static int sqlite_bind_int(sqlite3_stmt* SqlStatement, int pos, int value);
+ int sqlite_bind_int(sqlite3_stmt* SqlStatement, int pos, int value);
 
 /**
  * @brief Bind text to statement using ?1 ?2 ?3 ... in the statement
@@ -119,7 +119,7 @@ static int sqlite_bind_int(sqlite3_stmt* SqlStatement, int pos, int value);
  * @param value String to insert.
  * @return [description]
  */
-static int sqlite_bind_text(sqlite3_stmt* SqlStatement, int pos, const char* value);
+ int sqlite_bind_text(sqlite3_stmt* SqlStatement, int pos, const char* value);
 
 /**
  * @brief retrieve error message
@@ -128,7 +128,7 @@ static int sqlite_bind_text(sqlite3_stmt* SqlStatement, int pos, const char* val
  * @param DbHandle [description]
  * @return [description]
  */
-static const char* sqlite_errmsg(sqlite3* DbHandle);
+ const char* sqlite_errmsg(sqlite3* DbHandle);
 
 /**
  * @brief Destroy statement object
@@ -137,7 +137,7 @@ static const char* sqlite_errmsg(sqlite3* DbHandle);
  * @param Statement [description]
  * @return [description]
  */
-static int sqlite_finalize(sqlite3_stmt *Statement);
+ int sqlite_finalize(sqlite3_stmt *Statement);
 
 /**
  * @brief retrieve from current SQLITE_ROW the integer data.
@@ -148,7 +148,7 @@ static int sqlite_finalize(sqlite3_stmt *Statement);
  *
  * @return [description]
  */
-static int  sqlite_column_int(sqlite3_stmt* Statement, int Column);
+ int  sqlite_column_int(sqlite3_stmt* Statement, int Column);
 
 
 /**
@@ -160,5 +160,5 @@ static int  sqlite_column_int(sqlite3_stmt* Statement, int Column);
  *
  * @return [description]
  */
-static const unsigned char *  sqlite_column_text(sqlite3_stmt* Statement, int Column);
+ const unsigned char *  sqlite_column_text(sqlite3_stmt* Statement, int Column);
 

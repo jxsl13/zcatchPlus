@@ -2335,8 +2335,7 @@ int main(int argc, const char **argv) // ignore_convention
 
 	CServer *pServer = CreateServer();
 	IKernel *pKernel = IKernel::Create();
-	// unexpected shotdown with ctrl-c handling
-	GLOBAL_SERVER = (IGameServer*)pServer;
+
 
 	// create the components
 	IEngine *pEngine = CreateEngine("Teeworlds");

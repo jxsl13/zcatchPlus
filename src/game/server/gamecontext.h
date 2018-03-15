@@ -26,7 +26,7 @@
 #include "teehistorian.h"
 
 #define MAX_MUTES 35
-#define ZCATCH_VERSION "0.4.8"
+#define ZCATCH_VERSION "0.5.0"
 
 /*
 	Tick

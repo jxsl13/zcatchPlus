@@ -2603,14 +2603,12 @@ void CGameContext::OnInit(/*class IKernel *pKernel*/)
 	{
 
 
-		if (m_SqliteHistorianActive) {
-
-		} else {
-
 			char aGameUuid[UUID_MAXSTRSIZE];
 			FormatUuid(m_GameUuid, aGameUuid, sizeof(aGameUuid));
 			char aFilename[64];
 			str_format(aFilename, sizeof(aFilename), "teehistorian/%s.teehistorian", aGameUuid);
+
+
 
 			IOHANDLE File = Storage()->OpenFile(aFilename, IOFLAG_WRITE, IStorage::TYPE_SAVE);
 			if (!File)
@@ -2625,6 +2623,13 @@ void CGameContext::OnInit(/*class IKernel *pKernel*/)
 			}
 
 			m_pTeeHistorianFile = aio_new(File);
+
+
+
+			/*Sqlitehistorian*/
+			str_format(aFilename, sizeof(aFilename), "teehistorian/%s.db", aGameUuid);
+			m_TeeHistorian.CreateDatabase(aFilename);
+
 
 			CUuidManager Empty;
 
@@ -2656,7 +2661,6 @@ void CGameContext::OnInit(/*class IKernel *pKernel*/)
 					m_TeeHistorian.RecordAuthInitial(i, Server()->GetAuthLevel(i), Server()->GetAuthName(i));
 				}
 			}
-		}
 	}
 
 
@@ -2686,6 +2690,7 @@ void CGameContext::OnShutdown()
 			Server()->SetErrorShutdown("teehistorian close error");
 		}
 		aio_free(m_pTeeHistorianFile);
+		m_TeeHistorian.CloseDatabase();
 	}
 
 	delete m_pController;
