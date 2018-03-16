@@ -129,9 +129,9 @@ void CGameContext::Clear()
  */
 void CGameContext::TeeHistorianWrite(const void *pData, int DataSize, void *pUser)
 {
-		CGameContext *pSelf = (CGameContext *)pUser;
-		dbg_msg("TEEHISTORIAN","pSelft==%d, pSelf->m_pTeeHistorianFile=%d, DataSize=%d",(pSelf == NULL) ? 0 : 1,  (pSelf->m_pTeeHistorianFile == NULL) ? 0 : 1, DataSize);
-		aio_write(pSelf->m_pTeeHistorianFile, pData, DataSize);
+	CGameContext *pSelf = (CGameContext *)pUser;
+	dbg_msg("TEEHISTORIAN", "pSelft==%d, pSelf->m_pTeeHistorianFile=%d, DataSize=%d", (pSelf == NULL) ? 0 : 1,  (pSelf->m_pTeeHistorianFile == NULL) ? 0 : 1, DataSize);
+	aio_write(pSelf->m_pTeeHistorianFile, pData, DataSize);
 
 }
 
@@ -2615,31 +2615,34 @@ void CGameContext::OnInit(/*class IKernel *pKernel*/)
 		{
 			if (str_comp(g_Config.m_SvSqliteHistorianFileName, "") == 0)
 			{
-				m_pTeeHistorianFile = m_TeeHistorian.OnInit(NULL,
+				m_TeeHistorian.OnInit(NULL,
 				                      m_GameUuid,
 				                      Storage(),
 				                      Server(),
 				                      m_pController,
 				                      Tuning(),
-				                      this);
+				                      this,
+				                      m_pTeeHistorianFile);
 			} else {
-				m_pTeeHistorianFile = m_TeeHistorian.OnInit(g_Config.m_SvSqliteHistorianFileName,
+				m_TeeHistorian.OnInit(g_Config.m_SvSqliteHistorianFileName,
 				                      m_GameUuid,
 				                      Storage(),
 				                      Server(),
 				                      m_pController,
 				                      Tuning(),
-				                      this);
+				                      this,
+				                      m_pTeeHistorianFile);
 			}
 
 		} else {
-			m_pTeeHistorianFile = m_TeeHistorian.OnInit(NULL,
+			m_TeeHistorian.OnInit(NULL,
 			                      m_GameUuid,
 			                      Storage(),
 			                      Server(),
 			                      m_pController,
 			                      Tuning(),
-			                      this);
+			                      this,
+			                      m_pTeeHistorianFile);
 
 		}
 

@@ -52,7 +52,7 @@ static char EscapeJsonChar(char c)
 }
 
 
-ASYNCIO* CTeeHistorian::OnInit(char *pFileName, CUuid GameUuid, IStorage *pStorage, IServer *pServer, IGameController *pController, CTuningParams *pTuning, CGameContext *pGameContext) {
+void CTeeHistorian::OnInit(char *pFileName, CUuid GameUuid, IStorage *pStorage, IServer *pServer, IGameController *pController, CTuningParams *pTuning, CGameContext *pGameContext, ASYNCIO *pTeeHistorianFile) {
 
 	char aGameUuid[UUID_MAXSTRSIZE];
 	FormatUuid(GameUuid, aGameUuid, sizeof(aGameUuid));
@@ -68,7 +68,6 @@ ASYNCIO* CTeeHistorian::OnInit(char *pFileName, CUuid GameUuid, IStorage *pStora
 		}
 
 		CreateDatabase(aFilename);
-		return NULL;
 	} else {
 
 
@@ -83,14 +82,13 @@ ASYNCIO* CTeeHistorian::OnInit(char *pFileName, CUuid GameUuid, IStorage *pStora
 		{
 			dbg_msg("teehistorian", "failed to open '%s'", aFilename);
 			pServer->SetErrorShutdown("teehistorian open error");
-			return NULL;
 		}
 		else
 		{
 			dbg_msg("teehistorian", "recording to '%s'", aFilename);
 		}
 
-		ASYNCIO *pTeeHistorianFile = aio_new(File);
+		pTeeHistorianFile = (aio_new(File));
 
 
 		CUuidManager Empty;
@@ -115,7 +113,6 @@ ASYNCIO* CTeeHistorian::OnInit(char *pFileName, CUuid GameUuid, IStorage *pStora
 		dbg_msg("TEEHISTORIAN", "HERE IS THE BUG %s", aFilename);
 		Reset(&GameInfo, CGameContext::TeeHistorianWrite, pGameContext);
 		dbg_msg("teehistorian", "Initialization done.");
-		return pTeeHistorianFile;
 	}
 
 }
