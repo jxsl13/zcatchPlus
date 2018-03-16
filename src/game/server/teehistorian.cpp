@@ -61,7 +61,7 @@ ASYNCIO* CTeeHistorian::OnInit(char *pFileName, CUuid GameUuid, IStorage *pStora
 
 	if (g_Config.m_SvSqliteHistorian)
 	{
-		if (pFileName) {
+		if (pFileName != NULL) {
 			str_format(aFilename, sizeof(aFilename), "teehistorian/%s.db", pFileName);
 		} else {
 			str_format(aFilename, sizeof(aFilename), "teehistorian/%s.db", aGameUuid);
@@ -71,12 +71,9 @@ ASYNCIO* CTeeHistorian::OnInit(char *pFileName, CUuid GameUuid, IStorage *pStora
 		return NULL;
 	} else {
 
-		if (pFileName)
-		{
-			str_format(aFilename, sizeof(aFilename), "teehistorian/%s.teehistorian", pFileName);
-		} else {
-			str_format(aFilename, sizeof(aFilename), "teehistorian/%s.teehistorian", aGameUuid);
-		}
+
+		str_format(aFilename, sizeof(aFilename), "teehistorian/%s.teehistorian", aGameUuid);
+
 
 
 
@@ -115,8 +112,8 @@ ASYNCIO* CTeeHistorian::OnInit(char *pFileName, CUuid GameUuid, IStorage *pStora
 		pServer->GetMapInfo(aMapName, sizeof(aMapName), &GameInfo.m_MapSize, &GameInfo.m_MapCrc);
 		GameInfo.m_pMapName = aMapName;
 
-		dbg_msg("TEEHISTORIAN", "HERE IS THE BUG");
-		this->Reset(&GameInfo, CGameContext::TeeHistorianWrite, pGameContext);
+		dbg_msg("TEEHISTORIAN", "HERE IS THE BUG %s", aFilename);
+		Reset(&GameInfo, CGameContext::TeeHistorianWrite, pGameContext);
 		dbg_msg("teehistorian", "Initialization done.");
 		return pTeeHistorianFile;
 	}
