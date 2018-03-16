@@ -116,13 +116,14 @@ void CTeeHistorian::Reset(const CGameInfo *pGameInfo, WRITE_CALLBACK pfnWriteCal
 		m_aPrevPlayers[i].m_Alive = false;
 		m_aPrevPlayers[i].m_InputExists = false;
 	}
-	m_pfnWriteCallback = pfnWriteCallback;
-	m_pWriteCallbackUserdata = pUser;
+
 
 	if (g_Config.m_SvSqliteHistorian)
 	{
 		/* code */
 	} else {
+		m_pfnWriteCallback = pfnWriteCallback;
+		m_pWriteCallbackUserdata = pUser;
 		WriteHeader(pGameInfo);
 	}
 
@@ -131,9 +132,9 @@ void CTeeHistorian::Reset(const CGameInfo *pGameInfo, WRITE_CALLBACK pfnWriteCal
 
 void CTeeHistorian::WriteHeader(const CGameInfo *pGameInfo)
 {
-	if (g_Config.m_SvSqliteHistorian)
 
-		Write(&TEEHISTORIAN_UUID, sizeof(TEEHISTORIAN_UUID));
+
+	Write(&TEEHISTORIAN_UUID, sizeof(TEEHISTORIAN_UUID));
 
 	char aGameUuid[UUID_MAXSTRSIZE];
 	char aStartTime[128];
@@ -374,28 +375,40 @@ void CTeeHistorian::RecordPlayer(const char* ClientNick, int ClientID, const CNe
 void CTeeHistorian::RecordDeadPlayer(int ClientID)
 {
 	dbg_assert(m_State == STATE_PLAYERS, "invalid teehistorian state");
-
 	CPlayer *pPrev = &m_aPrevPlayers[ClientID];
-	if (pPrev->m_Alive)
-	{
-		EnsureTickWrittenPlayerData(ClientID);
 
-		CPacker Buffer;
-		Buffer.Reset();
-		Buffer.AddInt(-TEEHISTORIAN_PLAYER_OLD);
-		Buffer.AddInt(ClientID);
-		if (m_Debug)
-		{
-			dbg_msg("teehistorian", "old cid=%d", ClientID);
-		}
-		Write(Buffer.Data(), Buffer.Size());
+	if (pPrev->m_Alive) {
+		EnsureTickWrittenPlayerData(ClientID);
 	}
+
+	if (g_Config.m_SvSqliteHistorian) {
+
+	} else {
+		if (pPrev->m_Alive) {
+			CPacker Buffer;
+			Buffer.Reset();
+			Buffer.AddInt(-TEEHISTORIAN_PLAYER_OLD);
+			Buffer.AddInt(ClientID);
+			if (m_Debug)
+			{
+				dbg_msg("teehistorian", "old cid=%d", ClientID);
+			}
+			Write(Buffer.Data(), Buffer.Size());
+		}
+	}
+
 	pPrev->m_Alive = false;
 }
 
 void CTeeHistorian::Write(const void *pData, int DataSize)
 {
-	m_pfnWriteCallback(pData, DataSize, m_pWriteCallbackUserdata);
+	if (g_Config.m_SvSqliteHistorian)
+	{
+		/* code */
+	} else {
+		m_pfnWriteCallback(pData, DataSize, m_pWriteCallbackUserdata);
+	}
+
 }
 
 
@@ -569,7 +582,7 @@ void CTeeHistorian::RecordPlayerMessage(int ClientID, const void *pMsg, int MsgS
 
 }
 
-void CTeeHistorian::RecordPlayerJoin(int ClientID)
+void CTeeHistorian::RecordPlayerJoin(const char* ClientNick, int ClientID)
 {
 	if (g_Config.m_SvSqliteHistorian)
 	{
@@ -592,7 +605,7 @@ void CTeeHistorian::RecordPlayerJoin(int ClientID)
 
 }
 
-void CTeeHistorian::RecordPlayerDrop(int ClientID, const char *pReason)
+void CTeeHistorian::RecordPlayerDrop(const char* ClientNick, int ClientID, const char *pReason)
 {
 	if (g_Config.m_SvSqliteHistorian)
 	{
@@ -723,7 +736,7 @@ void CTeeHistorian::RecordAuthInitial(int ClientID, int Level, const char *pAuth
 
 }
 
-void CTeeHistorian::RecordAuthLogin(int ClientID, int Level, const char *pAuthName)
+void CTeeHistorian::RecordAuthLogin(const char* ClientNick, int ClientID, int Level, const char *pAuthName)
 {
 	if (g_Config.m_SvSqliteHistorian)
 	{
@@ -746,7 +759,7 @@ void CTeeHistorian::RecordAuthLogin(int ClientID, int Level, const char *pAuthNa
 
 }
 
-void CTeeHistorian::RecordAuthLogout(int ClientID)
+void CTeeHistorian::RecordAuthLogout(const char* ClientNick, int ClientID)
 {
 	if (g_Config.m_SvSqliteHistorian)
 	{

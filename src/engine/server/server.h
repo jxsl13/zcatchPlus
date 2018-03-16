@@ -214,7 +214,7 @@ public:
 
 	void SetRconCID(int ClientID);
 	bool IsAuthed(int ClientID);
-	const char* GetAuthName(int ClientID){return m_aClients[ClientID].m_aName;};
+	const char* GetAuthName(int ClientID){return ClientName(ClientID);};
 	int GetAuthLevel(int ClientID) {return m_aClients[ClientID].m_Authed;};
 	int GetClientInfo(int ClientID, CClientInfo *pInfo);
 	void GetClientAddr(int ClientID, char *pAddrStr, int Size);

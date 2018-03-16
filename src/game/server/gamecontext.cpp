@@ -799,7 +799,7 @@ void CGameContext::OnClientDirectInput(const char* ClientNick, int ClientID, voi
 	/*teehistorian*/
 	if (m_TeeHistorianActive)
 	{
-		m_TeeHistorian.RecordPlayerInput(ClientNick,ClientID, (CNetObj_PlayerInput *)pInput);
+		m_TeeHistorian.RecordPlayerInput(ClientNick, ClientID, (CNetObj_PlayerInput *)pInput);
 	}
 }
 
@@ -927,7 +927,7 @@ void CGameContext::OnClientEngineJoin(int ClientID)
 {
 	if (m_TeeHistorianActive)
 	{
-		m_TeeHistorian.RecordPlayerJoin(ClientID);
+		m_TeeHistorian.RecordPlayerJoin(Server()->ClientName(ClientID), ClientID);
 	}
 }
 
@@ -935,7 +935,7 @@ void CGameContext::OnClientEngineDrop(int ClientID, const char *pReason)
 {
 	if (m_TeeHistorianActive)
 	{
-		m_TeeHistorian.RecordPlayerDrop(ClientID, pReason);
+		m_TeeHistorian.RecordPlayerDrop(Server()->ClientName(ClientID), ClientID, pReason);
 	}
 }
 
@@ -1797,11 +1797,11 @@ void CGameContext::OnSetAuthed(int ClientID, int Level)
 	{
 		if (Level)
 		{
-			m_TeeHistorian.RecordAuthLogin(ClientID, Level, Server()->GetAuthName(ClientID));
+			m_TeeHistorian.RecordAuthLogin( Server()->ClientName(ClientID), ClientID, Level, Server()->GetAuthName(ClientID));
 		}
 		else
 		{
-			m_TeeHistorian.RecordAuthLogout(ClientID);
+			m_TeeHistorian.RecordAuthLogout(Server()->ClientName(ClientID), ClientID);
 		}
 	}
 }

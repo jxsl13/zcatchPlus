@@ -53,8 +53,8 @@ public:
 	void BeginInputs();
 	void RecordPlayerInput(const char* ClientNick, int ClientID, const CNetObj_PlayerInput *pInput);
 	void RecordPlayerMessage(int ClientID, const void *pMsg, int MsgSize);
-	void RecordPlayerJoin(int ClientID);
-	void RecordPlayerDrop(int ClientID, const char *pReason);
+	void RecordPlayerJoin(const char* ClientNick, int ClientID);
+	void RecordPlayerDrop(const char* ClientNick, int ClientID, const char *pReason);
 	void RecordConsoleCommand(const char* ClientName, int ClientID, int FlagMask, const char *pCmd, IConsole::IResult *pResult);
 	void RecordTestExtra();
 	void EndInputs();
@@ -62,8 +62,8 @@ public:
 	void EndTick();
 
 	void RecordAuthInitial(int ClientID, int Level, const char *pAuthName);
-	void RecordAuthLogin(int ClientID, int Level, const char *pAuthName);
-	void RecordAuthLogout(int ClientID);
+	void RecordAuthLogin( const char* ClientNick, int ClientID, int Level, const char *pAuthName);
+	void RecordAuthLogout( const char* ClientNick, int ClientID);
 
 	/*SQLiteHistorian*/
 	int CreateDatabase(const char* filename);
