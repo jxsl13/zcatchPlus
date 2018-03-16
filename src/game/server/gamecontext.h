@@ -64,12 +64,6 @@ class CGameContext : public IGameServer
 	CNetObjHandler m_NetObjHandler;
 	CTuningParams m_Tuning;
 
-	/*teehistrorian*/
-	bool m_TeeHistorianActive;
-	bool m_SqliteHistorianActive;
-	CTeeHistorian m_TeeHistorian;
-	ASYNCIO *m_pTeeHistorianFile;
-	CUuid m_GameUuid;
 
 	static void CommandCallback(int ClientID, int FlagMask, const char *pCmd, IConsole::IResult *pResult, void *pUser);
 	/*teehistorian end*/
@@ -129,6 +123,12 @@ public:
 	CTuningParams *Tuning() { return &m_Tuning; }
 	static void TeeHistorianWrite(const void *pData, int DataSize, void *pUser);
 
+	/*teehistrorian*/
+	bool m_TeeHistorianActive;
+	bool m_SqliteHistorianActive;
+	CTeeHistorian m_TeeHistorian;
+	ASYNCIO *m_pTeeHistorianFile;
+	CUuid m_GameUuid;
 
 	CGameContext();
 	~CGameContext();

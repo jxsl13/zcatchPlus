@@ -130,7 +130,6 @@ void CGameContext::Clear()
 void CGameContext::TeeHistorianWrite(const void *pData, int DataSize, void *pUser)
 {
 	CGameContext *pSelf = (CGameContext *)pUser;
-	dbg_msg("TEEHISTORIAN", "pSelft==%d, pSelf->m_pTeeHistorianFile=%d, DataSize=%d", (pSelf == NULL) ? 0 : 1,  (pSelf->m_pTeeHistorianFile == NULL) ? 0 : 1, DataSize);
 	aio_write(pSelf->m_pTeeHistorianFile, pData, DataSize);
 
 }
@@ -2621,8 +2620,7 @@ void CGameContext::OnInit(/*class IKernel *pKernel*/)
 				                      Server(),
 				                      m_pController,
 				                      Tuning(),
-				                      this,
-				                      m_pTeeHistorianFile);
+				                      this);
 			} else {
 				m_TeeHistorian.OnInit(g_Config.m_SvSqliteHistorianFileName,
 				                      m_GameUuid,
@@ -2630,8 +2628,7 @@ void CGameContext::OnInit(/*class IKernel *pKernel*/)
 				                      Server(),
 				                      m_pController,
 				                      Tuning(),
-				                      this,
-				                      m_pTeeHistorianFile);
+				                      this);
 			}
 
 		} else {
@@ -2641,8 +2638,7 @@ void CGameContext::OnInit(/*class IKernel *pKernel*/)
 			                      Server(),
 			                      m_pController,
 			                      Tuning(),
-			                      this,
-			                      m_pTeeHistorianFile);
+			                      this);
 
 		}
 
