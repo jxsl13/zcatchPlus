@@ -5,6 +5,7 @@
 #include <game/gamecore.h>
 #include <engine/shared/protocol.h>
 #include <sys/time.h>
+#include <game/server/gamecontext.h>
 
 
 static const char TEEHISTORIAN_NAME[] = "teehistorian@ddnet.tw";
@@ -48,6 +49,78 @@ static char EscapeJsonChar(char c)
 	// Don't escape '\f', who uses that. :)
 	default: return 0;
 	}
+}
+
+
+ASYNCIO* CTeeHistorian::OnInit(char *pFileName, CUuid GameUuid, IStorage *pStorage, IServer *pServer, IGameController *pController, CTuningParams *pTuning, CGameContext *pGameContext) {
+
+	char aGameUuid[UUID_MAXSTRSIZE];
+	FormatUuid(GameUuid, aGameUuid, sizeof(aGameUuid));
+	char aFilename[64];
+
+
+	if (g_Config.m_SvSqliteHistorian)
+	{
+		if (pFileName) {
+			str_format(aFilename, sizeof(aFilename), "teehistorian/%s.db", pFileName);
+		} else {
+			str_format(aFilename, sizeof(aFilename), "teehistorian/%s.db", aGameUuid);
+		}
+
+		CreateDatabase(aFilename);
+		return NULL;
+	} else {
+
+		if (pFileName)
+		{
+			str_format(aFilename, sizeof(aFilename), "teehistorian/%s.teehistorian", pFileName);
+		} else {
+			str_format(aFilename, sizeof(aFilename), "teehistorian/%s.teehistorian", aGameUuid);
+		}
+
+
+
+
+		IOHANDLE File = pStorage->OpenFile(aFilename, IOFLAG_WRITE, IStorage::TYPE_SAVE);
+		if (!File)
+		{
+			dbg_msg("teehistorian", "failed to open '%s'", aFilename);
+			pServer->SetErrorShutdown("teehistorian open error");
+			return NULL;
+		}
+		else
+		{
+			dbg_msg("teehistorian", "recording to '%s'", aFilename);
+		}
+
+		ASYNCIO *pTeeHistorianFile = aio_new(File);
+
+
+		CUuidManager Empty;
+
+		CTeeHistorian::CGameInfo GameInfo;
+		GameInfo.m_GameUuid = GameUuid;
+		GameInfo.m_pServerVersion = "jsxl's zcatch " GAME_VERSION;
+		GameInfo.m_StartTime = time(0);
+
+		GameInfo.m_pServerName = g_Config.m_SvName;
+		GameInfo.m_ServerPort = g_Config.m_SvPort;
+		GameInfo.m_pGameType = pController->m_pGameType;
+
+		GameInfo.m_pConfig = &g_Config;
+		GameInfo.m_pTuning = pTuning;
+		GameInfo.m_pUuids = &Empty;
+
+		char aMapName[128];
+		pServer->GetMapInfo(aMapName, sizeof(aMapName), &GameInfo.m_MapSize, &GameInfo.m_MapCrc);
+		GameInfo.m_pMapName = aMapName;
+
+		dbg_msg("TEEHISTORIAN", "HERE IS THE BUG");
+		this->Reset(&GameInfo, CGameContext::TeeHistorianWrite, pGameContext);
+		dbg_msg("teehistorian", "Initialization done.");
+		return pTeeHistorianFile;
+	}
+
 }
 
 static char *EscapeJson(char *pBuffer, int BufferSize, const char *pString)
@@ -1116,20 +1189,20 @@ char* CTeeHistorian::GetTimeStamp() {
 	str_format(aBuf, 25 * sizeof(char), "%s.%ld", aDate, milli);
 	return aBuf;
 }
-void CTeeHistorian::OptimizeDatabase(){
-	if(m_SqliteDB){
+void CTeeHistorian::OptimizeDatabase() {
+	if (m_SqliteDB) {
 		char* ErrMsg;
-		sqlite_lock(&m_SqliteMutex,1000);
+		sqlite_lock(&m_SqliteMutex, 1000);
 		sqlite_busy_timeout(m_SqliteDB, 3000);
 		sqlite_exec(m_SqliteDB, "PRAGMA synchronous = OFF", &ErrMsg);
 		sqlite_unlock(&m_SqliteMutex);
 		sqlite3_free(ErrMsg);
 	}
 }
-void CTeeHistorian::BeginTransaction(){
-if(m_SqliteDB){
+void CTeeHistorian::BeginTransaction() {
+	if (m_SqliteDB) {
 		char* ErrMsg;
-		sqlite_lock(&m_SqliteMutex,1000);
+		sqlite_lock(&m_SqliteMutex, 1000);
 		sqlite_busy_timeout(m_SqliteDB, 3000);
 		sqlite_exec(m_SqliteDB, "BEGIN TRANSACTION", &ErrMsg);
 		sqlite_unlock(&m_SqliteMutex);
@@ -1138,10 +1211,10 @@ if(m_SqliteDB){
 
 }
 
-void CTeeHistorian::EndTransaction(){
-if(m_SqliteDB){
+void CTeeHistorian::EndTransaction() {
+	if (m_SqliteDB) {
 		char* ErrMsg;
-		sqlite_lock(&m_SqliteMutex,1000);
+		sqlite_lock(&m_SqliteMutex, 1000);
 		sqlite_busy_timeout(m_SqliteDB, 3000);
 		sqlite_exec(m_SqliteDB, "END TRANSACTION", &ErrMsg);
 		sqlite_unlock(&m_SqliteMutex);

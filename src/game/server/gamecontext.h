@@ -72,7 +72,6 @@ class CGameContext : public IGameServer
 	CUuid m_GameUuid;
 
 	static void CommandCallback(int ClientID, int FlagMask, const char *pCmd, IConsole::IResult *pResult, void *pUser);
-	static void TeeHistorianWrite(const void *pData, int DataSize, void *pUser);
 	/*teehistorian end*/
 
 	static void ConTuneParam(IConsole::IResult *pResult, void *pUserData);
@@ -94,25 +93,25 @@ class CGameContext : public IGameServer
 	static void ConClearVotes(IConsole::IResult *pResult, void *pUserData);
 	static void ConVote(IConsole::IResult *pResult, void *pUserData);
 	static void ConchainSpecialMotdupdate(IConsole::IResult *pResult, void *pUserData, IConsole::FCommandCallback pfnCallback, void *pCallbackUserData);
-	
+
 	static void ConMute(IConsole::IResult *pResult, void *pUserData);
 	static void ConUnmuteID(IConsole::IResult *pResult, void *pUserData);
 	static void ConUnmuteIP(IConsole::IResult *pResult, void *pUserData);
 	static void ConMutes(IConsole::IResult *pResult, void *pUserData);
-	
+
 	static void ConKill(IConsole::IResult *pResult, void *pUserData);
 
 	CGameContext(int Resetting);
 	void Construct(int Resetting);
 
 	bool m_Resetting;
-	
+
 	bool MuteValidation(CPlayer *player);
-	
+
 	/* ranking system: sqlite connection */
 	sqlite3 *m_RankingDb;
 	std::timed_mutex m_RankingDbMutex;
-	
+
 	// zCatch/TeeVi: hard mode
 	struct HardMode
 	{
@@ -121,13 +120,15 @@ class CGameContext : public IGameServer
 		bool grenade;
 	};
 	std::vector<HardMode> m_HardModes;
-	
+
 public:
 	IServer *Server() const { return m_pServer; }
 	class IConsole *Console() { return m_pConsole; }
 	IStorage *Storage() { return m_pStorage; }
 	CCollision *Collision() { return &m_Collision; }
 	CTuningParams *Tuning() { return &m_Tuning; }
+	static void TeeHistorianWrite(const void *pData, int DataSize, void *pUser);
+
 
 	CGameContext();
 	~CGameContext();
@@ -163,7 +164,7 @@ public:
 	int m_VoteEnforce;
 	enum
 	{
-		VOTE_ENFORCE_UNKNOWN=0,
+		VOTE_ENFORCE_UNKNOWN = 0,
 		VOTE_ENFORCE_NO,
 		VOTE_ENFORCE_YES,
 		// ddnet
@@ -179,24 +180,24 @@ public:
 	void CreateHammerHit(vec2 Pos);
 	void CreatePlayerSpawn(vec2 Pos);
 	void CreateDeath(vec2 Pos, int Who);
-	void CreateSound(vec2 Pos, int Sound, int Mask=-1);
-	void CreateSoundGlobal(int Sound, int Target=-1);
+	void CreateSound(vec2 Pos, int Sound, int Mask = -1);
+	void CreateSoundGlobal(int Sound, int Target = -1);
 
 
 
 	enum
 	{
-		CHAT_ALL=-2,
-		CHAT_SPEC=-1,
-		CHAT_RED=0,
-		CHAT_BLUE=1
+		CHAT_ALL = -2,
+		CHAT_SPEC = -1,
+		CHAT_RED = 0,
+		CHAT_BLUE = 1
 	};
-	
+
 	struct CMutes
 	{
 		char m_aIP[NETADDR_MAXSTRSIZE];
 		int m_Expires;
-	}; 
+	};
 	CMutes m_aMutes[MAX_MUTES];
 	// helper functions
 	void AddMute(const char* pIP, int Secs);
@@ -252,7 +253,7 @@ public:
 	virtual const char *GameType();
 	virtual const char *Version();
 	virtual const char *NetVersion();
-	
+
 	// bot detection
 	// old bot detection
 	/*
@@ -263,7 +264,7 @@ public:
 	};
 	virtual bool IsClientAimBot(int ClientID);
 	*/
-	
+
 	virtual void BotDetection();
 
 	/* ranking system */
@@ -271,7 +272,7 @@ public:
 	bool RankingEnabled() { return m_RankingDb != NULL; };
 	bool LockRankingDb(int ms = -1);
 	void UnlockRankingDb();
-	
+
 	// zCatch/TeeVi: hard mode
 	std::vector<HardMode> GetHardModes() { return std::vector<HardMode>(m_HardModes.begin(), m_HardModes.end()); };
 
@@ -285,7 +286,7 @@ public:
 };
 
 inline int CmaskAll() { return -1; }
-inline int CmaskOne(int ClientID) { return 1<<ClientID; }
-inline int CmaskAllExceptOne(int ClientID) { return 0x7fffffff^CmaskOne(ClientID); }
-inline bool CmaskIsSet(int Mask, int ClientID) { return (Mask&CmaskOne(ClientID)) != 0; }
+inline int CmaskOne(int ClientID) { return 1 << ClientID; }
+inline int CmaskAllExceptOne(int ClientID) { return 0x7fffffff ^ CmaskOne(ClientID); }
+inline bool CmaskIsSet(int Mask, int ClientID) { return (Mask & CmaskOne(ClientID)) != 0; }
 #endif

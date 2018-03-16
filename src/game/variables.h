@@ -135,7 +135,8 @@ MACRO_CONFIG_INT(SvRifleRegenerationTime, sv_rifle_regeneration_time, 1200, 0, 1
 MACRO_CONFIG_INT(SvShotgunRegenerationTime, sv_shotgun_regeneration_time, 1000, 0, 10000, CFGFLAG_SERVER|CFGFLAG_NONTEEHISTORIC, "Default: 1000 - Time after which the shotgun's projectiles regenerate.")
 
 
-MACRO_CONFIG_INT(SvSqliteHistorian, sv_sqlite_historian, 1, 0, 1, CFGFLAG_SERVER, "Enable SQLite logging: Needs sv_tee_historian 1 (enabled) in order to work.");
+MACRO_CONFIG_INT(SvSqliteHistorian, sv_sqlite_historian, 1, 0, 1, CFGFLAG_SERVER, "Enable SQLite logging: Needs sv_tee_historian 1 (enabled) in order to work.")
+MACRO_CONFIG_STR(SvSqliteHistorianFileName, sv_sqlite_historian_file, 900, "", CFGFLAG_SERVER, "Sqlite Historian file name. Change to have an own file format or leave as is to have the default format.")
 
 
 #endif

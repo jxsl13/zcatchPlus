@@ -1,11 +1,21 @@
+
+#ifndef GAME_SERVER_TEE_HISTORIAN_H
+#define  GAME_SERVER_TEE_HISTORIAN_H
+
 #include <engine/console.h>
 #include <engine/shared/packer.h>
 #include <engine/shared/protocol.h>
 #include <engine/shared/uuid_manager.h>
+#include <engine/storage.h>
+#include <engine/server.h>
+#include <game/server/gamecontroller.h>
+#include <game/version.h>
+
+
 #include <game/generated/protocol.h>
 #include <time.h>
 #include <base/sqlite.h>
-#include <base/system.h>
+
 #include <thread>
 
 struct CConfiguration;
@@ -37,6 +47,7 @@ public:
 	};
 
 	CTeeHistorian();
+	ASYNCIO* OnInit(char *pFileName, CUuid GameUuid, IStorage *pStorage, IServer *pServer, IGameController *pController, CTuningParams *pTuning, CGameContext *pGameContext);
 
 	void Reset(const CGameInfo *pGameInfo, WRITE_CALLBACK pfnWriteCallback, void *pUser);
 	void Finish();
@@ -130,3 +141,5 @@ private:
 	int m_MaxClientID;
 	CPlayer m_aPrevPlayers[MAX_CLIENTS];
 };
+
+#endif

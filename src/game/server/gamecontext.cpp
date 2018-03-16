@@ -2611,54 +2611,37 @@ void CGameContext::OnInit(/*class IKernel *pKernel*/)
 
 		if (m_SqliteHistorianActive)
 		{
-			/*Sqlitehistorian*/
-			char aFilename[64];
-			str_format(aFilename, sizeof(aFilename), "teehistorian/%s.db", aGameUuid);
-			m_TeeHistorian.CreateDatabase(aFilename);
+			if (str_comp(g_Config.m_SvSqliteHistorianFileName, "") == 0)
+			{
+				m_pTeeHistorianFile = m_TeeHistorian.OnInit(NULL,
+				                      m_GameUuid,
+				                      Storage(),
+				                      Server(),
+				                      m_pController,
+				                      Tuning(),
+				                      this);
+			} else {
+				m_pTeeHistorianFile = m_TeeHistorian.OnInit(g_Config.m_SvSqliteHistorianFileName,
+				                      m_GameUuid,
+				                      Storage(),
+				                      Server(),
+				                      m_pController,
+				                      Tuning(),
+				                      this);
+			}
+
 		} else {
-			char aFilename[64];
-			str_format(aFilename, sizeof(aFilename), "teehistorian/%s.teehistorian", aGameUuid);
-
-
-
-			IOHANDLE File = Storage()->OpenFile(aFilename, IOFLAG_WRITE, IStorage::TYPE_SAVE);
-			if (!File)
-			{
-				dbg_msg("teehistorian", "failed to open '%s'", aFilename);
-				Server()->SetErrorShutdown("teehistorian open error");
-				return;
-			}
-			else
-			{
-				dbg_msg("teehistorian", "recording to '%s'", aFilename);
-			}
-
-			m_pTeeHistorianFile = aio_new(File);
-
-
-			CUuidManager Empty;
-
-			CTeeHistorian::CGameInfo GameInfo;
-			GameInfo.m_GameUuid = m_GameUuid;
-			GameInfo.m_pServerVersion = "jsxl's zcatch " GAME_VERSION;
-			GameInfo.m_StartTime = time(0);
-
-			GameInfo.m_pServerName = g_Config.m_SvName;
-			GameInfo.m_ServerPort = g_Config.m_SvPort;
-			GameInfo.m_pGameType = m_pController->m_pGameType;
-
-			GameInfo.m_pConfig = &g_Config;
-			GameInfo.m_pTuning = Tuning();
-			GameInfo.m_pUuids = &Empty;
-
-			char aMapName[128];
-			Server()->GetMapInfo(aMapName, sizeof(aMapName), &GameInfo.m_MapSize, &GameInfo.m_MapCrc);
-			GameInfo.m_pMapName = aMapName;
-
-			m_TeeHistorian.Reset(&GameInfo, TeeHistorianWrite, this);
-			dbg_msg("teehistorian", "Initialization done.");
+			m_pTeeHistorianFile = m_TeeHistorian.OnInit(NULL,
+			                      m_GameUuid,
+			                      Storage(),
+			                      Server(),
+			                      m_pController,
+			                      Tuning(),
+			                      this);
 
 		}
+
+
 		for (int i = 0; i < MAX_CLIENTS; i++)
 		{
 
