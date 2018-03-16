@@ -84,9 +84,9 @@ public:
 private:
 	void WriteHeader(const CGameInfo *pGameInfo);
 	void WriteExtra(CUuid Uuid, const void *pData, int DataSize);
-	int EnsureTickWrittenPlayerData(int ClientID);
-	int EnsureTickWritten();
-	int WriteTick();
+	void EnsureTickWrittenPlayerData(int ClientID);
+	void EnsureTickWritten();
+	void WriteTick();
 	void Write(const void *pData, int DataSize);
 	char* GetTimeStamp();
 	enum

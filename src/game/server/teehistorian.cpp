@@ -270,21 +270,20 @@ void CTeeHistorian::BeginPlayers()
 	m_State = STATE_PLAYERS;
 }
 
-int CTeeHistorian::EnsureTickWrittenPlayerData(int ClientID)
+void CTeeHistorian::EnsureTickWrittenPlayerData(int ClientID)
 {
 	dbg_assert(ClientID > m_MaxClientID, "invalid player data order");
 	m_MaxClientID = ClientID;
 
 	if (!m_TickWritten && (ClientID > m_PrevMaxClientID || m_LastWrittenTick + 1 != m_Tick))
 	{
-		return WriteTick();
+		WriteTick();
 	}
 	else
 	{
 		// Tick is implicit.
 		m_LastWrittenTick = m_Tick;
 		m_TickWritten = true;
-		return 0;
 	}
 }
 
@@ -292,45 +291,38 @@ void CTeeHistorian::RecordPlayer(const char* ClientNick, int ClientID, const CNe
 {
 	dbg_assert(m_State == STATE_PLAYERS, "invalid teehistorian state");
 
+	CPlayer *pPrev = &m_aPrevPlayers[ClientID];
+
 	if (g_Config.m_SvSqliteHistorian) {
 
-		CPlayer *pPrev = &m_aPrevPlayers[ClientID];
+
 		if (!pPrev->m_Alive || pPrev->m_X != pChar->m_X || pPrev->m_Y != pChar->m_Y)
 		{
-			int tick = EnsureTickWrittenPlayerData(ClientID);
+			EnsureTickWrittenPlayerData(ClientID);
+			char *Nick = (char*)malloc(MAX_NAME_LENGTH * sizeof(char));
+			str_copy(Nick, ClientNick, MAX_NAME_LENGTH * sizeof(char));
 
-			CPacker Buffer;
-			Buffer.Reset();
-			if (pPrev->m_Alive)
-			{
-				int dx = pChar->m_X - pPrev->m_X;
-				int dy = pChar->m_Y - pPrev->m_Y;
-				Buffer.AddInt(ClientID);
-				Buffer.AddInt(dx);
-				Buffer.AddInt(dy);
+			char *aDate = GetTimeStamp();
+			int Tick = m_Tick;
+			int X = pChar->m_X;
+			int Y = pChar->m_Y;
+			int OldX = pPrev->m_X;
+			int OldY = pPrev->m_Y;
 
-			}
-			else
-			{
-				int x = pChar->m_X;
-				int y = pChar->m_Y;
-				Buffer.AddInt(-TEEHISTORIAN_PLAYER_NEW);
-				Buffer.AddInt(ClientID);
-				Buffer.AddInt(x);
-				Buffer.AddInt(y);
-				if (m_Debug)
-				{
-					dbg_msg("teehistorian", "new cid=%d x=%d y=%d", ClientID, x, y);
-				}
-			}
-			Write(Buffer.Data(), Buffer.Size());
+			std::thread *t = new std::thread(&CTeeHistorian::InsertIntoPlayerMovementTable,
+			                                 this,
+			                                 Nick,
+			                                 aDate,
+			                                 Tick,
+			                                 X,
+			                                 Y,
+			                                 OldX,
+			                                 OldY);
+			t->detach();
+			delete t;
 		}
-		pPrev->m_X = pChar->m_X;
-		pPrev->m_Y = pChar->m_Y;
-		pPrev->m_Alive = true;
-
 	} else {
-		CPlayer *pPrev = &m_aPrevPlayers[ClientID];
+
 		if (!pPrev->m_Alive || pPrev->m_X != pChar->m_X || pPrev->m_Y != pChar->m_Y)
 		{
 			EnsureTickWrittenPlayerData(ClientID);
@@ -364,12 +356,12 @@ void CTeeHistorian::RecordPlayer(const char* ClientNick, int ClientID, const CNe
 			}
 			Write(Buffer.Data(), Buffer.Size());
 		}
-		pPrev->m_X = pChar->m_X;
-		pPrev->m_Y = pChar->m_Y;
-		pPrev->m_Alive = true;
-
-
 	}
+	// in both cases continue counting positions.
+	pPrev->m_X = pChar->m_X;
+	pPrev->m_Y = pChar->m_Y;
+	pPrev->m_Alive = true;
+
 }
 
 void CTeeHistorian::RecordDeadPlayer(int ClientID)
@@ -399,21 +391,17 @@ void CTeeHistorian::Write(const void *pData, int DataSize)
 	m_pfnWriteCallback(pData, DataSize, m_pWriteCallbackUserdata);
 }
 
-/**
- * @brief returns -1 if no tick was written.
- * @details [long description]
- * @return [description]
- */
-int CTeeHistorian::EnsureTickWritten()
+
+void CTeeHistorian::EnsureTickWritten()
 {
 	if (!m_TickWritten)
 	{
-		return WriteTick();
+		WriteTick();
 	}
-	return -1;
+
 }
 
-int CTeeHistorian::WriteTick()
+void CTeeHistorian::WriteTick()
 {
 	if (g_Config.m_SvSqliteHistorian) {
 
@@ -433,7 +421,7 @@ int CTeeHistorian::WriteTick()
 	}
 	m_TickWritten = true;
 	m_LastWrittenTick = m_Tick;
-	return m_LastWrittenTick;
+
 }
 
 void CTeeHistorian::EndPlayers()
@@ -450,7 +438,7 @@ void CTeeHistorian::BeginInputs()
 	m_State = STATE_INPUTS;
 }
 
-void CTeeHistorian::RecordPlayerInput(int ClientID, const CNetObj_PlayerInput *pInput)
+void CTeeHistorian::RecordPlayerInput(int ClientID, const CNetObj_PlayerInput * pInput)
 {
 	CPacker Buffer;
 
@@ -576,7 +564,7 @@ void CTeeHistorian::RecordPlayerDrop(int ClientID, const char *pReason)
 
 }
 
-void CTeeHistorian::RecordConsoleCommand(const char* ClientNick, int ClientID, int FlagMask, const char *pCmd, IConsole::IResult *pResult)
+void CTeeHistorian::RecordConsoleCommand(const char* ClientNick, int ClientID, int FlagMask, const char *pCmd, IConsole::IResult * pResult)
 {
 	EnsureTickWritten();
 
@@ -924,6 +912,7 @@ int CTeeHistorian::InsertIntoRconActivityTable(char* NickName, char *TimeStamp, 
 	return rc;
 }
 int CTeeHistorian::InsertIntoPlayerMovementTable(char *NickName, char *TimeStamp, int Tick, int x, int y, int old_x, int old_y) {
+
 	/* prepare */
 	const char *zTail;
 	const char *zSql = "\
@@ -945,7 +934,6 @@ int CTeeHistorian::InsertIntoPlayerMovementTable(char *NickName, char *TimeStamp
 		sqlite_bind_int(pStmt, 7, old_y);
 		/* lock database access in this process */
 		sqlite_lock(&m_SqliteMutex);
-
 		/* when another process uses the database, wait up to 1 minute */
 		sqlite_busy_timeout(m_SqliteDB, 60000);
 
