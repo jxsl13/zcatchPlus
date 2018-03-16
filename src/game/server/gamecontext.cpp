@@ -791,7 +791,7 @@ void CGameContext::OnTick()
 }
 
 // Server hooks
-void CGameContext::OnClientDirectInput(int ClientID, void *pInput)
+void CGameContext::OnClientDirectInput(const char* ClientNick, int ClientID, void *pInput)
 {
 	if (!m_World.m_Paused)
 		m_apPlayers[ClientID]->OnDirectInput((CNetObj_PlayerInput *)pInput);
@@ -799,7 +799,7 @@ void CGameContext::OnClientDirectInput(int ClientID, void *pInput)
 	/*teehistorian*/
 	if (m_TeeHistorianActive)
 	{
-		m_TeeHistorian.RecordPlayerInput(ClientID, (CNetObj_PlayerInput *)pInput);
+		m_TeeHistorian.RecordPlayerInput(ClientNick,ClientID, (CNetObj_PlayerInput *)pInput);
 	}
 }
 

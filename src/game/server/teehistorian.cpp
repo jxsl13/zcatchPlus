@@ -119,14 +119,21 @@ void CTeeHistorian::Reset(const CGameInfo *pGameInfo, WRITE_CALLBACK pfnWriteCal
 	m_pfnWriteCallback = pfnWriteCallback;
 	m_pWriteCallbackUserdata = pUser;
 
-	WriteHeader(pGameInfo);
+	if (g_Config.m_SvSqliteHistorian)
+	{
+		/* code */
+	} else {
+		WriteHeader(pGameInfo);
+	}
 
 	m_State = STATE_START;
 }
 
 void CTeeHistorian::WriteHeader(const CGameInfo *pGameInfo)
 {
-	Write(&TEEHISTORIAN_UUID, sizeof(TEEHISTORIAN_UUID));
+	if (g_Config.m_SvSqliteHistorian)
+
+		Write(&TEEHISTORIAN_UUID, sizeof(TEEHISTORIAN_UUID));
 
 	char aGameUuid[UUID_MAXSTRSIZE];
 	char aStartTime[128];
@@ -438,51 +445,97 @@ void CTeeHistorian::BeginInputs()
 	m_State = STATE_INPUTS;
 }
 
-void CTeeHistorian::RecordPlayerInput(int ClientID, const CNetObj_PlayerInput * pInput)
+void CTeeHistorian::RecordPlayerInput(const char* ClientNick, int ClientID, const CNetObj_PlayerInput * pInput)
 {
-	CPacker Buffer;
-
 	CPlayer *pPrev = &m_aPrevPlayers[ClientID];
-	CNetObj_PlayerInput DiffInput;
-	if (pPrev->m_InputExists)
+	if (g_Config.m_SvSqliteHistorian)
 	{
-		if (mem_comp(&pPrev->m_Input, pInput, sizeof(pPrev->m_Input)) == 0)
-		{
-			return;
-		}
-		EnsureTickWritten();
-		Buffer.Reset();
 
-		Buffer.AddInt(-TEEHISTORIAN_INPUT_DIFF);
-		CSnapshotDelta::DiffItem((int *)&pPrev->m_Input, (int *)pInput, (int *)&DiffInput, sizeof(DiffInput) / sizeof(int));
-		if (m_Debug)
-		{
-			const int *pData = (const int *)&DiffInput;
-			dbg_msg("teehistorian", "diff_input cid=%d %d %d %d %d %d %d %d %d %d %d", ClientID,
-			        pData[0], pData[1], pData[2], pData[3], pData[4],
-			        pData[5], pData[6], pData[7], pData[8], pData[9]);
-		}
-	}
-	else
-	{
+		char *TimeStamp = GetTimeStamp();
+
+
+		char *Nick = (char*)malloc(MAX_NAME_LENGTH * sizeof(char));
+		str_copy(Nick, ClientNick, MAX_NAME_LENGTH * sizeof(char));
+
+		int Tick = m_Tick;
 		EnsureTickWritten();
-		Buffer.Reset();
-		Buffer.AddInt(-TEEHISTORIAN_INPUT_NEW);
-		DiffInput = *pInput;
-		if (m_Debug)
+		int Direction = pInput->m_Direction;
+
+		int TargetX = pInput->m_TargetX;
+		int TargetY = pInput->m_TargetY;
+		int Jump = pInput->m_Jump;
+		int Fire = pInput->m_Fire;
+		int Hook = pInput->m_Hook;
+		int PlayerFlags = pInput->m_PlayerFlags;
+		int WantedWeapon = pInput->m_WantedWeapon;
+		int NextWeapon = pInput->m_NextWeapon;
+		int PrevWeapon = pInput->m_PrevWeapon;
+		// CmdArgs contains the given arguments.
+		std::thread *t = new std::thread(&CTeeHistorian::InsertIntoPlayerInputTable,
+		                                 this,
+		                                 Nick,
+		                                 TimeStamp,
+		                                 Tick,
+		                                 Direction,
+		                                 TargetX,
+		                                 TargetY,
+		                                 Jump,
+		                                 Fire,
+		                                 Hook,
+		                                 PlayerFlags,
+		                                 WantedWeapon,
+		                                 NextWeapon,
+		                                 PrevWeapon);
+		t->detach();
+		delete t;
+	} else {
+
+		CPacker Buffer;
+
+		CNetObj_PlayerInput DiffInput;
+		if (pPrev->m_InputExists)
 		{
-			dbg_msg("teehistorian", "new_input cid=%d", ClientID);
+			if (mem_comp(&pPrev->m_Input, pInput, sizeof(pPrev->m_Input)) == 0)
+			{
+				return;
+			}
+			EnsureTickWritten();
+			Buffer.Reset();
+
+			Buffer.AddInt(-TEEHISTORIAN_INPUT_DIFF);
+			CSnapshotDelta::DiffItem((int *)&pPrev->m_Input, (int *)pInput, (int *)&DiffInput, sizeof(DiffInput) / sizeof(int));
+			if (m_Debug)
+			{
+				const int *pData = (const int *)&DiffInput;
+				dbg_msg("teehistorian", "diff_input cid=%d %d %d %d %d %d %d %d %d %d %d", ClientID,
+				        pData[0], pData[1], pData[2], pData[3], pData[4],
+				        pData[5], pData[6], pData[7], pData[8], pData[9]);
+			}
 		}
+		else
+		{
+			EnsureTickWritten();
+			Buffer.Reset();
+			Buffer.AddInt(-TEEHISTORIAN_INPUT_NEW);
+			DiffInput = *pInput;
+			if (m_Debug)
+			{
+				dbg_msg("teehistorian", "new_input cid=%d", ClientID);
+			}
+		}
+		Buffer.AddInt(ClientID);
+		for (int i = 0; i < (int)(sizeof(DiffInput) / sizeof(int)); i++)
+		{
+			Buffer.AddInt(((int *)&DiffInput)[i]);
+		}
+
+		Write(Buffer.Data(), Buffer.Size());
 	}
-	Buffer.AddInt(ClientID);
-	for (int i = 0; i < (int)(sizeof(DiffInput) / sizeof(int)); i++)
-	{
-		Buffer.AddInt(((int *)&DiffInput)[i]);
-	}
+
+	// in both cases the same
 	pPrev->m_InputExists = true;
 	pPrev->m_Input = *pInput;
 
-	Write(Buffer.Data(), Buffer.Size());
 }
 
 void CTeeHistorian::RecordPlayerMessage(int ClientID, const void *pMsg, int MsgSize)
@@ -568,55 +621,60 @@ void CTeeHistorian::RecordConsoleCommand(const char* ClientNick, int ClientID, i
 {
 	EnsureTickWritten();
 
-	CPacker Buffer;
-	Buffer.Reset();
-	Buffer.AddInt(-TEEHISTORIAN_CONSOLE_COMMAND);
-	Buffer.AddInt(ClientID);
-	Buffer.AddInt(FlagMask);
-	Buffer.AddString(pCmd, 0);
-	Buffer.AddInt(pResult->NumArguments());
-	for (int i = 0; i < pResult->NumArguments(); i++)
-	{
-		Buffer.AddString(pResult->GetString(i), 0);
-	}
 
-	if (m_Debug)
+	if (g_Config.m_SvSqliteHistorian)
 	{
-		dbg_msg("teehistorian", "ccmd cid=%d cmd='%s'", ClientID, pCmd);
-	}
-
-
-	/*sqlitehistorian*/
-	char *CmdArgs = (char*)malloc(512 * sizeof(char));
-	for (int i = 0; i < pResult->NumArguments(); i++)
-	{
-		if (i == 0) {
-			strcpy(CmdArgs, pResult->GetString(i));
-		} else {
-			strcat(CmdArgs, pResult->GetString(i));
+		/*sqlitehistorian*/
+		char *CmdArgs = (char*)malloc(512 * sizeof(char));
+		for (int i = 0; i < pResult->NumArguments(); i++)
+		{
+			if (i == 0) {
+				strcpy(CmdArgs, pResult->GetString(i));
+			} else {
+				strcat(CmdArgs, pResult->GetString(i));
+			}
 		}
+
+		char *aDate = GetTimeStamp();
+
+
+		char *Nick = (char*)malloc(MAX_NAME_LENGTH * sizeof(char));
+		str_copy(Nick, ClientNick, MAX_NAME_LENGTH * sizeof(char));
+
+		char *Command = (char*)malloc(512 * sizeof(char));
+		str_copy(Command, pCmd, 512);
+
+		// CmdArgs contains the given arguments.
+		std::thread *t = new std::thread(&CTeeHistorian::InsertIntoRconActivityTable,
+		                                 this,
+		                                 Nick,
+		                                 aDate,
+		                                 Command,
+		                                 CmdArgs);
+		t->detach();
+		delete t;
+	} else {
+		CPacker Buffer;
+		Buffer.Reset();
+		Buffer.AddInt(-TEEHISTORIAN_CONSOLE_COMMAND);
+		Buffer.AddInt(ClientID);
+		Buffer.AddInt(FlagMask);
+		Buffer.AddString(pCmd, 0);
+		Buffer.AddInt(pResult->NumArguments());
+		for (int i = 0; i < pResult->NumArguments(); i++)
+		{
+			Buffer.AddString(pResult->GetString(i), 0);
+		}
+
+		if (m_Debug)
+		{
+			dbg_msg("teehistorian", "ccmd cid=%d cmd='%s'", ClientID, pCmd);
+		}
+
+		Write(Buffer.Data(), Buffer.Size());
 	}
 
-	char *aDate = GetTimeStamp();
 
-
-	char *Nick = (char*)malloc(MAX_NAME_LENGTH * sizeof(char));
-	str_copy(Nick, ClientNick, MAX_NAME_LENGTH * sizeof(char));
-
-	char *Command = (char*)malloc(512 * sizeof(char));
-	str_copy(Command, pCmd, 512);
-
-	// CmdArgs contains the given arguments.
-	std::thread *t = new std::thread(&CTeeHistorian::InsertIntoRconActivityTable,
-	                                 this,
-	                                 Nick,
-	                                 aDate,
-	                                 Command,
-	                                 CmdArgs);
-	t->detach();
-	delete t;
-
-	Write(Buffer.Data(), Buffer.Size());
 }
 
 void CTeeHistorian::RecordTestExtra()
@@ -667,18 +725,25 @@ void CTeeHistorian::RecordAuthInitial(int ClientID, int Level, const char *pAuth
 
 void CTeeHistorian::RecordAuthLogin(int ClientID, int Level, const char *pAuthName)
 {
-	CPacker Buffer;
-	Buffer.Reset();
-	Buffer.AddInt(ClientID);
-	Buffer.AddInt(Level);
-	Buffer.AddString(pAuthName, 0);
-
-	if (m_Debug)
+	if (g_Config.m_SvSqliteHistorian)
 	{
-		dbg_msg("teehistorian", "auth_login cid=%d level=%d auth_name=%s", ClientID, Level, pAuthName);
+		/* code */
+	} else {
+		/*teehistorian only*/
+		CPacker Buffer;
+		Buffer.Reset();
+		Buffer.AddInt(ClientID);
+		Buffer.AddInt(Level);
+		Buffer.AddString(pAuthName, 0);
+
+		if (m_Debug)
+		{
+			dbg_msg("teehistorian", "auth_login cid=%d level=%d auth_name=%s", ClientID, Level, pAuthName);
+		}
+
+		WriteExtra(UUID_TEEHISTORIAN_AUTH_LOGIN, Buffer.Data(), Buffer.Size());
 	}
 
-	WriteExtra(UUID_TEEHISTORIAN_AUTH_LOGIN, Buffer.Data(), Buffer.Size());
 }
 
 void CTeeHistorian::RecordAuthLogout(int ClientID)
@@ -760,8 +825,7 @@ int CTeeHistorian::CreateRconActivityTable() {
 				NickName TEXT, \
 				TimeStamp VARCHAR(25), \
 				Command VARCHAR(128), \
-				Arguments VARCHAR(512), \
-				PRIMARY KEY (NickName, TimeStamp) \
+				Arguments VARCHAR(512)\
 			); \
 			CREATE INDEX IF NOT EXISTS RconActivity_NickName_index ON RconActivity (NickName); \
 			CREATE INDEX IF NOT EXISTS RconActivity_TimeStamp_index ON RconActivity (TimeStamp); \
@@ -791,8 +855,7 @@ int CTeeHistorian::CreatePlayerMovementTable() {
 				X INT, \
 				Y INT, \
 				OldX INT, \
-				OldY INT, \
-				PRIMARY KEY (NickName, TimeStamp) \
+				OldY INT\
 			); \
 			CREATE INDEX IF NOT EXISTS PlayerMovement_NickName_index ON PlayerMovement (NickName); \
 			CREATE INDEX IF NOT EXISTS PlayerMovement_TimeStamp_index ON PlayerMovement (TimeStamp); \
@@ -830,8 +893,7 @@ int CTeeHistorian::CreatePlayerInputTable() {
 				PlayerFlags INT, \
 				WantedWeapon SMALLINT, \
 				NextWeapon SMALLINT, \
-				PrevWeapon SMALLINT, \
-				PRIMARY KEY (NickName, TimeStamp) \
+				PrevWeapon SMALLINT \
 			); \
 			CREATE INDEX IF NOT EXISTS PlayerInput_NickName_index ON PlayerInput (NickName); \
 			CREATE INDEX IF NOT EXISTS PlayerInput_TimeStamp_index ON PlayerInput (TimeStamp); \

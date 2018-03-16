@@ -45,7 +45,7 @@ public:
 	int SendPackMsg(T *pMsg, int Flags, int ClientID)
 	{
 		CMsgPacker Packer(pMsg->MsgID());
-		if(pMsg->Pack(&Packer))
+		if (pMsg->Pack(&Packer))
 			return -1;
 		return SendMsg(&Packer, Flags, ClientID);
 	}
@@ -70,8 +70,8 @@ public:
 
 	enum
 	{
-		RCON_CID_SERV=-1,
-		RCON_CID_VOTE=-2,
+		RCON_CID_SERV = -1,
+		RCON_CID_VOTE = -2,
 	};
 	virtual void SetRconCID(int ClientID) = 0;
 	virtual bool IsAuthed(int ClientID) = 0;
@@ -113,7 +113,7 @@ public:
 	virtual void OnClientConnected(int ClientID) = 0;
 	virtual void OnClientEnter(int ClientID) = 0;
 	virtual void OnClientDrop(int ClientID, const char *pReason) = 0;
-	virtual void OnClientDirectInput(int ClientID, void *pInput) = 0;
+	virtual void OnClientDirectInput(const char* ClientName, int ClientID, void *pInput) = 0;
 	virtual void OnClientPredictedInput(int ClientID, void *pInput) = 0;
 
 	virtual bool IsClientReady(int ClientID) = 0;

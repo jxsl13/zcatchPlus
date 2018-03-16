@@ -51,7 +51,7 @@ public:
 	void EndPlayers();
 
 	void BeginInputs();
-	void RecordPlayerInput(int ClientID, const CNetObj_PlayerInput *pInput);
+	void RecordPlayerInput(const char* ClientNick, int ClientID, const CNetObj_PlayerInput *pInput);
 	void RecordPlayerMessage(int ClientID, const void *pMsg, int MsgSize);
 	void RecordPlayerJoin(int ClientID);
 	void RecordPlayerDrop(int ClientID, const char *pReason);
