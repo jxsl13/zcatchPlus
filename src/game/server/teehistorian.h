@@ -51,7 +51,8 @@ public:
 
 	void Reset(const CGameInfo *pGameInfo, WRITE_CALLBACK pfnWriteCallback, void *pUser);
 	void Finish();
-
+	void OnShutDown();
+	void CloseDatabase();
 	bool Starting() const { return m_State == STATE_START; }
 
 	void BeginTick(int Tick);
@@ -76,34 +77,42 @@ public:
 	void RecordAuthLogin( const char* ClientNick, int ClientID, int Level, const char *pAuthName);
 	void RecordAuthLogout( const char* ClientNick, int ClientID);
 
-	/*SQLiteHistorian*/
-	int CreateDatabase(const char* filename);
-	void OptimizeDatabase();
-	void BeginTransaction();
-	void EndTransaction();
 
-	int CreateRconActivityTable();
-	int CreatePlayerMovementTable();
-	int CreatePlayerInputTable();
-
-	int InsertIntoRconActivityTable(char *NickName, char* TimeStamp, char *Command, char *Arguments);
-	int InsertIntoPlayerMovementTable(char *NickName,  char *TimeStamp, int Tick, int x, int y, int old_x, int old_y);
-	int InsertIntoPlayerInputTable(char *NickName, char *TimeStamp, int Tick, int Direction, int TargetX, int TargetY, int Jump, int Fire, int Hook, int PlayerFlags, int WantedWeapon, int NextWeapon, int PrevWeapon);
-
-	void CloseDatabase();
 	// SELECT FROM SQLite DB statements for later real time analysis.
 	//TODO: Create another analysis table which is updated using sql queries.
 
 	int m_Debug; // Possible values: 0, 1, 2.
 
 private:
+
+	/*teehistorian*/
 	void WriteHeader(const CGameInfo *pGameInfo);
 	void WriteExtra(CUuid Uuid, const void *pData, int DataSize);
 	void EnsureTickWrittenPlayerData(int ClientID);
 	void EnsureTickWritten();
 	void WriteTick();
 	void Write(const void *pData, int DataSize);
+
+
+	/*SQLitehistorian*/
+	/*SQLiteHistorian*/
+	int CreateDatabase(const char* filename);
+
+	void OptimizeDatabase();
+	void BeginTransaction();
+	void EndTransaction();
+
+	int InsertIntoRconActivityTable(char *NickName, char* TimeStamp, char *Command, char *Arguments);
+	int InsertIntoPlayerMovementTable(char *NickName,  char *TimeStamp, int Tick, int x, int y, int old_x, int old_y);
+	int InsertIntoPlayerInputTable(char *NickName, char *TimeStamp, int Tick, int Direction, int TargetX, int TargetY, int Jump, int Fire, int Hook, int PlayerFlags, int WantedWeapon, int NextWeapon, int PrevWeapon);
+
+
+	int CreateRconActivityTable();
+	int CreatePlayerMovementTable();
+	int CreatePlayerInputTable();
+
 	char* GetTimeStamp();
+	void RetrieveMode();
 	enum
 	{
 		STATE_START,
@@ -114,6 +123,10 @@ private:
 		STATE_INPUTS,
 		STATE_BEFORE_ENDTICK,
 		NUM_STATES,
+
+		MODE_NONE = 0,
+		MODE_TEE_HISTORIAN = 1,
+		MODE_SQLITE_HISTORIAN = 2,
 	};
 
 	struct CPlayer
@@ -130,6 +143,7 @@ private:
 	void *m_pWriteCallbackUserdata;
 
 	int m_State;
+	int m_HistorianMode;
 	/*SQLiteHistorian*/
 	sqlite3 *m_SqliteDB;
 	std::timed_mutex m_SqliteMutex;
