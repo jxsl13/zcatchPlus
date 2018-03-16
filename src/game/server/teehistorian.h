@@ -67,6 +67,10 @@ public:
 
 	/*SQLiteHistorian*/
 	int CreateDatabase(const char* filename);
+	void OptimizeDatabase();
+	void BeginTransaction();
+	void EndTransaction();
+
 	int CreateRconActivityTable();
 	int CreatePlayerMovementTable();
 	int CreatePlayerInputTable();

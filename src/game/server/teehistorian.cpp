@@ -424,7 +424,7 @@ void CTeeHistorian::EnsureTickWritten()
 void CTeeHistorian::WriteTick()
 {
 	if (g_Config.m_SvSqliteHistorian) {
-
+		/*TODO: Create a thread that writes every % 3000 == 0 (60 seconds) to DB.*/
 
 	} else {
 		CPacker TickPacker;
@@ -1116,5 +1116,40 @@ char* CTeeHistorian::GetTimeStamp() {
 	str_format(aBuf, 25 * sizeof(char), "%s.%ld", aDate, milli);
 	return aBuf;
 }
+void CTeeHistorian::OptimizeDatabase(){
+	if(m_SqliteDB){
+		char* ErrMsg;
+		sqlite_lock(&m_SqliteMutex,1000);
+		sqlite_busy_timeout(m_SqliteDB, 3000);
+		sqlite_exec(m_SqliteDB, "PRAGMA synchronous = OFF", &ErrMsg);
+		sqlite_unlock(&m_SqliteMutex);
+		sqlite3_free(ErrMsg);
+	}
+}
+void CTeeHistorian::BeginTransaction(){
+if(m_SqliteDB){
+		char* ErrMsg;
+		sqlite_lock(&m_SqliteMutex,1000);
+		sqlite_busy_timeout(m_SqliteDB, 3000);
+		sqlite_exec(m_SqliteDB, "BEGIN TRANSACTION", &ErrMsg);
+		sqlite_unlock(&m_SqliteMutex);
+		sqlite3_free(ErrMsg);
+	}
+
+}
+
+void CTeeHistorian::EndTransaction(){
+if(m_SqliteDB){
+		char* ErrMsg;
+		sqlite_lock(&m_SqliteMutex,1000);
+		sqlite_busy_timeout(m_SqliteDB, 3000);
+		sqlite_exec(m_SqliteDB, "END TRANSACTION", &ErrMsg);
+		sqlite_unlock(&m_SqliteMutex);
+		sqlite3_free(ErrMsg);
+	}
+}
+
+
+
 
 
