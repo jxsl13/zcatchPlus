@@ -5,6 +5,8 @@
 #include <game/generated/protocol.h>
 #include <time.h>
 #include <base/sqlite.h>
+#include <base/system.h>
+#include <thread>
 
 struct CConfiguration;
 class CTuningParams;
@@ -53,7 +55,7 @@ public:
 	void RecordPlayerMessage(int ClientID, const void *pMsg, int MsgSize);
 	void RecordPlayerJoin(int ClientID);
 	void RecordPlayerDrop(int ClientID, const char *pReason);
-	void RecordConsoleCommand(int ClientID, int FlagMask, const char *pCmd, IConsole::IResult *pResult);
+	void RecordConsoleCommand(const char* ClientName, int ClientID, int FlagMask, const char *pCmd, IConsole::IResult *pResult);
 	void RecordTestExtra();
 	void EndInputs();
 
@@ -69,9 +71,9 @@ public:
 	int CreatePlayerMovementTable();
 	int CreatePlayerInputTable();
 
-	int InsertIntoRconActivityTable(const char NickName[MAX_NAME_LENGTH], const char TimeStamp[20], const char *Command, const char *Arguments);
-	int InsertIntoPlayerMovementTable(const char NickName[MAX_NAME_LENGTH], const char TimeStamp[20], int Tick, int x, int y, int old_x, int old_y);
-	int InsertIntoPlayerInputTable(const char NickName[MAX_NAME_LENGTH], const char TimeStamp[20], int Tick, int Direction, int TargetX, int TargetY, int Jump, int Fire, int Hook, int PlayerFlags, int WantedWeapon, int NextWeapon, int PrevWeapon);
+	int InsertIntoRconActivityTable(char *NickName, char* TimeStamp, char *Command, char *Arguments);
+	int InsertIntoPlayerMovementTable(char *NickName,  char *TimeStamp, int Tick, int x, int y, int old_x, int old_y);
+	int InsertIntoPlayerInputTable(char *NickName, char *TimeStamp, int Tick, int Direction, int TargetX, int TargetY, int Jump, int Fire, int Hook, int PlayerFlags, int WantedWeapon, int NextWeapon, int PrevWeapon);
 
 	void CloseDatabase();
 	// SELECT FROM SQLite DB statements for later real time analysis.
@@ -86,7 +88,7 @@ private:
 	void EnsureTickWritten();
 	void WriteTick();
 	void Write(const void *pData, int DataSize);
-
+	char* GetTimeStamp();
 	enum
 	{
 		STATE_START,

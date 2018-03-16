@@ -3,6 +3,8 @@
 #include <engine/shared/config.h>
 #include <engine/shared/snapshot.h>
 #include <game/gamecore.h>
+#include <engine/shared/protocol.h>
+#include <sys/time.h>
 
 
 static const char TEEHISTORIAN_NAME[] = "teehistorian@ddnet.tw";
@@ -500,7 +502,7 @@ void CTeeHistorian::RecordPlayerDrop(int ClientID, const char *pReason)
 	Write(Buffer.Data(), Buffer.Size());
 }
 
-void CTeeHistorian::RecordConsoleCommand(int ClientID, int FlagMask, const char *pCmd, IConsole::IResult *pResult)
+void CTeeHistorian::RecordConsoleCommand(const char* ClientNick, int ClientID, int FlagMask, const char *pCmd, IConsole::IResult *pResult)
 {
 	EnsureTickWritten();
 
@@ -520,6 +522,37 @@ void CTeeHistorian::RecordConsoleCommand(int ClientID, int FlagMask, const char 
 	{
 		dbg_msg("teehistorian", "ccmd cid=%d cmd='%s'", ClientID, pCmd);
 	}
+
+
+	/*sqlitehistorian*/
+	char *CmdArgs = (char*)malloc(512 * sizeof(char));
+	for (int i = 0; i < pResult->NumArguments(); i++)
+	{
+		if (i == 0) {
+			strcpy(CmdArgs, pResult->GetString(i));
+		} else {
+			strcat(CmdArgs, pResult->GetString(i));
+		}
+	}
+
+	char *aDate = GetTimeStamp();
+
+
+	char *Nick = (char*)malloc(MAX_NAME_LENGTH * sizeof(char));
+	str_copy(Nick, ClientNick, MAX_NAME_LENGTH * sizeof(char));
+
+	char *Command = (char*)malloc(512 * sizeof(char));
+	str_copy(Command, pCmd, 512);
+
+	// CmdArgs contains the given arguments.
+	std::thread *t = new std::thread(&CTeeHistorian::InsertIntoRconActivityTable,
+	                                 this,
+	                                 Nick,
+	                                 aDate,
+	                                 Command,
+	                                 CmdArgs);
+	t->detach();
+	delete t;
 
 	Write(Buffer.Data(), Buffer.Size());
 }
@@ -640,7 +673,7 @@ int CTeeHistorian::CreateRconActivityTable() {
 	                      "BEGIN; \
 			CREATE TABLE IF NOT EXISTS RconActivity( \
 				NickName TEXT, \
-				TimeStamp VARCHAR(24), \
+				TimeStamp VARCHAR(25), \
 				Command VARCHAR(128), \
 				Arguments VARCHAR(512), \
 				PRIMARY KEY (NickName, TimeStamp) \
@@ -668,7 +701,7 @@ int CTeeHistorian::CreatePlayerMovementTable() {
 	                      "BEGIN; \
 			CREATE TABLE IF NOT EXISTS PlayerMovement( \
 				NickName TEXT, \
-				TimeStamp VARCHAR(24), \
+				TimeStamp VARCHAR(25), \
 				Tick UNSIGNED BIG INT, \
 				X INT, \
 				Y INT, \
@@ -701,7 +734,7 @@ int CTeeHistorian::CreatePlayerInputTable() {
 	                      "BEGIN; \
 			CREATE TABLE IF NOT EXISTS PlayerInput( \
 				NickName TEXT, \
-				TimeStamp VARCHAR(24), \
+				TimeStamp VARCHAR(25), \
 				Tick UNSIGNED BIG INT, \
 				Direction SMALLINT, \
 				TargetX INT, \
@@ -741,7 +774,7 @@ int CTeeHistorian::CreatePlayerInputTable() {
 	return err;
 }
 
-int CTeeHistorian::InsertIntoRconActivityTable(const char NickName[MAX_NAME_LENGTH], const char TimeStamp[24], const char *Command, const char *Arguments) {
+int CTeeHistorian::InsertIntoRconActivityTable(char* NickName, char *TimeStamp, char *Command, char *Arguments) {
 	/* prepare */
 	const char *zTail;
 	const char *zSql = "\
@@ -786,10 +819,14 @@ int CTeeHistorian::InsertIntoRconActivityTable(const char NickName[MAX_NAME_LENG
 		dbg_msg("SQLiteHistorian", "SQL error (#%d): %s", rc, sqlite_errmsg(m_SqliteDB));
 	}
 
+	free(NickName);
+	free(TimeStamp);
+	free(Command);
+	free(Arguments);
 	sqlite_finalize(pStmt);
 	return rc;
 }
-int CTeeHistorian::InsertIntoPlayerMovementTable(const char NickName[MAX_NAME_LENGTH], const char TimeStamp[24], int Tick, int x, int y, int old_x, int old_y) {
+int CTeeHistorian::InsertIntoPlayerMovementTable(char *NickName, char *TimeStamp, int Tick, int x, int y, int old_x, int old_y) {
 	/* prepare */
 	const char *zTail;
 	const char *zSql = "\
@@ -836,10 +873,12 @@ int CTeeHistorian::InsertIntoPlayerMovementTable(const char NickName[MAX_NAME_LE
 		dbg_msg("SQLiteHistorian", "SQL error (#%d): %s", rc, sqlite_errmsg(m_SqliteDB));
 	}
 
+	free(NickName);
+	free(TimeStamp);
 	sqlite_finalize(pStmt);
 	return rc;
 }
-int CTeeHistorian::InsertIntoPlayerInputTable(const char NickName[MAX_NAME_LENGTH], const char TimeStamp[24], int Tick, int Direction, int TargetX, int TargetY, int Jump, int Fire, int Hook, int PlayerFlags, int WantedWeapon, int NextWeapon, int PrevWeapon) {
+int CTeeHistorian::InsertIntoPlayerInputTable(char *NickName, char *TimeStamp, int Tick, int Direction, int TargetX, int TargetY, int Jump, int Fire, int Hook, int PlayerFlags, int WantedWeapon, int NextWeapon, int PrevWeapon) {
 	/* prepare */
 	const char *zTail;
 	const char *zSql = "\
@@ -893,12 +932,29 @@ int CTeeHistorian::InsertIntoPlayerInputTable(const char NickName[MAX_NAME_LENGT
 		dbg_msg("SQLiteHistorian", "SQL error (#%d): %s", rc, sqlite_errmsg(m_SqliteDB));
 	}
 
+	free(NickName);
+	free(TimeStamp);
 	sqlite_finalize(pStmt);
 	return rc;
 }
 
 void CTeeHistorian::CloseDatabase() {
-	sqlite_close(m_SqliteDB);
+	int err = sqlite_close(m_SqliteDB);
+	if (err != SQLITE_OK) {
+		dbg_msg("SQLiteHistorian", "Error on closeing sqlite database.");
+	}
+}
+
+char* CTeeHistorian::GetTimeStamp(){
+	char aDate[20];
+
+	timeval curTime;
+	gettimeofday(&curTime, NULL);
+	long milli = curTime.tv_usec / 1000;
+	strftime(aDate, 20, "%Y-%m-%d %H:%M:%S", localtime(&curTime.tv_sec));
+	char *aBuf = (char*)malloc(25*sizeof(char));
+	str_format(aBuf, 25*sizeof(char), "%s.%ld", aDate, milli);
+	return aBuf;
 }
 
 

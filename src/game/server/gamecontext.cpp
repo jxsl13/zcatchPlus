@@ -135,9 +135,11 @@ void CGameContext::TeeHistorianWrite(const void *pData, int DataSize, void *pUse
 void CGameContext::CommandCallback(int ClientID, int FlagMask, const char *pCmd, IConsole::IResult *pResult, void *pUser)
 {
 	CGameContext *pSelf = (CGameContext *)pUser;
+
+	dbg_msg("SQLiteHistorian", "ClientID: %d", ClientID);
 	if (pSelf->m_TeeHistorianActive)
 	{
-		pSelf->m_TeeHistorian.RecordConsoleCommand(ClientID, FlagMask, pCmd, pResult);
+		pSelf->m_TeeHistorian.RecordConsoleCommand(pSelf->Server()->ClientName(ClientID), ClientID, FlagMask, pCmd, pResult);
 	}
 }
 
