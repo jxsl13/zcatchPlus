@@ -46,7 +46,7 @@ public:
 	void BeginTick(int Tick);
 
 	void BeginPlayers();
-	void RecordPlayer(int ClientID, const CNetObj_CharacterCore *pChar);
+	void RecordPlayer(const char* ClientNick, int ClientID, const CNetObj_CharacterCore *pChar);
 	void RecordDeadPlayer(int ClientID);
 	void EndPlayers();
 
@@ -84,9 +84,9 @@ public:
 private:
 	void WriteHeader(const CGameInfo *pGameInfo);
 	void WriteExtra(CUuid Uuid, const void *pData, int DataSize);
-	void EnsureTickWrittenPlayerData(int ClientID);
-	void EnsureTickWritten();
-	void WriteTick();
+	int EnsureTickWrittenPlayerData(int ClientID);
+	int EnsureTickWritten();
+	int WriteTick();
 	void Write(const void *pData, int DataSize);
 	char* GetTimeStamp();
 	enum

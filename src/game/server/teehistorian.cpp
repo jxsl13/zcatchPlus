@@ -232,6 +232,7 @@ void CTeeHistorian::WriteHeader(const CGameInfo *pGameInfo)
 
 void CTeeHistorian::WriteExtra(CUuid Uuid, const void *pData, int DataSize)
 {
+
 	EnsureTickWritten();
 
 	CPacker Ex;
@@ -269,64 +270,106 @@ void CTeeHistorian::BeginPlayers()
 	m_State = STATE_PLAYERS;
 }
 
-void CTeeHistorian::EnsureTickWrittenPlayerData(int ClientID)
+int CTeeHistorian::EnsureTickWrittenPlayerData(int ClientID)
 {
 	dbg_assert(ClientID > m_MaxClientID, "invalid player data order");
 	m_MaxClientID = ClientID;
 
 	if (!m_TickWritten && (ClientID > m_PrevMaxClientID || m_LastWrittenTick + 1 != m_Tick))
 	{
-		WriteTick();
+		return WriteTick();
 	}
 	else
 	{
 		// Tick is implicit.
 		m_LastWrittenTick = m_Tick;
 		m_TickWritten = true;
+		return 0;
 	}
 }
 
-void CTeeHistorian::RecordPlayer(int ClientID, const CNetObj_CharacterCore *pChar)
+void CTeeHistorian::RecordPlayer(const char* ClientNick, int ClientID, const CNetObj_CharacterCore *pChar)
 {
 	dbg_assert(m_State == STATE_PLAYERS, "invalid teehistorian state");
 
-	CPlayer *pPrev = &m_aPrevPlayers[ClientID];
-	if (!pPrev->m_Alive || pPrev->m_X != pChar->m_X || pPrev->m_Y != pChar->m_Y)
-	{
-		EnsureTickWrittenPlayerData(ClientID);
+	if (g_Config.m_SvSqliteHistorian) {
 
-		CPacker Buffer;
-		Buffer.Reset();
-		if (pPrev->m_Alive)
+		CPlayer *pPrev = &m_aPrevPlayers[ClientID];
+		if (!pPrev->m_Alive || pPrev->m_X != pChar->m_X || pPrev->m_Y != pChar->m_Y)
 		{
-			int dx = pChar->m_X - pPrev->m_X;
-			int dy = pChar->m_Y - pPrev->m_Y;
-			Buffer.AddInt(ClientID);
-			Buffer.AddInt(dx);
-			Buffer.AddInt(dy);
-			if (m_Debug)
+			int tick = EnsureTickWrittenPlayerData(ClientID);
+
+			CPacker Buffer;
+			Buffer.Reset();
+			if (pPrev->m_Alive)
 			{
-				dbg_msg("teehistorian", "diff cid=%d dx=%d dy=%d", ClientID, dx, dy);
+				int dx = pChar->m_X - pPrev->m_X;
+				int dy = pChar->m_Y - pPrev->m_Y;
+				Buffer.AddInt(ClientID);
+				Buffer.AddInt(dx);
+				Buffer.AddInt(dy);
+
 			}
+			else
+			{
+				int x = pChar->m_X;
+				int y = pChar->m_Y;
+				Buffer.AddInt(-TEEHISTORIAN_PLAYER_NEW);
+				Buffer.AddInt(ClientID);
+				Buffer.AddInt(x);
+				Buffer.AddInt(y);
+				if (m_Debug)
+				{
+					dbg_msg("teehistorian", "new cid=%d x=%d y=%d", ClientID, x, y);
+				}
+			}
+			Write(Buffer.Data(), Buffer.Size());
 		}
-		else
+		pPrev->m_X = pChar->m_X;
+		pPrev->m_Y = pChar->m_Y;
+		pPrev->m_Alive = true;
+
+	} else {
+		CPlayer *pPrev = &m_aPrevPlayers[ClientID];
+		if (!pPrev->m_Alive || pPrev->m_X != pChar->m_X || pPrev->m_Y != pChar->m_Y)
 		{
-			int x = pChar->m_X;
-			int y = pChar->m_Y;
-			Buffer.AddInt(-TEEHISTORIAN_PLAYER_NEW);
-			Buffer.AddInt(ClientID);
-			Buffer.AddInt(x);
-			Buffer.AddInt(y);
-			if (m_Debug)
+			EnsureTickWrittenPlayerData(ClientID);
+
+			CPacker Buffer;
+			Buffer.Reset();
+			if (pPrev->m_Alive)
 			{
-				dbg_msg("teehistorian", "new cid=%d x=%d y=%d", ClientID, x, y);
+				int dx = pChar->m_X - pPrev->m_X;
+				int dy = pChar->m_Y - pPrev->m_Y;
+				Buffer.AddInt(ClientID);
+				Buffer.AddInt(dx);
+				Buffer.AddInt(dy);
+				if (m_Debug)
+				{
+					dbg_msg("teehistorian", "diff cid=%d dx=%d dy=%d", ClientID, dx, dy);
+				}
 			}
+			else
+			{
+				int x = pChar->m_X;
+				int y = pChar->m_Y;
+				Buffer.AddInt(-TEEHISTORIAN_PLAYER_NEW);
+				Buffer.AddInt(ClientID);
+				Buffer.AddInt(x);
+				Buffer.AddInt(y);
+				if (m_Debug)
+				{
+					dbg_msg("teehistorian", "new cid=%d x=%d y=%d", ClientID, x, y);
+				}
+			}
+			Write(Buffer.Data(), Buffer.Size());
 		}
-		Write(Buffer.Data(), Buffer.Size());
+		pPrev->m_X = pChar->m_X;
+		pPrev->m_Y = pChar->m_Y;
+		pPrev->m_Alive = true;
+
+
 	}
-	pPrev->m_X = pChar->m_X;
-	pPrev->m_Y = pChar->m_Y;
-	pPrev->m_Alive = true;
 }
 
 void CTeeHistorian::RecordDeadPlayer(int ClientID)
@@ -356,30 +399,41 @@ void CTeeHistorian::Write(const void *pData, int DataSize)
 	m_pfnWriteCallback(pData, DataSize, m_pWriteCallbackUserdata);
 }
 
-void CTeeHistorian::EnsureTickWritten()
+/**
+ * @brief returns -1 if no tick was written.
+ * @details [long description]
+ * @return [description]
+ */
+int CTeeHistorian::EnsureTickWritten()
 {
 	if (!m_TickWritten)
 	{
-		WriteTick();
+		return WriteTick();
 	}
+	return -1;
 }
 
-void CTeeHistorian::WriteTick()
+int CTeeHistorian::WriteTick()
 {
-	CPacker TickPacker;
-	TickPacker.Reset();
+	if (g_Config.m_SvSqliteHistorian) {
 
-	int dt = m_Tick - m_LastWrittenTick - 1;
-	TickPacker.AddInt(-TEEHISTORIAN_TICK_SKIP);
-	TickPacker.AddInt(dt);
-	if (m_Debug)
-	{
-		dbg_msg("teehistorian", "skip_ticks dt=%d", dt);
+
+	} else {
+		CPacker TickPacker;
+		TickPacker.Reset();
+
+		int dt = m_Tick - m_LastWrittenTick - 1;
+		TickPacker.AddInt(-TEEHISTORIAN_TICK_SKIP);
+		TickPacker.AddInt(dt);
+		if (m_Debug)
+		{
+			dbg_msg("teehistorian", "skip_ticks dt=%d", dt);
+		}
+		Write(TickPacker.Data(), TickPacker.Size());
 	}
-	Write(TickPacker.Data(), TickPacker.Size());
-
 	m_TickWritten = true;
 	m_LastWrittenTick = m_Tick;
+	return m_LastWrittenTick;
 }
 
 void CTeeHistorian::EndPlayers()
@@ -445,61 +499,81 @@ void CTeeHistorian::RecordPlayerInput(int ClientID, const CNetObj_PlayerInput *p
 
 void CTeeHistorian::RecordPlayerMessage(int ClientID, const void *pMsg, int MsgSize)
 {
-	EnsureTickWritten();
-
-	CPacker Buffer;
-	Buffer.Reset();
-	Buffer.AddInt(-TEEHISTORIAN_MESSAGE);
-	Buffer.AddInt(ClientID);
-	Buffer.AddInt(MsgSize);
-	Buffer.AddRaw(pMsg, MsgSize);
-
-	if (m_Debug)
+	if (g_Config.m_SvSqliteHistorian)
 	{
-		CUnpacker Unpacker;
-		Unpacker.Reset(pMsg, MsgSize);
-		int MsgID = Unpacker.GetInt();
-		int Sys = MsgID & 1;
-		MsgID >>= 1;
-		dbg_msg("teehistorian", "msg cid=%d sys=%d msgid=%d", ClientID, Sys, MsgID);
+		/* code */
+	} else {
+
+		EnsureTickWritten();
+
+		CPacker Buffer;
+		Buffer.Reset();
+		Buffer.AddInt(-TEEHISTORIAN_MESSAGE);
+		Buffer.AddInt(ClientID);
+		Buffer.AddInt(MsgSize);
+		Buffer.AddRaw(pMsg, MsgSize);
+
+		if (m_Debug)
+		{
+			CUnpacker Unpacker;
+			Unpacker.Reset(pMsg, MsgSize);
+			int MsgID = Unpacker.GetInt();
+			int Sys = MsgID & 1;
+			MsgID >>= 1;
+			dbg_msg("teehistorian", "msg cid=%d sys=%d msgid=%d", ClientID, Sys, MsgID);
+		}
+
+		Write(Buffer.Data(), Buffer.Size());
 	}
 
-	Write(Buffer.Data(), Buffer.Size());
 }
 
 void CTeeHistorian::RecordPlayerJoin(int ClientID)
 {
-	EnsureTickWritten();
-
-	CPacker Buffer;
-	Buffer.Reset();
-	Buffer.AddInt(-TEEHISTORIAN_JOIN);
-	Buffer.AddInt(ClientID);
-
-	if (m_Debug)
+	if (g_Config.m_SvSqliteHistorian)
 	{
-		dbg_msg("teehistorian", "join cid=%d", ClientID);
+		/* code */
+	} else {
+		EnsureTickWritten();
+
+		CPacker Buffer;
+		Buffer.Reset();
+		Buffer.AddInt(-TEEHISTORIAN_JOIN);
+		Buffer.AddInt(ClientID);
+
+		if (m_Debug)
+		{
+			dbg_msg("teehistorian", "join cid=%d", ClientID);
+		}
+
+		Write(Buffer.Data(), Buffer.Size());
 	}
 
-	Write(Buffer.Data(), Buffer.Size());
 }
 
 void CTeeHistorian::RecordPlayerDrop(int ClientID, const char *pReason)
 {
-	EnsureTickWritten();
-
-	CPacker Buffer;
-	Buffer.Reset();
-	Buffer.AddInt(-TEEHISTORIAN_DROP);
-	Buffer.AddInt(ClientID);
-	Buffer.AddString(pReason, 0);
-
-	if (m_Debug)
+	if (g_Config.m_SvSqliteHistorian)
 	{
-		dbg_msg("teehistorian", "drop cid=%d reason='%s'", ClientID, pReason);
+		/* code */
+	} else {
+
+		EnsureTickWritten();
+
+		CPacker Buffer;
+		Buffer.Reset();
+		Buffer.AddInt(-TEEHISTORIAN_DROP);
+		Buffer.AddInt(ClientID);
+		Buffer.AddString(pReason, 0);
+
+		if (m_Debug)
+		{
+			dbg_msg("teehistorian", "drop cid=%d reason='%s'", ClientID, pReason);
+		}
+
+		Write(Buffer.Data(), Buffer.Size());
 	}
 
-	Write(Buffer.Data(), Buffer.Size());
 }
 
 void CTeeHistorian::RecordConsoleCommand(const char* ClientNick, int ClientID, int FlagMask, const char *pCmd, IConsole::IResult *pResult)
@@ -582,18 +656,25 @@ void CTeeHistorian::EndTick()
 
 void CTeeHistorian::RecordAuthInitial(int ClientID, int Level, const char *pAuthName)
 {
-	CPacker Buffer;
-	Buffer.Reset();
-	Buffer.AddInt(ClientID);
-	Buffer.AddInt(Level);
-	Buffer.AddString(pAuthName, 0);
-
-	if (m_Debug)
+	if (g_Config.m_SvSqliteHistorian)
 	{
-		dbg_msg("teehistorian", "auth_init cid=%d level=%d auth_name=%s", ClientID, Level, pAuthName);
+		/* code */
+	} else {
+
+		CPacker Buffer;
+		Buffer.Reset();
+		Buffer.AddInt(ClientID);
+		Buffer.AddInt(Level);
+		Buffer.AddString(pAuthName, 0);
+
+		if (m_Debug)
+		{
+			dbg_msg("teehistorian", "auth_init cid=%d level=%d auth_name=%s", ClientID, Level, pAuthName);
+		}
+
+		WriteExtra(UUID_TEEHISTORIAN_AUTH_INIT, Buffer.Data(), Buffer.Size());
 	}
 
-	WriteExtra(UUID_TEEHISTORIAN_AUTH_INIT, Buffer.Data(), Buffer.Size());
 }
 
 void CTeeHistorian::RecordAuthLogin(int ClientID, int Level, const char *pAuthName)
@@ -614,41 +695,57 @@ void CTeeHistorian::RecordAuthLogin(int ClientID, int Level, const char *pAuthNa
 
 void CTeeHistorian::RecordAuthLogout(int ClientID)
 {
-	CPacker Buffer;
-	Buffer.Reset();
-	Buffer.AddInt(ClientID);
-
-	if (m_Debug)
+	if (g_Config.m_SvSqliteHistorian)
 	{
-		dbg_msg("teehistorian", "auth_logout cid=%d", ClientID);
+		/* code */
+	} else {
+
+		CPacker Buffer;
+		Buffer.Reset();
+		Buffer.AddInt(ClientID);
+
+		if (m_Debug)
+		{
+			dbg_msg("teehistorian", "auth_logout cid=%d", ClientID);
+		}
+
+		WriteExtra(UUID_TEEHISTORIAN_AUTH_LOGOUT, Buffer.Data(), Buffer.Size());
 	}
 
-	WriteExtra(UUID_TEEHISTORIAN_AUTH_LOGOUT, Buffer.Data(), Buffer.Size());
 }
 
 void CTeeHistorian::Finish()
 {
 	dbg_assert(m_State == STATE_START || m_State == STATE_INPUTS || m_State == STATE_BEFORE_ENDTICK || m_State == STATE_BEFORE_TICK, "invalid teehistorian state");
 
+	if (g_Config.m_SvSqliteHistorian)
+	{
+		/* code */
+	} else {
+
+		CPacker Buffer;
+		Buffer.Reset();
+		Buffer.AddInt(-TEEHISTORIAN_FINISH);
+
+		if (m_Debug)
+		{
+			dbg_msg("teehistorian", "finish");
+		}
+
+		Write(Buffer.Data(), Buffer.Size());
+	}
+
 	if (m_State == STATE_INPUTS)
 	{
 		EndInputs();
 	}
+
 	if (m_State == STATE_BEFORE_ENDTICK)
 	{
 		EndTick();
 	}
 
-	CPacker Buffer;
-	Buffer.Reset();
-	Buffer.AddInt(-TEEHISTORIAN_FINISH);
 
-	if (m_Debug)
-	{
-		dbg_msg("teehistorian", "finish");
-	}
-
-	Write(Buffer.Data(), Buffer.Size());
 }
 
 
@@ -945,15 +1042,15 @@ void CTeeHistorian::CloseDatabase() {
 	}
 }
 
-char* CTeeHistorian::GetTimeStamp(){
+char* CTeeHistorian::GetTimeStamp() {
 	char aDate[20];
 
 	timeval curTime;
 	gettimeofday(&curTime, NULL);
 	long milli = curTime.tv_usec / 1000;
 	strftime(aDate, 20, "%Y-%m-%d %H:%M:%S", localtime(&curTime.tv_sec));
-	char *aBuf = (char*)malloc(25*sizeof(char));
-	str_format(aBuf, 25*sizeof(char), "%s.%ld", aDate, milli);
+	char *aBuf = (char*)malloc(25 * sizeof(char));
+	str_format(aBuf, 25 * sizeof(char), "%s.%ld", aDate, milli);
 	return aBuf;
 }
 

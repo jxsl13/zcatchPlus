@@ -30,6 +30,7 @@ void CGameContext::Construct(int Resetting)
 
 	/*teehistorian*/
 	m_TeeHistorianActive = false;
+	m_SqliteHistorianActive = false;
 
 	for (int i = 0; i < MAX_CLIENTS; i++)
 		m_apPlayers[i] = 0;
@@ -136,7 +137,6 @@ void CGameContext::CommandCallback(int ClientID, int FlagMask, const char *pCmd,
 {
 	CGameContext *pSelf = (CGameContext *)pUser;
 
-	dbg_msg("SQLiteHistorian", "ClientID: %d", ClientID);
 	if (pSelf->m_TeeHistorianActive)
 	{
 		pSelf->m_TeeHistorian.RecordConsoleCommand(pSelf->Server()->ClientName(ClientID), ClientID, FlagMask, pCmd, pResult);
@@ -515,11 +515,13 @@ void CGameContext::OnTick()
 	/*teehistorian*/
 	if (m_TeeHistorianActive)
 	{
-		int Error = aio_error(m_pTeeHistorianFile);
-		if (Error)
-		{
-			dbg_msg("teehistorian", "error writing to file, err=%d", Error);
-			Server()->SetErrorShutdown("teehistorian io error");
+		if (m_TeeHistorianActive && !m_SqliteHistorianActive) {
+			int Error = aio_error(m_pTeeHistorianFile);
+			if (Error)
+			{
+				dbg_msg("teehistorian", "error writing to file, err=%d", Error);
+				Server()->SetErrorShutdown("teehistorian io error");
+			}
 		}
 
 		if (!m_TeeHistorian.Starting())
@@ -548,11 +550,15 @@ void CGameContext::OnTick()
 			{
 				CNetObj_CharacterCore Char;
 				m_apPlayers[i]->GetCharacter()->GetCore().Write(&Char);
-				m_TeeHistorian.RecordPlayer(i, &Char);
+				m_TeeHistorian.RecordPlayer(Server()->ClientName(i), i, &Char);
 			}
 			else
 			{
-				m_TeeHistorian.RecordDeadPlayer(i);
+				if (!m_SqliteHistorianActive)
+				{
+					m_TeeHistorian.RecordDeadPlayer(i);
+				}
+
 			}
 		}
 		m_TeeHistorian.EndPlayers();
@@ -2594,19 +2600,22 @@ void CGameContext::OnInit(/*class IKernel *pKernel*/)
 
 	// after everything else is ready? teehistorian
 	m_TeeHistorianActive = g_Config.m_SvTeeHistorian;
-	m_SqliteHistorianActive = g_Config.m_SvSqliteLogging;
-	if (m_TeeHistorianActive && m_SqliteHistorianActive) {
-		dbg_msg("TeeHistorian", "Is Active");
-	} else if (m_TeeHistorianActive) {
-		dbg_msg("SQLiteHistorian", "Is Active");
-	}
+	m_SqliteHistorianActive = g_Config.m_SvSqliteHistorian;
 
 	if (m_TeeHistorianActive)
 	{
 
 
-			char aGameUuid[UUID_MAXSTRSIZE];
-			FormatUuid(m_GameUuid, aGameUuid, sizeof(aGameUuid));
+		char aGameUuid[UUID_MAXSTRSIZE];
+		FormatUuid(m_GameUuid, aGameUuid, sizeof(aGameUuid));
+
+		if (m_SqliteHistorianActive)
+		{
+			/*Sqlitehistorian*/
+			char aFilename[64];
+			str_format(aFilename, sizeof(aFilename), "teehistorian/%s.db", aGameUuid);
+			m_TeeHistorian.CreateDatabase(aFilename);
+		} else {
 			char aFilename[64];
 			str_format(aFilename, sizeof(aFilename), "teehistorian/%s.teehistorian", aGameUuid);
 
@@ -2625,12 +2634,6 @@ void CGameContext::OnInit(/*class IKernel *pKernel*/)
 			}
 
 			m_pTeeHistorianFile = aio_new(File);
-
-
-
-			/*Sqlitehistorian*/
-			str_format(aFilename, sizeof(aFilename), "teehistorian/%s.db", aGameUuid);
-			m_TeeHistorian.CreateDatabase(aFilename);
 
 
 			CUuidManager Empty;
@@ -2655,14 +2658,16 @@ void CGameContext::OnInit(/*class IKernel *pKernel*/)
 			m_TeeHistorian.Reset(&GameInfo, TeeHistorianWrite, this);
 			dbg_msg("teehistorian", "Initialization done.");
 
-			for (int i = 0; i < MAX_CLIENTS; i++)
-			{
+		}
+		for (int i = 0; i < MAX_CLIENTS; i++)
+		{
 
-				if (Server()->IsAuthed(i))
-				{
-					m_TeeHistorian.RecordAuthInitial(i, Server()->GetAuthLevel(i), Server()->GetAuthName(i));
-				}
+			if (Server()->IsAuthed(i))
+			{
+				m_TeeHistorian.RecordAuthInitial(i, Server()->GetAuthLevel(i), Server()->GetAuthName(i));
 			}
+		}
+
 	}
 
 
@@ -2679,20 +2684,28 @@ void CGameContext::OnInit(/*class IKernel *pKernel*/)
 
 void CGameContext::OnShutdown()
 {
+	m_TeeHistorian.Finish();
+
 	/*teehistorian*/
 	if (m_TeeHistorianActive)
 	{
-		m_TeeHistorian.Finish();
-		aio_close(m_pTeeHistorianFile);
-		aio_wait(m_pTeeHistorianFile);
-		int Error = aio_error(m_pTeeHistorianFile);
-		if (Error)
+		if (m_SqliteHistorianActive)
 		{
-			dbg_msg("teehistorian", "error closing file, err=%d", Error);
-			Server()->SetErrorShutdown("teehistorian close error");
+			m_TeeHistorian.CloseDatabase();
+		} else {
+			aio_close(m_pTeeHistorianFile);
+			aio_wait(m_pTeeHistorianFile);
+			int Error = aio_error(m_pTeeHistorianFile);
+			if (Error)
+			{
+				dbg_msg("teehistorian", "error closing file, err=%d", Error);
+				Server()->SetErrorShutdown("teehistorian close error");
+			}
+			aio_free(m_pTeeHistorianFile);
+
 		}
-		aio_free(m_pTeeHistorianFile);
-		m_TeeHistorian.CloseDatabase();
+
+
 	}
 
 	delete m_pController;
