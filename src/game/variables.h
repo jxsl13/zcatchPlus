@@ -127,7 +127,7 @@ MACRO_CONFIG_INT(SvAllowHardMode, sv_allow_hard_mode, 0, 0, 2, CFGFLAG_SERVER, "
 MACRO_CONFIG_INT(SvAllowDynamicCam, sv_allow_dynamic_cam, 1, 0, 2, CFGFLAG_SERVER|CFGFLAG_NONTEEHISTORIC, "Allow the use and sending of player information in dynamic cam range(allow dynamic cam = 1, else static only (16:9 screen ratio) = 0)")
 MACRO_CONFIG_INT(SvStaticCamAbsolutexDistanceX, sv_static_cam_x, 832, 0, 10000, CFGFLAG_SERVER|CFGFLAG_NONTEEHISTORIC, "If the dynamic camera is disabled, this is the rendered horizontal distance from a player's current position.")
 MACRO_CONFIG_INT(SvStaticCamAbsolutexDistanceY, sv_static_cam_y, 468, 0, 10000, CFGFLAG_SERVER|CFGFLAG_NONTEEHISTORIC, "If the dynamic camera is disabled, this is the rendered vertical distance from a player's current position.")
-MACRO_CONFIG_INT(SvLastStandingDeathmatch, sv_last_standing_deathmatch, 0, 0, 2, CFGFLAG_SERVER|CFGFLAG_NONTEEHISTORIC, "If the last standing players treshold is not reached, caught people will be released automatically and new people are allowed to join the game directly.")
+MACRO_CONFIG_INT(SvLastStandingDeathmatch, sv_last_standing_deathmatch, 0, 0, 1, CFGFLAG_SERVER|CFGFLAG_NONTEEHISTORIC, "If the last standing players treshold is not reached, caught people will be released automatically and new people are allowed to join the game directly.")
 // Adjustable default regeneration time.
 MACRO_CONFIG_INT(SvGunRegenerationTime, sv_gun_regeneration_time, 625, 0, 10000, CFGFLAG_SERVER|CFGFLAG_NONTEEHISTORIC, "Default: 625 - Time after which the gun's projectiles regenerate.")
 MACRO_CONFIG_INT(SvGrenadeRegenerationTime, sv_grenade_regeneration_time, 1000, 0, 10000, CFGFLAG_SERVER|CFGFLAG_NONTEEHISTORIC, "Default: 1000 - Time after which the grenade's projectiles regenerate.")

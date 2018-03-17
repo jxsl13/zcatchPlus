@@ -845,11 +845,17 @@ void CGameContext::OnClientEnter(int ClientID)
 			p->m_SpecExplicit = false;
 	}
 
+
 	/* end zCatch */
 
 	char aBuf[512];
 	str_format(aBuf, sizeof(aBuf), "'%s' entered and joined the %s", Server()->ClientName(ClientID), m_pController->GetTeamName(p->GetTeam()));
 	SendChat(-1, CGameContext::CHAT_ALL, aBuf);
+	/*zcatch*/
+	if(g_Config.m_SvLastStandingDeathmatch == 1){
+		SendBroadcast("We are currently playing the Release Game.", ClientID);
+	}
+	/*zcatch*/
 
 	str_format(aBuf, sizeof(aBuf), "team_join player='%d:%s' team=%d", ClientID, Server()->ClientName(ClientID), p->GetTeam());
 	Console()->Print(IConsole::OUTPUT_LEVEL_DEBUG, "game", aBuf);

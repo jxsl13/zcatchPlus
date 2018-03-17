@@ -141,6 +141,9 @@ void CGameController_zCatch::DoWincheck()
 			{
 				winner->HardModeRestart();
 				GameServer()->SendChatTarget(-1, "Too few players to end round.");
+				if(g_Config.m_SvLastStandingDeathmatch){
+					GameServer()->SendBroadcast("Too few players to end round.", -1);
+				}
 				GameServer()->SendBroadcast("Too few players to end round.", -1);
 			}
 			else
