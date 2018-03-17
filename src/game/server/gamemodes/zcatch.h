@@ -13,6 +13,7 @@ class CGameController_zCatch: public IGameController
 	int m_OldMode;
 	// jxsl13 added
 	int m_OldAllowJoin;
+	int m_OldSvReleaseGame;
 	
 	void RewardWinner(int winnerId);
 	
@@ -24,6 +25,7 @@ class CGameController_zCatch: public IGameController
 
 	// jxsl13 added
 	void ToggleLastStandingDeathmatchAndRelease(int Players_Ingame);
+	void CheckReleaseGameStatus();
 	static char* GetGameModeTableName();
 
 public:

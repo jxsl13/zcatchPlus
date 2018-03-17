@@ -831,7 +831,12 @@ void CGameContext::OnClientEnter(int ClientID)
 	{
 		p->m_SpecExplicit = (NumReady > 2);
 		p->SetTeamDirect(p->m_SpecExplicit ? TEAM_SPECTATORS : m_pController->ClampTeam(1));
-		SendBroadcast("You can join the game", ClientID);
+
+		if (g_Config.m_SvLastStandingDeathmatch) {
+			SendBroadcast("We are currently playing the Release Game. You can join the game!", ClientID);
+		} else {
+			SendBroadcast("You can join the game", ClientID);
+		}
 	}
 	// sv_allow_join 2: The player will join when the player with the most kills dies
 	else if (g_Config.m_SvAllowJoin == 2)
@@ -845,17 +850,18 @@ void CGameContext::OnClientEnter(int ClientID)
 			p->m_SpecExplicit = false;
 	}
 
+	if(g_Config.m_SvLastStandingDeathmatch == 1){
+		SendBroadcast("We are currently playing the Release Game. You can join the game!", ClientID);
+	} ;
+
+
 
 	/* end zCatch */
 
 	char aBuf[512];
 	str_format(aBuf, sizeof(aBuf), "'%s' entered and joined the %s", Server()->ClientName(ClientID), m_pController->GetTeamName(p->GetTeam()));
 	SendChat(-1, CGameContext::CHAT_ALL, aBuf);
-	/*zcatch*/
-	if(g_Config.m_SvLastStandingDeathmatch == 1){
-		SendBroadcast("We are currently playing the Release Game.", ClientID);
-	}
-	/*zcatch*/
+
 
 	str_format(aBuf, sizeof(aBuf), "team_join player='%d:%s' team=%d", ClientID, Server()->ClientName(ClientID), p->GetTeam());
 	Console()->Print(IConsole::OUTPUT_LEVEL_DEBUG, "game", aBuf);

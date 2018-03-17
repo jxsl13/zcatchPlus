@@ -16,11 +16,13 @@ CGameController_zCatch::CGameController_zCatch(class CGameContext *pGameServer) 
 {
 	m_pGameType = "zCatch+";
 	m_OldMode = g_Config.m_SvMode;
-
+	m_OldSvReleaseGame = g_Config.m_SvLastStandingDeathmatch;
 	// jxsl13 added to save old server config. Needed for last man
-	// standing deathmatch feature to reset to previous state 
+	// standing deathmatch feature to reset to previous state
 	// if treshold of players is reached.
 	m_OldAllowJoin = g_Config.m_SvAllowJoin;
+	dbg_msg("RELASE", "release game=%d", g_Config.m_SvLastStandingDeathmatch);
+
 }
 
 CGameController_zCatch::~CGameController_zCatch() {
@@ -28,6 +30,23 @@ CGameController_zCatch::~CGameController_zCatch() {
 	for (int i = 0; i < MAX_CLIENTS; i++)
 		if (GameServer()->m_apPlayers[i])
 			SaveRanking(GameServer()->m_apPlayers[i]);
+}
+
+void CGameController_zCatch::CheckReleaseGameStatus() {
+
+
+	if (m_OldSvReleaseGame != g_Config.m_SvLastStandingDeathmatch) {
+		m_OldSvReleaseGame = g_Config.m_SvLastStandingDeathmatch;
+
+		if (m_OldSvReleaseGame == 1) {
+
+			GameServer()->SendBroadcast("Release Game was enabled.", -1);
+		} else if (m_OldSvReleaseGame == 0) {
+			// switching from 0 to 1 -> enabling release game
+			GameServer()->SendBroadcast("Release Game was disabled.", -1);
+
+		}
+	}
 }
 
 /* ranking system: create zcatch score table */
@@ -80,6 +99,8 @@ void CGameController_zCatch::OnInitRanking(sqlite3 *rankingDb) {
 void CGameController_zCatch::Tick()
 {
 	IGameController::Tick();
+	CheckReleaseGameStatus();
+
 
 	if (m_OldMode != g_Config.m_SvMode && !GameServer()->m_World.m_Paused)
 	{
@@ -141,10 +162,13 @@ void CGameController_zCatch::DoWincheck()
 			{
 				winner->HardModeRestart();
 				GameServer()->SendChatTarget(-1, "Too few players to end round.");
-				if(g_Config.m_SvLastStandingDeathmatch){
+
+				if (g_Config.m_SvLastStandingDeathmatch == 1) {
+					GameServer()->SendBroadcast("Cannot end a round, because we are playing the Release Game.", -1);
+				} else {
 					GameServer()->SendBroadcast("Too few players to end round.", -1);
 				}
-				GameServer()->SendBroadcast("Too few players to end round.", -1);
+
 			}
 			else
 			{
@@ -475,7 +499,7 @@ void CGameController_zCatch::SaveRanking(CPlayer *player)
  * @details Saves given score for given unique name to the database.
  *
  * @param GameServer CGameContext Object needed for most game related information.
- * @param name This is the unique primary key which identifies a ranking record. 
+ * @param name This is the unique primary key which identifies a ranking record.
  * 			   Because this function is executed within a thread, the free(name) is used at the end of this function.
  * @param score Score which is calculated with a specific and deterministic algorithm.
  * @param numWins Number of wins
@@ -840,6 +864,7 @@ void CGameController_zCatch::FormatRankingColumn(const char* column, char buf[32
  * @param Players_Ingame Count of players actually playing without those, which are explicidly spectating.
  */
 void CGameController_zCatch::ToggleLastStandingDeathmatchAndRelease(int Players_Ingame) {
+
 	if (g_Config.m_SvLastStandingDeathmatch == 1 && Players_Ingame < g_Config.m_SvLastStandingPlayers) {
 
 		// old Joining settings are the same as the current ones and not the allow everyone to join option.
@@ -851,6 +876,7 @@ void CGameController_zCatch::ToggleLastStandingDeathmatchAndRelease(int Players_
 		} else if (m_OldAllowJoin == g_Config.m_SvAllowJoin && m_OldAllowJoin == 1) {
 			// do nothing
 		}
+
 
 		// Go through ingame players and release their victims while last man standing treshold is not met and
 		// Last man standig deathmatch is still enabled.
@@ -893,7 +919,7 @@ void CGameController_zCatch::MergeRankingIntoTarget(CGameContext* GameServer, ch
 	int source_numShots = 0;
 	int source_highestSpree = 0;
 	int source_timePlayed = 0;
-	
+
 	/*Sqlite stuff*/
 	/*sqlite statement object*/
 	sqlite3_stmt *pStmt;
@@ -1013,21 +1039,21 @@ void CGameController_zCatch::MergeRankingIntoTarget(CGameContext* GameServer, ch
 	/*Second part: add fetched data to Target player*/
 	/* give the points to Target player*/
 	CGameController_zCatch::SaveScore(GameServer, // gamecontext
-	                                 Target, // username ---> is freed!!
-	                                 source_score, // score
-	                                 source_numWins, // numWins
-	                                 source_numKills, // numKills
-	                                 source_numKillsWallshot, // numKillsWallshot
-	                                 source_numDeaths, // numDeaths
-	                                 source_numShots, // numShots
-	                                 source_highestSpree, // highestSpree
-	                                 source_timePlayed // timePlayed
+	                                  Target, // username ---> is freed!!
+	                                  source_score, // score
+	                                  source_numWins, // numWins
+	                                  source_numKills, // numKills
+	                                  source_numKillsWallshot, // numKillsWallshot
+	                                  source_numDeaths, // numDeaths
+	                                  source_numShots, // numShots
+	                                  source_highestSpree, // highestSpree
+	                                  source_timePlayed // timePlayed
 	                                 );
-	
+
 	/*Cannot use "Target" variable from here on. */
-	
+
 	/*Third part: delete Source player records.*/
-	
+
 	// Target has been freed in SaveScore already !!
 	DeleteRanking(GameServer, Source);
 	// Source has been freed in DeleteRanking!
@@ -1042,8 +1068,8 @@ void CGameController_zCatch::MergeRankingIntoTarget(CGameContext* GameServer, ch
  * 			WARNING: This function frees the allocated memory of the "Name" parameter.
  *
  * @param GameServer Is a CGameContext Object, which hold the information about out sqlite3 database handle.
- * 					That handle is needed here to execute queries on the database. 
- * @param Name Is the name of the player whose ranking score should be deleted. The name is trimmed from both sides, 
+ * 					That handle is needed here to execute queries on the database.
+ * @param Name Is the name of the player whose ranking score should be deleted. The name is trimmed from both sides,
  * 			   in order to have a consistent ranking and no faking or faulty deletions.
  */
 void CGameController_zCatch::DeleteRanking(CGameContext* GameServer, char* Name) {
@@ -1104,16 +1130,16 @@ void CGameController_zCatch::DeleteRanking(CGameContext* GameServer, char* Name)
  * 			in the database.
  * @return name of current game mode.
  */
-char* CGameController_zCatch::GetGameModeTableName(){
-	char* aBuf = (char*)malloc(sizeof(char)*16);
-	
-	switch(g_Config.m_SvMode){
-		case 1: return strncpy(aBuf,"Laser", 4); break;
-		case 2: return strncpy(aBuf,"Everything", 10); break;
-		case 3: return strncpy(aBuf,"Hammer", 6); break;
-		case 4: return strncpy(aBuf,"Grenade", 7); break;
-		case 5: return strncpy(aBuf,"Ninja", 5); break;
-		default: return strncpy(aBuf,"zCatch", 6); break;
+char* CGameController_zCatch::GetGameModeTableName() {
+	char* aBuf = (char*)malloc(sizeof(char) * 16);
+
+	switch (g_Config.m_SvMode) {
+	case 1: return strncpy(aBuf, "Laser", 4); break;
+	case 2: return strncpy(aBuf, "Everything", 10); break;
+	case 3: return strncpy(aBuf, "Hammer", 6); break;
+	case 4: return strncpy(aBuf, "Grenade", 7); break;
+	case 5: return strncpy(aBuf, "Ninja", 5); break;
+	default: return strncpy(aBuf, "zCatch", 6); break;
 
 		return aBuf;
 
