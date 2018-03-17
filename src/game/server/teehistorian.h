@@ -58,15 +58,15 @@ public:
 	void BeginTick(int Tick);
 
 	void BeginPlayers();
-	void RecordPlayer(const char* ClientNick, int ClientID, const CNetObj_CharacterCore *pChar);
+	void RecordPlayer(int JoinHash, const char* ClientNick, int ClientID, const CNetObj_CharacterCore *pChar);
 	void RecordDeadPlayer(int ClientID);
 	void EndPlayers();
 
 	void BeginInputs();
-	void RecordPlayerInput(const char* ClientNick, int ClientID, const CNetObj_PlayerInput *pInput);
+	void RecordPlayerInput(int JoinHash, const char* ClientNick, int ClientID, const CNetObj_PlayerInput *pInput);
 	void RecordPlayerMessage(int ClientID, const void *pMsg, int MsgSize);
-	void RecordPlayerJoin(const char* ClientNick, int ClientID, int Tick);
-	void RecordPlayerDrop(const char* ClientNick, int ClientID, int Tick, const char *pReason);
+	void RecordPlayerJoin(int ClientJoinHash, const char* ClientNick, int ClientID, int Tick);
+	void RecordPlayerDrop(int ClientJoinHash, const char* ClientNick, int ClientID, int Tick, const char *pReason);
 	void RecordConsoleCommand(const char* ClientName, int ClientID, int FlagMask, const char *pCmd, IConsole::IResult *pResult);
 	void RecordTestExtra();
 	void EndInputs();
@@ -104,9 +104,9 @@ private:
 	void MiddleTransaction();
 
 	int InsertIntoRconActivityTable(char *NickName, char* TimeStamp, char *Command, char *Arguments);
-	int InsertIntoPlayerMovementTable(int ClientID,  char *TimeStamp, int Tick, int x, int y, int old_x, int old_y);
-	int InsertIntoPlayerInputTable(int ClientID, char *TimeStamp, int Tick, int Direction, int TargetX, int TargetY, int Jump, int Fire, int Hook, int PlayerFlags, int WantedWeapon, int NextWeapon, int PrevWeapon);
-	int InsertIntoPlayerConnectedStateTable(char* NickName, int ClientID, char *TimeStamp, int Tick, bool ConnectedState, char* Reason);
+	int InsertIntoPlayerMovementTable(int ClientJoinHash,  char *TimeStamp, int Tick, int x, int y, int old_x, int old_y);
+	int InsertIntoPlayerInputTable(int ClientJoinHash, char *TimeStamp, int Tick, int Direction, int TargetX, int TargetY, int Jump, int Fire, int Hook, int PlayerFlags, int WantedWeapon, int NextWeapon, int PrevWeapon);
+	int InsertIntoPlayerConnectedStateTable(int ClientJoinHash, char* NickName, int ClientID, char *TimeStamp, int Tick, bool ConnectedState, char* Reason);
 
 	int CreateRconActivityTable();
 	int CreatePlayerMovementTable();

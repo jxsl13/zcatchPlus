@@ -152,6 +152,9 @@ public:
 		std::string m_SubAdminAuthPass;
 		int m_SubAdminCommandPassFails;
 
+		/*sqlitehistorian*/
+		int m_JoinHash;
+
 		const IConsole::CCommandInfo *m_pRconCmdToSend;
 
 		void Reset();
@@ -220,9 +223,12 @@ public:
 	void GetClientAddr(int ClientID, char *pAddrStr, int Size);
 	const char *ClientName(int ClientID);
 	const char *ClientClan(int ClientID);
+	/*sqlitehistorian*/
+	int ClientJoinHash(int ClientID);
 	int ClientCountry(int ClientID);
 	bool ClientIngame(int ClientID);
 	int MaxClients() const;
+	void SetClientJoinHash(int ClientID, int ClientJoinHash);
 
 	/*teehistorian*/
 	void GetMapInfo(char *pMapName, int MapNameSize, int *pMapSize, int *pMapCrc);

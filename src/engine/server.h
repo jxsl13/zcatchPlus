@@ -38,6 +38,7 @@ public:
 	virtual int GetClientInfo(int ClientID, CClientInfo *pInfo) = 0;
 	virtual void GetClientAddr(int ClientID, char *pAddrStr, int Size) = 0;
 	virtual int ClientVotebannedTime(int ClientID) = 0;
+	virtual int ClientJoinHash(int ClientID) = 0;
 
 	virtual int SendMsg(CMsgPacker *pMsg, int Flags, int ClientID) = 0;
 
@@ -54,6 +55,7 @@ public:
 	virtual void SetClientClan(int ClientID, char const *pClan) = 0;
 	virtual void SetClientCountry(int ClientID, int Country) = 0;
 	virtual void SetClientScore(int ClientID, int Score) = 0;
+	virtual void SetClientJoinHash(int ClientID, int ClientJoinHash) = 0;
 
 	virtual const char* GetAuthName(int ClientID) = 0;
 	virtual int GetAuthLevel(int ClientID) = 0;

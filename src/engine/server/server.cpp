@@ -463,6 +463,7 @@ void CServer::SetClientName(int ClientID, const char *pName)
 				break;
 		}
 	}
+	/*sqlitehistorian*/
 }
 
 void CServer::SetClientClan(int ClientID, const char *pClan)
@@ -533,6 +534,8 @@ int CServer::Init()
 		m_aClients[i].m_aClan[0] = 0;
 		m_aClients[i].m_Country = -1;
 		m_aClients[i].m_Snapshots.Init();
+		/*sqlitehistorian*/
+		m_aClients[i].m_JoinHash = 0;
 	}
 
 	AdjustVotebanTime(m_CurrentGameTick);
@@ -582,6 +585,23 @@ const char *CServer::ClientName(int ClientID)
 	else
 		return "(connecting)";
 
+}
+
+int CServer::ClientJoinHash(int ClientID) {
+	if (ClientID < 0 || ClientID >= MAX_CLIENTS || m_aClients[ClientID].m_State == CServer::CClient::STATE_EMPTY) {
+		return -1;
+	}
+	if (m_aClients[ClientID].m_State == CServer::CClient::STATE_INGAME) {
+		return m_aClients[ClientID].m_JoinHash;
+	}
+	else {
+		return -1;
+	}
+}
+
+void CServer::SetClientJoinHash(int ClientID, int ClientJoinHash){
+
+		m_aClients[ClientID].m_JoinHash = ClientJoinHash;
 }
 
 const char *CServer::ClientClan(int ClientID)
@@ -808,7 +828,8 @@ int CServer::NewClientCallback(int ClientID, void *pUser)
 	pThis->m_aClients[ClientID].m_AuthTries = 0;
 	pThis->m_aClients[ClientID].m_pRconCmdToSend = 0;
 	pThis->m_aClients[ClientID].Reset();
-
+	/*sqliteadmin*/
+	pThis->m_aClients[ClientID].m_JoinHash = 0;
 	return 0;
 }
 
@@ -824,6 +845,8 @@ int CServer::DelClientCallback(int ClientID, const char *pReason, void *pUser)
 
 	/*teehistorian*/
 	pThis->GameServer()->OnClientEngineDrop(ClientID, pReason);
+	/*sqlitehistorian*/
+	pThis->m_aClients[ClientID].m_JoinHash = 0;
 
 	// notify the mod about the drop
 	if (pThis->m_aClients[ClientID].m_State >= CClient::STATE_READY)
@@ -837,6 +860,9 @@ int CServer::DelClientCallback(int ClientID, const char *pReason, void *pUser)
 	pThis->m_aClients[ClientID].m_AuthTries = 0;
 	pThis->m_aClients[ClientID].m_pRconCmdToSend = 0;
 	pThis->m_aClients[ClientID].m_Snapshots.PurgeAll();
+
+	/*sqlitehistorian*/
+	pThis->m_aClients[ClientID].m_JoinHash = 0;
 
 	// could have been an admin
 	pThis->UpdateLoggedInAdmins();

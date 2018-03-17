@@ -385,7 +385,7 @@ void CTeeHistorian::EnsureTickWrittenPlayerData(int ClientID)
 }
 
 
-void CTeeHistorian::RecordPlayer(const char* ClientNick, int ClientID, const CNetObj_CharacterCore *pChar)
+void CTeeHistorian::RecordPlayer(int ClientJoinHash, const char* ClientNick, int ClientID, const CNetObj_CharacterCore *pChar)
 {
 
 	if (m_HistorianMode) {
@@ -397,9 +397,9 @@ void CTeeHistorian::RecordPlayer(const char* ClientNick, int ClientID, const CNe
 
 		if (m_HistorianMode == MODE_SQLITE) {
 
+			//if (!pPrev->m_Alive || pPrev->m_X != pChar->m_X || pPrev->m_Y != pChar->m_Y) // doesn't write every tick
 
-			if (!pPrev->m_Alive || pPrev->m_X != pChar->m_X || pPrev->m_Y != pChar->m_Y)
-			{
+
 				EnsureTickWrittenPlayerData(ClientID);
 				char *Nick = (char*)malloc(MAX_NAME_LENGTH * sizeof(char));
 				str_copy(Nick, ClientNick, MAX_NAME_LENGTH * sizeof(char));
@@ -426,7 +426,7 @@ void CTeeHistorian::RecordPlayer(const char* ClientNick, int ClientID, const CNe
 				/*it does not matter if this is written before or after this thread is executed*/
 				std::thread *t = new std::thread(&CTeeHistorian::InsertIntoPlayerMovementTable,
 				                                 this,
-				                                 ClientID,
+				                                 ClientJoinHash,
 				                                 aDate,
 				                                 Tick,
 				                                 X,
@@ -435,7 +435,8 @@ void CTeeHistorian::RecordPlayer(const char* ClientNick, int ClientID, const CNe
 				                                 OldY);
 				t->detach();
 				delete t;
-			}
+
+
 		} else if (m_HistorianMode == MODE_TEE_HISTORIAN) {
 
 			if (!pPrev->m_Alive || pPrev->m_X != pChar->m_X || pPrev->m_Y != pChar->m_Y)
@@ -577,7 +578,7 @@ void CTeeHistorian::BeginInputs()
 
 }
 
-void CTeeHistorian::RecordPlayerInput(const char* ClientNick, int ClientID, const CNetObj_PlayerInput * pInput)
+void CTeeHistorian::RecordPlayerInput(int ClientJoinHash, const char* ClientNick, int ClientID, const CNetObj_PlayerInput * pInput)
 {
 	if (m_HistorianMode)
 	{
@@ -590,7 +591,6 @@ void CTeeHistorian::RecordPlayerInput(const char* ClientNick, int ClientID, cons
 			char *TimeStamp = GetTimeStamp();
 
 			int Tick = m_Tick;
-			EnsureTickWritten();
 			int Direction = pInput->m_Direction;
 
 			int TargetX = pInput->m_TargetX;
@@ -605,7 +605,7 @@ void CTeeHistorian::RecordPlayerInput(const char* ClientNick, int ClientID, cons
 			// CmdArgs contains the given arguments.
 			std::thread *t = new std::thread(&CTeeHistorian::InsertIntoPlayerInputTable,
 			                                 this,
-			                                 ClientID,
+			                                 ClientJoinHash,
 			                                 TimeStamp,
 			                                 Tick,
 			                                 Direction,
@@ -710,7 +710,7 @@ void CTeeHistorian::RecordPlayerMessage(int ClientID, const void *pMsg, int MsgS
 
 }
 
-void CTeeHistorian::RecordPlayerJoin(const char* ClientNick, int ClientID, int Tick)
+void CTeeHistorian::RecordPlayerJoin(int ClientJoinHash , const char* ClientNick, int ClientID, int Tick)
 {
 	if (m_HistorianMode)
 	{
@@ -721,10 +721,12 @@ void CTeeHistorian::RecordPlayerJoin(const char* ClientNick, int ClientID, int T
 
 			char* TimeStamp = GetTimeStamp();
 
-			char* Reason = NULL;
+			char *Reason = (char*)malloc(sizeof(char));
+			str_copy(Reason, "", sizeof(Reason));
 
 			std::thread *t = new std::thread(&CTeeHistorian::InsertIntoPlayerConnectedStateTable,
 			                                 this,
+			                                 ClientJoinHash,
 			                                 Nick,
 			                                 ClientID,
 			                                 TimeStamp,
@@ -754,7 +756,7 @@ void CTeeHistorian::RecordPlayerJoin(const char* ClientNick, int ClientID, int T
 
 }
 
-void CTeeHistorian::RecordPlayerDrop(const char* ClientNick, int ClientID, int Tick, const char *pReason)
+void CTeeHistorian::RecordPlayerDrop(int ClientJoinHash, const char* ClientNick, int ClientID, int Tick, const char *pReason)
 {
 	if (m_HistorianMode)
 	{
@@ -766,10 +768,11 @@ void CTeeHistorian::RecordPlayerDrop(const char* ClientNick, int ClientID, int T
 			char* TimeStamp = GetTimeStamp();
 
 			char* Reason = (char*)malloc(sizeof(char) * 128);
-			str_copy(Reason, pReason, sizeof(Reason));
+			str_copy(Reason, pReason, sizeof(char) * 128);
 
 			std::thread *t = new std::thread(&CTeeHistorian::InsertIntoPlayerConnectedStateTable,
 			                                 this,
+			                                 ClientJoinHash,
 			                                 Nick,
 			                                 ClientID,
 			                                 TimeStamp,
@@ -1016,6 +1019,7 @@ int CTeeHistorian::CreateDatabase(const char* filename) {
 	}
 	return err;
 }
+
 int CTeeHistorian::CreateRconActivityTable() {
 	char* ErrMsg;
 	int err = sqlite_exec(m_SqliteDB,
@@ -1048,7 +1052,7 @@ int CTeeHistorian::CreatePlayerMovementTable() {
 	int err = sqlite_exec(m_SqliteDB,
 	                      "BEGIN; \
 			CREATE TABLE IF NOT EXISTS PlayerMovement( \
-				ClientID TINYINT, \
+				JoinHash INT, \
 				TimeStamp VARCHAR(25), \
 				Tick UNSIGNED BIG INT, \
 				X INT, \
@@ -1056,7 +1060,7 @@ int CTeeHistorian::CreatePlayerMovementTable() {
 				OldX INT, \
 				OldY INT\
 			); \
-			CREATE INDEX IF NOT EXISTS PlayerMovement_ClientID_index ON PlayerMovement (ClientID); \
+			CREATE INDEX IF NOT EXISTS PlayerMovement_JoinHash_index ON PlayerMovement (JoinHash); \
 			CREATE INDEX IF NOT EXISTS PlayerMovement_TimeStamp_index ON PlayerMovement (TimeStamp); \
 			CREATE INDEX IF NOT EXISTS PlayerMovement_Tick_index ON PlayerMovement (Tick); \
 			CREATE INDEX IF NOT EXISTS PlayerMovement_X_index ON PlayerMovement (X); \
@@ -1080,7 +1084,7 @@ int CTeeHistorian::CreatePlayerInputTable() {
 	int err = sqlite_exec(m_SqliteDB,
 	                      "BEGIN; \
 			CREATE TABLE IF NOT EXISTS PlayerInput( \
-				ClientID TINYINT, \
+				JoinHash INT, \
 				TimeStamp VARCHAR(25), \
 				Tick UNSIGNED BIG INT, \
 				Direction TINYINT, \
@@ -1094,7 +1098,7 @@ int CTeeHistorian::CreatePlayerInputTable() {
 				NextWeapon TINYINT, \
 				PrevWeapon TINYINT \
 			); \
-			CREATE INDEX IF NOT EXISTS PlayerInput_ClientID_index ON PlayerInput (ClientID); \
+			CREATE INDEX IF NOT EXISTS PlayerInput_JoinHash_index ON PlayerInput (JoinHash); \
 			CREATE INDEX IF NOT EXISTS PlayerInput_TimeStamp_index ON PlayerInput (TimeStamp); \
 			CREATE INDEX IF NOT EXISTS PlayerInput_Tick_index ON PlayerInput (Tick); \
 			CREATE INDEX IF NOT EXISTS PlayerInput_Direction_index ON PlayerInput (Direction); \
@@ -1126,13 +1130,15 @@ int CTeeHistorian::CreatePlayerConnectedStateTable() {
 	int err = sqlite_exec(m_SqliteDB ,
 	                      "BEGIN; \
 			CREATE TABLE IF NOT EXISTS PlayerConnectedState( \
+				JoinHash INT, \
 				NickName VARCHAR(20), \
 				ClientID TINYINT, \
 				TimeStamp VARCHAR(25), \
 				Tick UNSIGNED BIG INT, \
 				ConnectedState VARCHAR(64), \
-				Reason VARCHAR(64) \
+				Reason VARCHAR(128) \
 	                      ); \
+	        CREATE INDEX IF NOT EXISTS PlayerConnectedState_JoinHash_index ON PlayerConnectedState (JoinHash); \
 			CREATE INDEX IF NOT EXISTS PlayerConnectedState_NickName_index ON PlayerConnectedState (NickName); \
 			CREATE INDEX IF NOT EXISTS PlayerConnectedState_ClientID_index ON PlayerConnectedState (ClientID); \
 			CREATE INDEX IF NOT EXISTS PlayerConnectedState_TimeStamp_index ON PlayerConnectedState (TimeStamp); \
@@ -1206,12 +1212,12 @@ int CTeeHistorian::InsertIntoRconActivityTable(char* NickName, char *TimeStamp, 
 	return rc;
 }
 
-int CTeeHistorian::InsertIntoPlayerMovementTable(int ClientID, char *TimeStamp, int Tick, int x, int y, int old_x, int old_y) {
+int CTeeHistorian::InsertIntoPlayerMovementTable(int ClientJoinHash, char *TimeStamp, int Tick, int x, int y, int old_x, int old_y) {
 
 	/* prepare */
 	const char *zTail;
 	const char *zSql = "\
-		INSERT OR REPLACE INTO PlayerMovement (ClientID, TimeStamp, Tick, X, Y, OldX, OldY) \
+		INSERT OR REPLACE INTO PlayerMovement (JoinHash, TimeStamp, Tick, X, Y, OldX, OldY) \
 		VALUES ( ?1, trim(?2), ?3, ?4, ?5, ?6, ?7 ) \
 		;";
 	sqlite3_stmt *pStmt;
@@ -1220,7 +1226,7 @@ int CTeeHistorian::InsertIntoPlayerMovementTable(int ClientID, char *TimeStamp, 
 	if (rc == SQLITE_OK)
 	{
 		/* bind parameters in query */
-		sqlite_bind_int(pStmt, 1, ClientID);
+		sqlite_bind_int(pStmt, 1, ClientJoinHash);
 		sqlite_bind_text(pStmt, 2, TimeStamp);
 		sqlite_bind_int(pStmt, 3, Tick);
 		sqlite_bind_int(pStmt, 4, x);
@@ -1257,11 +1263,11 @@ int CTeeHistorian::InsertIntoPlayerMovementTable(int ClientID, char *TimeStamp, 
 	sqlite_finalize(pStmt);
 	return rc;
 }
-int CTeeHistorian::InsertIntoPlayerInputTable(int ClientID, char *TimeStamp, int Tick, int Direction, int TargetX, int TargetY, int Jump, int Fire, int Hook, int PlayerFlags, int WantedWeapon, int NextWeapon, int PrevWeapon) {
+int CTeeHistorian::InsertIntoPlayerInputTable(int ClientJoinHash, char *TimeStamp, int Tick, int Direction, int TargetX, int TargetY, int Jump, int Fire, int Hook, int PlayerFlags, int WantedWeapon, int NextWeapon, int PrevWeapon) {
 	/* prepare */
 	const char *zTail;
 	const char *zSql = "\
-		INSERT OR REPLACE INTO PlayerInput (ClientID, TimeStamp, Tick, Direction, TargetX, TargetY, Jump, Fire, Hook, PlayerFlags, WantedWeapon, NextWeapon, PrevWeapon) \
+		INSERT OR REPLACE INTO PlayerInput (JoinHash, TimeStamp, Tick, Direction, TargetX, TargetY, Jump, Fire, Hook, PlayerFlags, WantedWeapon, NextWeapon, PrevWeapon) \
 		VALUES ( ?1, trim(?2), ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13 ) \
 		;";
 	sqlite3_stmt *pStmt;
@@ -1270,7 +1276,7 @@ int CTeeHistorian::InsertIntoPlayerInputTable(int ClientID, char *TimeStamp, int
 	if (rc == SQLITE_OK)
 	{
 		/* bind parameters in query */
-		sqlite_bind_int(pStmt, 1, ClientID);
+		sqlite_bind_int(pStmt, 1, ClientJoinHash);
 		sqlite_bind_text(pStmt, 2, TimeStamp);
 		sqlite_bind_int(pStmt, 3, Tick);
 		sqlite_bind_int(pStmt, 4, Direction);
@@ -1318,12 +1324,12 @@ int CTeeHistorian::InsertIntoPlayerInputTable(int ClientID, char *TimeStamp, int
 }
 
 
-int CTeeHistorian::InsertIntoPlayerConnectedStateTable(char  *NickName, int ClientID, char *TimeStamp, int Tick, bool ConnectedState, char *Reason) {
+int CTeeHistorian::InsertIntoPlayerConnectedStateTable(int ClientJoinHash, char  *NickName, int ClientID, char *TimeStamp, int Tick, bool ConnectedState, char *Reason) {
 	/* prepare */
 	const char *zTail;
 	const char *zSql = "\
-		INSERT OR REPLACE INTO PlayerConnectedState (NickName, ClientID, TimeStamp, Tick, ConnectedState, Reason) \
-		VALUES ( trim(?1), ?2, ?3, ?4, ?5, 6) \
+		INSERT OR REPLACE INTO PlayerConnectedState (JoinHash, NickName, ClientID, TimeStamp, Tick, ConnectedState, Reason) \
+		VALUES ( ?1, trim(?2), ?3, ?4, ?5, ?6, ?7) \
 		;";
 	sqlite3_stmt *pStmt;
 	int rc = sqlite_prepare_statement(m_SqliteDB, zSql, &pStmt, &zTail);
@@ -1331,12 +1337,13 @@ int CTeeHistorian::InsertIntoPlayerConnectedStateTable(char  *NickName, int Clie
 	if (rc == SQLITE_OK)
 	{
 		/* bind parameters in query */
-		sqlite_bind_text(pStmt, 1, NickName);
-		sqlite_bind_int(pStmt, 2, ClientID);
-		sqlite_bind_text(pStmt, 3, TimeStamp);
-		sqlite_bind_int(pStmt, 4, Tick);
-		sqlite_bind_text(pStmt, 5, ConnectedState ? "joined" : "left");
-		sqlite_bind_text(pStmt, 6, ConnectedState ? "" : Reason);
+		sqlite_bind_int(pStmt, 1, ClientJoinHash);
+		sqlite_bind_text(pStmt, 2, NickName);
+		sqlite_bind_int(pStmt, 3, ClientID);
+		sqlite_bind_text(pStmt, 4, TimeStamp);
+		sqlite_bind_int(pStmt, 5, Tick);
+		sqlite_bind_text(pStmt, 6, ConnectedState ? "joined" : "left");
+		sqlite_bind_text(pStmt, 7, Reason);
 
 		/* lock database access in this process */
 		sqlite_lock(&m_SqliteMutex);

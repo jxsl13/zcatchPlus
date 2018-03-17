@@ -551,7 +551,7 @@ void CGameContext::OnTick()
 			{
 				CNetObj_CharacterCore Char;
 				m_apPlayers[i]->GetCharacter()->GetCore().Write(&Char);
-				m_TeeHistorian.RecordPlayer(Server()->ClientName(i), i, &Char);
+				m_TeeHistorian.RecordPlayer(Server()->ClientJoinHash(i), Server()->ClientName(i), i, &Char);
 			}
 			else
 			{
@@ -800,7 +800,7 @@ void CGameContext::OnClientDirectInput(const char* ClientNick, int ClientID, voi
 	/*teehistorian*/
 	if (m_TeeHistorianActive)
 	{
-		m_TeeHistorian.RecordPlayerInput(ClientNick, ClientID, (CNetObj_PlayerInput *)pInput);
+		m_TeeHistorian.RecordPlayerInput(Server()->ClientJoinHash(ClientID), ClientNick, ClientID, (CNetObj_PlayerInput *)pInput);
 	}
 }
 
@@ -928,7 +928,7 @@ void CGameContext::OnClientEngineJoin(int ClientID)
 {
 	if (m_TeeHistorianActive)
 	{
-		m_TeeHistorian.RecordPlayerJoin(Server()->ClientName(ClientID), ClientID, Server()->Tick());
+		m_TeeHistorian.RecordPlayerJoin(Server()->ClientJoinHash(ClientID), Server()->ClientName(ClientID), ClientID, Server()->Tick());
 	}
 }
 
@@ -936,7 +936,7 @@ void CGameContext::OnClientEngineDrop(int ClientID, const char *pReason)
 {
 	if (m_TeeHistorianActive)
 	{
-		m_TeeHistorian.RecordPlayerDrop(Server()->ClientName(ClientID), ClientID, Server()->Tick(), pReason);
+		m_TeeHistorian.RecordPlayerDrop(Server()->ClientJoinHash(ClientID), Server()->ClientName(ClientID), ClientID, Server()->Tick(), pReason);
 	}
 }
 
@@ -1601,6 +1601,15 @@ void CGameContext::OnMessage(int MsgID, CUnpacker *pUnpacker, int ClientID)
 		pPlayer->m_TeeInfos.m_ColorBody = pMsg->m_ColorBody;
 		pPlayer->m_TeeInfos.m_ColorFeet = pMsg->m_ColorFeet;
 		m_pController->OnPlayerInfoChange(pPlayer);
+
+		/*sqlitehistorian*/
+		/*sqlitehistorian*/
+		char aJoinHash[MAX_NAME_LENGTH + 32];
+		str_format(aJoinHash, sizeof(aJoinHash), "%32d %s-%d", Server()->Tick(), Server()->ClientName(ClientID), ClientID);
+
+		int Hash = str_quickhash(aJoinHash);
+		Server()->SetClientJoinHash(ClientID, Hash);
+
 
 		// send vote options
 		CNetMsg_Sv_VoteClearOptions ClearMsg;
