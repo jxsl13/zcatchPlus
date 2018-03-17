@@ -164,7 +164,7 @@ void CGameController_zCatch::DoWincheck()
 				GameServer()->SendChatTarget(-1, "Too few players to end round.");
 
 				if (g_Config.m_SvLastStandingDeathmatch == 1) {
-					GameServer()->SendBroadcast("Cannot end a round, because we are playing the Release Game.", -1);
+					GameServer()->SendBroadcast("Cannot end the round, because we are playing the Release Game.", -1);
 				} else {
 					GameServer()->SendBroadcast("Too few players to end round.", -1);
 				}
