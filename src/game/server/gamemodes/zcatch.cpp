@@ -870,11 +870,11 @@ void CGameController_zCatch::ToggleLastStandingDeathmatchAndRelease(int Players_
 
 		if (Players_Ingame < g_Config.m_SvLastStandingPlayers)
 		{
-			dbg_msg("TEST#1", "TEST");
+
 			if (m_OldPlayersIngame >= g_Config.m_SvLastStandingPlayers)
 			{
-				dbg_msg("TEST#1", "TEST");
-				GameServer()->SendThreadedDelayedBroadCast("Not enough players to end the round again.", -1, 5000);
+
+				GameServer()->SendThreadedDelayedBroadCast("Not enough players to end the round again.", -1, 2000);
 			}
 
 			// old Joining settings are the same as the current ones and not the allow everyone to join option.
