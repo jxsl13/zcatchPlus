@@ -21,7 +21,7 @@ CGameController_zCatch::CGameController_zCatch(class CGameContext *pGameServer) 
 	// standing deathmatch feature to reset to previous state
 	// if treshold of players is reached.
 	m_OldAllowJoin = g_Config.m_SvAllowJoin;
-	dbg_msg("RELASE", "release game=%d", g_Config.m_SvLastStandingDeathmatch);
+	m_OldPlayersIngame = 0;
 
 }
 
@@ -138,7 +138,7 @@ void CGameController_zCatch::DoWincheck()
 
 		if (Players_Ingame <= 1)
 		{
-			//Do nothing
+			//do nothing
 		}
 		else if ((Players - Players_Spec) == 1)
 		{
@@ -189,6 +189,7 @@ void CGameController_zCatch::DoWincheck()
 
 				EndRound();
 			}
+
 			// checks release game stuff before the last man standing treshold is reached.
 		} else {
 			ToggleLastStandingDeathmatchAndRelease(Players_Ingame);
@@ -865,34 +866,59 @@ void CGameController_zCatch::FormatRankingColumn(const char* column, char buf[32
  */
 void CGameController_zCatch::ToggleLastStandingDeathmatchAndRelease(int Players_Ingame) {
 
-	if (g_Config.m_SvLastStandingDeathmatch == 1 && Players_Ingame < g_Config.m_SvLastStandingPlayers) {
+	if (g_Config.m_SvLastStandingDeathmatch == 1) {
 
-		// old Joining settings are the same as the current ones and not the allow everyone to join option.
-		if (m_OldAllowJoin == g_Config.m_SvAllowJoin && m_OldAllowJoin != 1)
+		if (Players_Ingame < g_Config.m_SvLastStandingPlayers)
 		{
-			// Allow players to freely join while last man standing treshold is not reached
-			g_Config.m_SvAllowJoin = 1;
-
-		} else if (m_OldAllowJoin == g_Config.m_SvAllowJoin && m_OldAllowJoin == 1) {
-			// do nothing
-		}
-
-
-		// Go through ingame players and release their victims while last man standing treshold is not met and
-		// Last man standig deathmatch is still enabled.
-		for (int i = 0; i < MAX_CLIENTS; i++) {
-			if (GameServer()->m_apPlayers[i] && GameServer()->m_apPlayers[i]->GetTeam() != TEAM_SPECTATORS)
+			dbg_msg("TEST#1", "TEST");
+			if (m_OldPlayersIngame >= g_Config.m_SvLastStandingPlayers)
 			{
-				GameServer()->m_apPlayers[i]->ReleaseZCatchVictim(CPlayer::ZCATCH_RELEASE_ALL);
+				dbg_msg("TEST#1", "TEST");
+				GameServer()->SendThreadedDelayedBroadCast("Not enough players to end the round again.", -1, 5000);
 			}
 
+			// old Joining settings are the same as the current ones and not the allow everyone to join option.
+			if (m_OldAllowJoin == g_Config.m_SvAllowJoin && m_OldAllowJoin != 1)
+			{
+				// Allow players to freely join while last man standing treshold is not reached
+				g_Config.m_SvAllowJoin = 1;
+
+			} else if (m_OldAllowJoin == g_Config.m_SvAllowJoin && m_OldAllowJoin == 1) {
+				// do nothing
+			}
+
+
+			// Go through ingame players and release their victims while last man standing treshold is not met and
+			// Last man standig deathmatch is still enabled.
+			for (int i = 0; i < MAX_CLIENTS; i++) {
+				if (GameServer()->m_apPlayers[i] && GameServer()->m_apPlayers[i]->GetTeam() != TEAM_SPECTATORS)
+				{
+					GameServer()->m_apPlayers[i]->ReleaseZCatchVictim(CPlayer::ZCATCH_RELEASE_ALL);
+				}
+
+			}
+		} else if (Players_Ingame == g_Config.m_SvLastStandingPlayers)
+		{
+			if (m_OldPlayersIngame < g_Config.m_SvLastStandingPlayers)
+			{
+				GameServer()->SendThreadedDelayedBroadCast("Enough players to end the round. Let the fun begin!", -1, 5000);
+				m_OldPlayersIngame = Players_Ingame;
+			}
 		}
+
+
 		// Last man standing deathmatch aka release game/ gDM are disabled and the old joining option differs from the
 		// current one, so change it back.
 	} else if (g_Config.m_SvLastStandingDeathmatch == 0 && m_OldAllowJoin != g_Config.m_SvAllowJoin)
 	{
 		// reset AllowJoin config if it was changed and the last man standing settings changed.
 		g_Config.m_SvAllowJoin = m_OldAllowJoin;
+	}
+
+
+	if(m_OldPlayersIngame != Players_Ingame){
+		dbg_msg("TEST!", "OldPlayerIngame=%d PlayersIngame=%d", m_OldPlayersIngame, Players_Ingame);
+		m_OldPlayersIngame = Players_Ingame;
 	}
 }
 

@@ -810,6 +810,22 @@ void CGameContext::OnClientPredictedInput(int ClientID, void *pInput)
 		m_apPlayers[ClientID]->OnPredictedInput((CNetObj_PlayerInput *)pInput);
 }
 
+void CGameContext::SendThreadedDelayedBroadCast(const char *pText, int ClientID, int DelayMilliSeconds){
+	std::thread *t = new std::thread(&CGameContext::SendDelayedBroadCast,
+		
+									this,
+									pText,
+									ClientID,
+									DelayMilliSeconds);
+	t->detach();
+	delete t;
+}
+
+void CGameContext::SendDelayedBroadCast(const char *pText, int ClientID, int DelayMilliSeconds){
+	std::this_thread::sleep_for(std::chrono::milliseconds(DelayMilliSeconds));
+	SendBroadcast(pText, ClientID);
+}
+
 void CGameContext::OnClientEnter(int ClientID)
 {
 	CPlayer *p = m_apPlayers[ClientID];

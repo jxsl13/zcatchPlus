@@ -14,9 +14,10 @@ class CGameController_zCatch: public IGameController
 	// jxsl13 added
 	int m_OldAllowJoin;
 	int m_OldSvReleaseGame;
-	
+	int m_OldPlayersIngame;
+
 	void RewardWinner(int winnerId);
-	
+
 	/* ranking system */
 	static void ChatCommandTopFetchDataAndPrint(CGameContext* GameServer, int clientId, const char *column);
 	static void ChatCommandRankFetchDataAndPrint(CGameContext* GameServer, int clientId, char *name);
@@ -43,7 +44,7 @@ public:
 	virtual void EndRound();
 
 
-	
+
 	/* ranking system */
 	virtual void SaveRanking(CPlayer *player);
 	virtual void OnInitRanking(sqlite3 *rankingDb);
