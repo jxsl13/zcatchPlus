@@ -809,8 +809,6 @@ int CServer::NewClientCallback(int ClientID, void *pUser)
 	pThis->m_aClients[ClientID].m_pRconCmdToSend = 0;
 	pThis->m_aClients[ClientID].Reset();
 
-	/*teehistorian*/
-	pThis->GameServer()->OnClientEngineJoin(ClientID);
 	return 0;
 }
 
@@ -823,6 +821,9 @@ int CServer::DelClientCallback(int ClientID, const char *pReason, void *pUser)
 	char aBuf[256];
 	str_format(aBuf, sizeof(aBuf), "client dropped. cid=%d addr=%s reason='%s'", ClientID, aAddrStr,	pReason);
 	pThis->Console()->Print(IConsole::OUTPUT_LEVEL_ADDINFO, "server", aBuf);
+
+	/*teehistorian*/
+	pThis->GameServer()->OnClientEngineDrop(ClientID, pReason);
 
 	// notify the mod about the drop
 	if (pThis->m_aClients[ClientID].m_State >= CClient::STATE_READY)
@@ -840,8 +841,6 @@ int CServer::DelClientCallback(int ClientID, const char *pReason, void *pUser)
 	// could have been an admin
 	pThis->UpdateLoggedInAdmins();
 
-	/*teehistorian*/
-	pThis->GameServer()->OnClientEngineDrop(ClientID, pReason);
 
 	return 0;
 }
@@ -1041,6 +1040,10 @@ void CServer::ProcessClientPacket(CNetChunk *pPacket)
 				Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "server", aBuf);
 				m_aClients[ClientID].m_State = CClient::STATE_INGAME;
 				GameServer()->OnClientEnter(ClientID);
+
+				/*teehistorian*/
+				GameServer()->OnClientEngineJoin(ClientID);
+
 			}
 		}
 		else if (Msg == NETMSG_INPUT)
@@ -2304,10 +2307,10 @@ static CServer *CreateServer() { return new CServer(); }
  * @brief Andles weird server shutdowns.
  * like with ctrl+c
  * @details [long description]
- * 
+ *
  * @param s [description]
  */
-void ErrorSignalHandler(int s){
+void ErrorSignalHandler(int s) {
 	s_SignalHandlerShutdown = 1;
 	dbg_msg("SHUTDOWN", "Shutting down due to kill signal or CTRL-C");
 }
@@ -2327,7 +2330,7 @@ int main(int argc, const char **argv) // ignore_convention
 	}
 #endif
 
-	if(secure_random_init() != 0)
+	if (secure_random_init() != 0)
 	{
 		dbg_msg("secure", "could not initialize secure RNG");
 		return -1;

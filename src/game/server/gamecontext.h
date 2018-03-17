@@ -247,6 +247,7 @@ public:
 	virtual void OnClientEngineDrop(int ClientID, const char *pReason);
 	/*teehistorian end*/
 
+
 	virtual bool IsClientReady(int ClientID);
 	virtual bool IsClientPlayer(int ClientID);
 

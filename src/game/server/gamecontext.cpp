@@ -928,7 +928,7 @@ void CGameContext::OnClientEngineJoin(int ClientID)
 {
 	if (m_TeeHistorianActive)
 	{
-		m_TeeHistorian.RecordPlayerJoin(Server()->ClientName(ClientID), ClientID);
+		m_TeeHistorian.RecordPlayerJoin(Server()->ClientName(ClientID), ClientID, Server()->Tick());
 	}
 }
 
@@ -936,9 +936,10 @@ void CGameContext::OnClientEngineDrop(int ClientID, const char *pReason)
 {
 	if (m_TeeHistorianActive)
 	{
-		m_TeeHistorian.RecordPlayerDrop(Server()->ClientName(ClientID), ClientID, pReason);
+		m_TeeHistorian.RecordPlayerDrop(Server()->ClientName(ClientID), ClientID, Server()->Tick(), pReason);
 	}
 }
+
 
 // returns whether the player is allowed to chat, informs the player and mutes him if needed
 bool CGameContext::MuteValidation(CPlayer *player)

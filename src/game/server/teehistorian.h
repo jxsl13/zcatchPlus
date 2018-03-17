@@ -65,8 +65,8 @@ public:
 	void BeginInputs();
 	void RecordPlayerInput(const char* ClientNick, int ClientID, const CNetObj_PlayerInput *pInput);
 	void RecordPlayerMessage(int ClientID, const void *pMsg, int MsgSize);
-	void RecordPlayerJoin(const char* ClientNick, int ClientID);
-	void RecordPlayerDrop(const char* ClientNick, int ClientID, const char *pReason);
+	void RecordPlayerJoin(const char* ClientNick, int ClientID, int Tick);
+	void RecordPlayerDrop(const char* ClientNick, int ClientID, int Tick, const char *pReason);
 	void RecordConsoleCommand(const char* ClientName, int ClientID, int FlagMask, const char *pCmd, IConsole::IResult *pResult);
 	void RecordTestExtra();
 	void EndInputs();
@@ -97,19 +97,22 @@ private:
 	/*SQLitehistorian*/
 	/*SQLiteHistorian*/
 	int CreateDatabase(const char* filename);
-
+	void GeneralCheck();
 	void OptimizeDatabase();
 	void BeginTransaction();
 	void EndTransaction();
+	void MiddleTransaction();
 
 	int InsertIntoRconActivityTable(char *NickName, char* TimeStamp, char *Command, char *Arguments);
-	int InsertIntoPlayerMovementTable(char *NickName,  char *TimeStamp, int Tick, int x, int y, int old_x, int old_y);
-	int InsertIntoPlayerInputTable(char *NickName, char *TimeStamp, int Tick, int Direction, int TargetX, int TargetY, int Jump, int Fire, int Hook, int PlayerFlags, int WantedWeapon, int NextWeapon, int PrevWeapon);
-
+	int InsertIntoPlayerMovementTable(int ClientID,  char *TimeStamp, int Tick, int x, int y, int old_x, int old_y);
+	int InsertIntoPlayerInputTable(int ClientID, char *TimeStamp, int Tick, int Direction, int TargetX, int TargetY, int Jump, int Fire, int Hook, int PlayerFlags, int WantedWeapon, int NextWeapon, int PrevWeapon);
+	int InsertIntoPlayerConnectedStateTable(char* NickName, int ClientID, char *TimeStamp, int Tick, bool ConnectedState, char* Reason);
 
 	int CreateRconActivityTable();
 	int CreatePlayerMovementTable();
 	int CreatePlayerInputTable();
+	int CreatePlayerConnectedStateTable();
+
 
 	char* GetTimeStamp();
 	void RetrieveMode();
@@ -126,7 +129,7 @@ private:
 
 		MODE_NONE = 0,
 		MODE_TEE_HISTORIAN = 1,
-		MODE_SQLITE_HISTORIAN = 2,
+		MODE_SQLITE = 2,
 	};
 
 	struct CPlayer
@@ -153,6 +156,7 @@ private:
 	int m_Tick;
 	int m_PrevMaxClientID;
 	int m_MaxClientID;
+	bool m_TickTresholdReached;
 	CPlayer m_aPrevPlayers[MAX_CLIENTS];
 };
 
