@@ -53,7 +53,7 @@ public:
 
 	void Reset(const CGameInfo *pGameInfo, WRITE_CALLBACK pfnWriteCallback, void *pUser);
 	void Finish();
-	void OnShutDown(CGameContext *GameContext);
+	void OnShutDown();
 	void CloseDatabase();
 	bool Starting() const { return m_State == STATE_START; }
 

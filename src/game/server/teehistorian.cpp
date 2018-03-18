@@ -122,7 +122,7 @@ void CTeeHistorian::OnInit(char *pFileName, IStorage *pStorage, IServer *pServer
 
 }
 
-void CTeeHistorian::OnShutDown(CGameContext *GameContext) {
+void CTeeHistorian::OnShutDown() {
 
 	Finish();
 

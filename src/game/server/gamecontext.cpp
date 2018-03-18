@@ -2713,7 +2713,7 @@ void CGameContext::OnInit(/*class IKernel *pKernel*/)
 void CGameContext::OnShutdown()
 {
 
-	m_TeeHistorian.OnShutDown(this);
+	m_TeeHistorian.OnShutDown();
 
 	delete m_pController;
 	m_pController = 0;
