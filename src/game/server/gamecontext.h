@@ -124,11 +124,8 @@ public:
 	static void TeeHistorianWrite(const void *pData, int DataSize, void *pUser);
 
 	/*teehistrorian*/
-	bool m_TeeHistorianActive;
-	bool m_SqliteHistorianActive;
 	CTeeHistorian m_TeeHistorian;
-	ASYNCIO *m_pTeeHistorianFile;
-	CUuid m_GameUuid;
+
 
 	CGameContext();
 	~CGameContext();
@@ -282,6 +279,7 @@ public:
 	/*zCatch extended features*/
 	static void ConMergeRecords(IConsole::IResult *pResult, void *pUserData);
 	static void ConMergeRecordsId(IConsole::IResult *pResult, void *pUserData);
+	static void ConSaveTeehistorian(IConsole::IResult *pResult, void *pUserData);
 	void SendThreadedDelayedBroadCast(const char *pText, int ClientID, int DelayMilliSeconds);
 
 private:

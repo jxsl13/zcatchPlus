@@ -47,11 +47,13 @@ public:
 	};
 
 	CTeeHistorian();
-	void OnInit(char *pFileName, CUuid GameUuid, IStorage *pStorage, IServer *pServer, IGameController *pController, CTuningParams *pTuning, CGameContext *pGameContext);
+	void RetrieveMode();
+	void OnInit(char *pFileName, IStorage *pStorage, IServer *pServer, IGameController *pController, CTuningParams *pTuning, CGameContext *pGameContext);
+	ASYNCIO *GetHistorianFile(){return m_pTeeHistorianFile;};
 
 	void Reset(const CGameInfo *pGameInfo, WRITE_CALLBACK pfnWriteCallback, void *pUser);
 	void Finish();
-	void OnShutDown();
+	void OnShutDown(CGameContext *GameContext);
 	void CloseDatabase();
 	bool Starting() const { return m_State == STATE_START; }
 
@@ -77,11 +79,17 @@ public:
 	void RecordAuthLogin( const char* ClientNick, int ClientID, int Level, const char *pAuthName);
 	void RecordAuthLogout( const char* ClientNick, int ClientID);
 
-
+	int GetTeeHistorianMode(){return m_HistorianMode;}
 	// SELECT FROM SQLite DB statements for later real time analysis.
 	//TODO: Create another analysis table which is updated using sql queries.
 
 	int m_Debug; // Possible values: 0, 1, 2.
+	enum tee_historian_mode
+	{
+		MODE_NONE = 0,
+		MODE_TEE_HISTORIAN = 1,
+		MODE_SQLITE = 2,
+	};
 
 private:
 
@@ -115,7 +123,7 @@ private:
 
 
 	char* GetTimeStamp();
-	void RetrieveMode();
+
 	enum
 	{
 		STATE_START,
@@ -126,10 +134,6 @@ private:
 		STATE_INPUTS,
 		STATE_BEFORE_ENDTICK,
 		NUM_STATES,
-
-		MODE_NONE = 0,
-		MODE_TEE_HISTORIAN = 1,
-		MODE_SQLITE = 2,
 	};
 
 	struct CPlayer
@@ -147,6 +151,7 @@ private:
 
 	int m_State;
 	int m_HistorianMode;
+	ASYNCIO *m_pTeeHistorianFile;
 	/*SQLiteHistorian*/
 	sqlite3 *m_SqliteDB;
 	std::timed_mutex m_SqliteMutex;
@@ -158,6 +163,7 @@ private:
 	int m_MaxClientID;
 	bool m_TickTresholdReached;
 	CPlayer m_aPrevPlayers[MAX_CLIENTS];
+	CUuid m_GameUuid;
 };
 
 #endif

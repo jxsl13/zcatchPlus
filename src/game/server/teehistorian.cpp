@@ -52,12 +52,12 @@ static char EscapeJsonChar(char c)
 }
 
 
-void CTeeHistorian::OnInit(char *pFileName, CUuid GameUuid, IStorage *pStorage, IServer *pServer, IGameController *pController, CTuningParams *pTuning, CGameContext *pGameContext) {
+void CTeeHistorian::OnInit(char *pFileName, IStorage *pStorage, IServer *pServer, IGameController *pController, CTuningParams *pTuning, CGameContext *pGameContext) {
 	RetrieveMode();
 
 	if (m_HistorianMode) {
 		char aGameUuid[UUID_MAXSTRSIZE];
-		FormatUuid(GameUuid, aGameUuid, sizeof(aGameUuid));
+		FormatUuid(m_GameUuid, aGameUuid, sizeof(aGameUuid));
 		char aFilename[64];
 
 
@@ -94,12 +94,12 @@ void CTeeHistorian::OnInit(char *pFileName, CUuid GameUuid, IStorage *pStorage, 
 				dbg_msg("teehistorian", "recording to '%s'", aFilename);
 			}
 
-			pGameContext->m_pTeeHistorianFile = (aio_new(File));
+			m_pTeeHistorianFile = (aio_new(File));
 
 			CUuidManager Empty;
 
 			CTeeHistorian::CGameInfo GameInfo;
-			GameInfo.m_GameUuid = GameUuid;
+			GameInfo.m_GameUuid = m_GameUuid;
 			GameInfo.m_pServerVersion = "jsxl's zcatch " GAME_VERSION;
 			GameInfo.m_StartTime = time(0);
 
@@ -120,6 +120,28 @@ void CTeeHistorian::OnInit(char *pFileName, CUuid GameUuid, IStorage *pStorage, 
 		}
 	}
 
+}
+
+void CTeeHistorian::OnShutDown(CGameContext *GameContext) {
+
+	Finish();
+
+	if (m_HistorianMode == MODE_SQLITE)
+	{
+		CloseDatabase();
+	} else  if (m_HistorianMode == MODE_TEE_HISTORIAN)
+	{
+		aio_close(m_pTeeHistorianFile);
+		aio_wait(m_pTeeHistorianFile);
+		int Error = aio_error(m_pTeeHistorianFile);
+		if (Error)
+		{
+			dbg_msg("teehistorian", "error closing file, err=%d", Error);
+			//GameContext->Server()->SetErrorShutdown("teehistorian close error");
+		}
+		aio_free(m_pTeeHistorianFile);
+
+	}
 }
 
 static char *EscapeJson(char *pBuffer, int BufferSize, const char *pString)
@@ -170,6 +192,7 @@ CTeeHistorian::CTeeHistorian()
 	m_pfnWriteCallback = 0;
 	m_pWriteCallbackUserdata = 0;
 	m_HistorianMode = MODE_NONE;
+	m_GameUuid = RandomUuid();
 }
 
 void CTeeHistorian::RetrieveMode() {
@@ -400,41 +423,41 @@ void CTeeHistorian::RecordPlayer(int ClientJoinHash, const char* ClientNick, int
 			//if (!pPrev->m_Alive || pPrev->m_X != pChar->m_X || pPrev->m_Y != pChar->m_Y) // doesn't write every tick
 
 
-				EnsureTickWrittenPlayerData(ClientID);
-				char *Nick = (char*)malloc(MAX_NAME_LENGTH * sizeof(char));
-				str_copy(Nick, ClientNick, MAX_NAME_LENGTH * sizeof(char));
+			EnsureTickWrittenPlayerData(ClientID);
+			char *Nick = (char*)malloc(MAX_NAME_LENGTH * sizeof(char));
+			str_copy(Nick, ClientNick, MAX_NAME_LENGTH * sizeof(char));
 
-				char *aDate = GetTimeStamp();
-				int Tick = m_Tick;
-				int X = pChar->m_X;
-				int Y = pChar->m_Y;
-				int OldX = pPrev->m_X;
-				int OldY = pPrev->m_Y;
+			char *aDate = GetTimeStamp();
+			int Tick = m_Tick;
+			int X = pChar->m_X;
+			int Y = pChar->m_Y;
+			int OldX = pPrev->m_X;
+			int OldY = pPrev->m_Y;
 
-				/**
-				 * before detaching the thread let's check
-				 * if enough ticks passed to write out
-				 * transactions to the database
-				 */
+			/**
+			 * before detaching the thread let's check
+			 * if enough ticks passed to write out
+			 * transactions to the database
+			 */
 
-				if (Tick % (50 * g_Config.m_SvSqliteWriteInterval) == 0) {
-					std::thread *t = new std::thread(&CTeeHistorian::MiddleTransaction, this);
-					t->detach();
-					delete t;
-				}
-
-				/*it does not matter if this is written before or after this thread is executed*/
-				std::thread *t = new std::thread(&CTeeHistorian::InsertIntoPlayerMovementTable,
-				                                 this,
-				                                 ClientJoinHash,
-				                                 aDate,
-				                                 Tick,
-				                                 X,
-				                                 Y,
-				                                 OldX,
-				                                 OldY);
+			if (Tick % (50 * g_Config.m_SvSqliteWriteInterval) == 0) {
+				std::thread *t = new std::thread(&CTeeHistorian::MiddleTransaction, this);
 				t->detach();
 				delete t;
+			}
+
+			/*it does not matter if this is written before or after this thread is executed*/
+			std::thread *t = new std::thread(&CTeeHistorian::InsertIntoPlayerMovementTable,
+			                                 this,
+			                                 ClientJoinHash,
+			                                 aDate,
+			                                 Tick,
+			                                 X,
+			                                 Y,
+			                                 OldX,
+			                                 OldY);
+			t->detach();
+			delete t;
 
 
 		} else if (m_HistorianMode == MODE_TEE_HISTORIAN) {

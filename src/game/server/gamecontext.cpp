@@ -28,10 +28,6 @@ void CGameContext::Construct(int Resetting)
 	m_Resetting = 0;
 	m_pServer = 0;
 
-	/*teehistorian*/
-	m_TeeHistorianActive = false;
-	m_SqliteHistorianActive = false;
-
 	for (int i = 0; i < MAX_CLIENTS; i++)
 		m_apPlayers[i] = 0;
 
@@ -130,7 +126,7 @@ void CGameContext::Clear()
 void CGameContext::TeeHistorianWrite(const void *pData, int DataSize, void *pUser)
 {
 	CGameContext *pSelf = (CGameContext *)pUser;
-	aio_write(pSelf->m_pTeeHistorianFile, pData, DataSize);
+	aio_write(pSelf->m_TeeHistorian.GetHistorianFile(), pData, DataSize);
 
 }
 
@@ -138,7 +134,7 @@ void CGameContext::CommandCallback(int ClientID, int FlagMask, const char *pCmd,
 {
 	CGameContext *pSelf = (CGameContext *)pUser;
 
-	if (pSelf->m_TeeHistorianActive)
+	if (pSelf->m_TeeHistorian.GetTeeHistorianMode())
 	{
 		pSelf->m_TeeHistorian.RecordConsoleCommand(pSelf->Server()->ClientName(ClientID), ClientID, FlagMask, pCmd, pResult);
 	}
@@ -514,10 +510,10 @@ void CGameContext::OnTick()
 
 
 	/*teehistorian*/
-	if (m_TeeHistorianActive)
+	if (m_TeeHistorian.GetTeeHistorianMode())
 	{
-		if (m_TeeHistorianActive && !m_SqliteHistorianActive) {
-			int Error = aio_error(m_pTeeHistorianFile);
+		if (m_TeeHistorian.GetTeeHistorianMode() == CTeeHistorian::MODE_TEE_HISTORIAN) {
+			int Error = aio_error(m_TeeHistorian.GetHistorianFile());
 			if (Error)
 			{
 				dbg_msg("teehistorian", "error writing to file, err=%d", Error);
@@ -543,7 +539,7 @@ void CGameContext::OnTick()
 	m_pController->Tick();
 
 	/*teehistorian*/
-	if (m_TeeHistorianActive)
+	if (m_TeeHistorian.GetTeeHistorianMode())
 	{
 		for (int i = 0; i < MAX_CLIENTS; i++)
 		{
@@ -555,7 +551,7 @@ void CGameContext::OnTick()
 			}
 			else
 			{
-				if (!m_SqliteHistorianActive)
+				if (m_TeeHistorian.GetTeeHistorianMode() == CTeeHistorian::MODE_TEE_HISTORIAN)
 				{
 					m_TeeHistorian.RecordDeadPlayer(i);
 				}
@@ -798,7 +794,7 @@ void CGameContext::OnClientDirectInput(const char* ClientNick, int ClientID, voi
 		m_apPlayers[ClientID]->OnDirectInput((CNetObj_PlayerInput *)pInput);
 
 	/*teehistorian*/
-	if (m_TeeHistorianActive)
+	if (m_TeeHistorian.GetTeeHistorianMode())
 	{
 		m_TeeHistorian.RecordPlayerInput(Server()->ClientJoinHash(ClientID), ClientNick, ClientID, (CNetObj_PlayerInput *)pInput);
 	}
@@ -812,16 +808,16 @@ void CGameContext::OnClientPredictedInput(int ClientID, void *pInput)
 
 void CGameContext::SendThreadedDelayedBroadCast(const char *pText, int ClientID, int DelayMilliSeconds){
 	std::thread *t = new std::thread(&CGameContext::SendDelayedBroadCast,
-		
-									this,
-									pText,
-									ClientID,
-									DelayMilliSeconds);
+
+	                                 this,
+	                                 pText,
+	                                 ClientID,
+	                                 DelayMilliSeconds);
 	t->detach();
 	delete t;
 }
 
-void CGameContext::SendDelayedBroadCast(const char *pText, int ClientID, int DelayMilliSeconds){
+void CGameContext::SendDelayedBroadCast(const char *pText, int ClientID, int DelayMilliSeconds) {
 	std::this_thread::sleep_for(std::chrono::milliseconds(DelayMilliSeconds));
 	SendBroadcast(pText, ClientID);
 }
@@ -866,7 +862,7 @@ void CGameContext::OnClientEnter(int ClientID)
 			p->m_SpecExplicit = false;
 	}
 
-	if(g_Config.m_SvLastStandingDeathmatch == 1){
+	if (g_Config.m_SvLastStandingDeathmatch == 1) {
 		SendBroadcast("We are currently playing the Release Game. You can join the game!", ClientID);
 	} ;
 
@@ -954,7 +950,7 @@ void CGameContext::OnClientDrop(int ClientID, const char *pReason)
  */
 void CGameContext::OnClientEngineJoin(int ClientID)
 {
-	if (m_TeeHistorianActive)
+	if (m_TeeHistorian.GetTeeHistorianMode())
 	{
 		m_TeeHistorian.RecordPlayerJoin(Server()->ClientJoinHash(ClientID), Server()->ClientName(ClientID), ClientID, Server()->Tick());
 	}
@@ -962,7 +958,7 @@ void CGameContext::OnClientEngineJoin(int ClientID)
 
 void CGameContext::OnClientEngineDrop(int ClientID, const char *pReason)
 {
-	if (m_TeeHistorianActive)
+	if (m_TeeHistorian.GetTeeHistorianMode())
 	{
 		m_TeeHistorian.RecordPlayerDrop(Server()->ClientJoinHash(ClientID), Server()->ClientName(ClientID), ClientID, Server()->Tick(), pReason);
 	}
@@ -997,7 +993,7 @@ void CGameContext::OnMessage(int MsgID, CUnpacker *pUnpacker, int ClientID)
 	CPlayer *pPlayer = m_apPlayers[ClientID];
 
 	/*teehistorian*/
-	if (m_TeeHistorianActive)
+	if (m_TeeHistorian.GetTeeHistorianMode())
 	{
 		if (m_NetObjHandler.TeeHistorianRecordMsg(MsgID))
 		{
@@ -1832,11 +1828,11 @@ void CGameContext::OnSetAuthed(int ClientID, int Level)
 			Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "CGameContext", "Aborted vote by admin login.");
 		}
 	}
-	if (m_TeeHistorianActive)
+	if (m_TeeHistorian.GetTeeHistorianMode())
 	{
 		if (Level)
 		{
-			m_TeeHistorian.RecordAuthLogin( Server()->ClientName(ClientID), ClientID, Level, Server()->GetAuthName(ClientID));
+			m_TeeHistorian.RecordAuthLogin(Server()->ClientName(ClientID), ClientID, Level, Server()->GetAuthName(ClientID));
 		}
 		else
 		{
@@ -2537,6 +2533,24 @@ void CGameContext::OnConsoleInit()
 	// jxsl13 was here. Console Commands
 	Console()->Register("merge_records", "ss", CFGFLAG_SERVER, ConMergeRecords, this, "Merge two records into the target username and delete source records: merge_records <source nickname> <target nickname>", IConsole::ACCESS_LEVEL_ADMIN);
 	Console()->Register("merge_records_id", "ii", CFGFLAG_SERVER, ConMergeRecordsId, this, "Merge two records into the target ID and delete source ID's records: merge_records <source ID> <target ID>", IConsole::ACCESS_LEVEL_ADMIN);
+	Console()->Register("save_tee_historian", "", CFGFLAG_SERVER, ConSaveTeehistorian, this, "Writes latest records to either the Sqlite Database or creates a new Teehistorian File.", IConsole::ACCESS_LEVEL_ADMIN);
+}
+
+
+
+void CGameContext::ConSaveTeehistorian(IConsole::IResult *pResult, void *pUserData) {
+	CGameContext *pSelf = (CGameContext *)pUserData;
+
+	if (pSelf->m_TeeHistorian.GetTeeHistorianMode())
+	{
+		if (pSelf->m_TeeHistorian.GetTeeHistorianMode() == CTeeHistorian::MODE_SQLITE)
+		{
+
+		} else if (pSelf->m_TeeHistorian.GetTeeHistorianMode() == CTeeHistorian::MODE_TEE_HISTORIAN)
+		{
+			/* code */
+		}
+	}
 }
 
 void CGameContext::OnInit(/*class IKernel *pKernel*/)
@@ -2548,9 +2562,6 @@ void CGameContext::OnInit(/*class IKernel *pKernel*/)
 	m_Events.SetGameServer(this);
 
 	/*teehistorian*/
-
-
-	m_GameUuid = RandomUuid();
 	Console()->SetTeeHistorianCommandCallback(CommandCallback, this);
 
 
@@ -2638,22 +2649,19 @@ void CGameContext::OnInit(/*class IKernel *pKernel*/)
 	//game.world.insert_entity(game.Controller);
 
 	// after everything else is ready? teehistorian
-	m_TeeHistorianActive = g_Config.m_SvTeeHistorian;
-	m_SqliteHistorianActive = g_Config.m_SvSqliteHistorian;
+	m_TeeHistorian.RetrieveMode();
 
-	if (m_TeeHistorianActive)
+	if (m_TeeHistorian.GetTeeHistorianMode())
 	{
 
 
-		char aGameUuid[UUID_MAXSTRSIZE];
-		FormatUuid(m_GameUuid, aGameUuid, sizeof(aGameUuid));
 
-		if (m_SqliteHistorianActive)
+
+		if (m_TeeHistorian.GetTeeHistorianMode() == CTeeHistorian::MODE_SQLITE)
 		{
 			if (str_comp(g_Config.m_SvSqliteHistorianFileName, "") == 0)
 			{
 				m_TeeHistorian.OnInit(NULL,
-				                      m_GameUuid,
 				                      Storage(),
 				                      Server(),
 				                      m_pController,
@@ -2661,7 +2669,6 @@ void CGameContext::OnInit(/*class IKernel *pKernel*/)
 				                      this);
 			} else {
 				m_TeeHistorian.OnInit(g_Config.m_SvSqliteHistorianFileName,
-				                      m_GameUuid,
 				                      Storage(),
 				                      Server(),
 				                      m_pController,
@@ -2669,9 +2676,8 @@ void CGameContext::OnInit(/*class IKernel *pKernel*/)
 				                      this);
 			}
 
-		} else {
+		} else  if(m_TeeHistorian.GetTeeHistorianMode() == CTeeHistorian::MODE_TEE_HISTORIAN){
 			m_TeeHistorian.OnInit(NULL,
-			                      m_GameUuid,
 			                      Storage(),
 			                      Server(),
 			                      m_pController,
@@ -2706,29 +2712,8 @@ void CGameContext::OnInit(/*class IKernel *pKernel*/)
 
 void CGameContext::OnShutdown()
 {
-	m_TeeHistorian.Finish();
 
-	/*teehistorian*/
-	if (m_TeeHistorianActive)
-	{
-		if (m_SqliteHistorianActive)
-		{
-			m_TeeHistorian.CloseDatabase();
-		} else {
-			aio_close(m_pTeeHistorianFile);
-			aio_wait(m_pTeeHistorianFile);
-			int Error = aio_error(m_pTeeHistorianFile);
-			if (Error)
-			{
-				dbg_msg("teehistorian", "error closing file, err=%d", Error);
-				Server()->SetErrorShutdown("teehistorian close error");
-			}
-			aio_free(m_pTeeHistorianFile);
-
-		}
-
-
-	}
+	m_TeeHistorian.OnShutDown(this);
 
 	delete m_pController;
 	m_pController = 0;
