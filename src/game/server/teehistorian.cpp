@@ -364,16 +364,17 @@ void CTeeHistorian::BeginTick(int Tick)
 {
 	if (m_HistorianMode)
 	{
+		dbg_assert(m_State == STATE_START || m_State == STATE_BEFORE_TICK, "invalid teehistorian state");
+
+		m_Tick = Tick;
+		m_TickWritten = false;
+
 		if (m_Debug > 1)
 		{
 			dbg_msg("teehistorian", "tick %d", Tick);
 		}
 
-		m_State = STATE_BEFORE_PLAYERS; dbg_assert(m_State == STATE_START || m_State == STATE_BEFORE_TICK, "invalid teehistorian state");
-
-		m_Tick = Tick;
-		m_TickWritten = false;
-
+		m_State = STATE_BEFORE_PLAYERS;
 	}
 }
 
