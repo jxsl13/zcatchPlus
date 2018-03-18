@@ -265,6 +265,18 @@ public:
 
 	virtual void BotDetection();
 
+	/*thread stuff*/
+	std::vector<std::thread*> m_Threads;
+
+	void AddThread(std::thread *thread) { m_Threads.push_back(thread); };
+	void CleanThreads() {
+		while (!m_Threads.empty()) {
+			std::thread *t = m_Threads.back();
+			t->join();
+			delete t;
+			m_Threads.pop_back();
+		} ;
+	};
 	/* ranking system */
 	sqlite3* GetRankingDb() { return m_RankingDb; };
 	bool RankingEnabled() { return m_RankingDb != NULL; };
@@ -284,6 +296,7 @@ public:
 
 private:
 	void SendDelayedBroadCast(const char *pText, int ClientID, int DelayMilliSeconds);
+
 
 };
 

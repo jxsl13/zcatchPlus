@@ -55,6 +55,14 @@ static char EscapeJsonChar(char c)
 void CTeeHistorian::OnInit(char *pFileName, IStorage *pStorage, IServer *pServer, IGameController *pController, CTuningParams *pTuning, CGameContext *pGameContext) {
 	RetrieveMode();
 
+	m_pFileName = pFileName;
+	m_pStorage = pStorage;
+	m_pServer = pServer;
+	m_pController = pController;
+	m_pTuning = pTuning;
+	m_pGameContext = pGameContext;
+	m_GameUuid = RandomUuid();
+
 	if (m_HistorianMode) {
 		char aGameUuid[UUID_MAXSTRSIZE];
 		FormatUuid(m_GameUuid, aGameUuid, sizeof(aGameUuid));
@@ -63,8 +71,8 @@ void CTeeHistorian::OnInit(char *pFileName, IStorage *pStorage, IServer *pServer
 
 		if (m_HistorianMode == MODE_SQLITE)
 		{
-			if (pFileName != NULL) {
-				str_format(aFilename, sizeof(aFilename), "teehistorian/%s.db", pFileName);
+			if (m_pFileName != NULL) {
+				str_format(aFilename, sizeof(aFilename), "teehistorian/%s.db", m_pFileName);
 			} else {
 				str_format(aFilename, sizeof(aFilename), "teehistorian/%s.db", aGameUuid);
 			}
@@ -83,11 +91,11 @@ void CTeeHistorian::OnInit(char *pFileName, IStorage *pStorage, IServer *pServer
 
 
 
-			IOHANDLE File = pStorage->OpenFile(aFilename, IOFLAG_WRITE, IStorage::TYPE_SAVE);
+			IOHANDLE File = m_pStorage->OpenFile(aFilename, IOFLAG_WRITE, IStorage::TYPE_SAVE);
 			if (!File)
 			{
 				dbg_msg("teehistorian", "failed to open '%s'", aFilename);
-				pServer->SetErrorShutdown("teehistorian open error");
+				m_pServer->SetErrorShutdown("teehistorian open error");
 			}
 			else
 			{
@@ -105,17 +113,17 @@ void CTeeHistorian::OnInit(char *pFileName, IStorage *pStorage, IServer *pServer
 
 			GameInfo.m_pServerName = g_Config.m_SvName;
 			GameInfo.m_ServerPort = g_Config.m_SvPort;
-			GameInfo.m_pGameType = pController->m_pGameType;
+			GameInfo.m_pGameType = m_pController->m_pGameType;
 
 			GameInfo.m_pConfig = &g_Config;
-			GameInfo.m_pTuning = pTuning;
+			GameInfo.m_pTuning = m_pTuning;
 			GameInfo.m_pUuids = &Empty;
 
 			char aMapName[128];
-			pServer->GetMapInfo(aMapName, sizeof(aMapName), &GameInfo.m_MapSize, &GameInfo.m_MapCrc);
+			m_pServer->GetMapInfo(aMapName, sizeof(aMapName), &GameInfo.m_MapSize, &GameInfo.m_MapCrc);
 			GameInfo.m_pMapName = aMapName;
 
-			Reset(&GameInfo, CGameContext::TeeHistorianWrite, pGameContext);
+			Reset(&GameInfo, CGameContext::TeeHistorianWrite, m_pGameContext);
 			dbg_msg("TeeHistorian", "Initialization done.");
 		}
 	}
@@ -146,6 +154,11 @@ void CTeeHistorian::OnShutDown() {
 		aio_free(m_pTeeHistorianFile);
 
 	}
+}
+
+void CTeeHistorian::OnSave() {
+	OnShutDown();
+	OnInit(m_pFileName, m_pStorage, m_pServer, m_pController, m_pTuning, m_pGameContext);
 }
 
 static char *EscapeJson(char *pBuffer, int BufferSize, const char *pString)
@@ -1435,16 +1448,14 @@ void CTeeHistorian::CloseDatabase() {
 	//performance test
 
 	sqlite_lock(&m_SqliteMutex);
-	int tmpHistorianMode = m_HistorianMode;
-	m_HistorianMode = MODE_NONE;
-
+	
 	EndTransaction();
 
 	int err = sqlite_close(m_SqliteDB);
 	if (err != SQLITE_OK) {
 		dbg_msg("SQLiteHistorian", "Error on closing sqlite database(%li).(%d)", (long)m_SqliteDB ,err);
 	}
-	m_HistorianMode = tmpHistorianMode;
+
 	sqlite_unlock(&m_SqliteMutex);
 }
 

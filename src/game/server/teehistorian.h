@@ -55,6 +55,7 @@ public:
 	void Reset(const CGameInfo *pGameInfo, WRITE_CALLBACK pfnWriteCallback, void *pUser);
 	void Finish();
 	void OnShutDown();
+	void OnSave();
 	void CloseDatabase();
 	bool Starting() const { return m_State == STATE_START; }
 
@@ -166,6 +167,13 @@ private:
 			m_Threads.pop_back();
 		} ;
 	};
+
+	char *m_pFileName;
+	IStorage *m_pStorage;
+	IServer *m_pServer;
+	IGameController *m_pController;
+	CTuningParams *m_pTuning;
+	CGameContext *m_pGameContext;
 
 
 int m_LastWrittenTick;

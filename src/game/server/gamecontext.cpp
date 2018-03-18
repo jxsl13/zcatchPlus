@@ -807,14 +807,12 @@ void CGameContext::OnClientPredictedInput(int ClientID, void *pInput)
 }
 
 void CGameContext::SendThreadedDelayedBroadCast(const char *pText, int ClientID, int DelayMilliSeconds){
-	std::thread *t = new std::thread(&CGameContext::SendDelayedBroadCast,
+	AddThread(new std::thread(&CGameContext::SendDelayedBroadCast,
 
 	                                 this,
 	                                 pText,
 	                                 ClientID,
-	                                 DelayMilliSeconds);
-	t->detach();
-	delete t;
+	                                 DelayMilliSeconds));
 }
 
 void CGameContext::SendDelayedBroadCast(const char *pText, int ClientID, int DelayMilliSeconds) {
@@ -2432,11 +2430,8 @@ void CGameContext::ConMergeRecords(IConsole::IResult *pResult, void *pUserData) 
 	// strcpy(target, Target.c_str());
 
 	//CGameController_zCatch::MergeRankingIntoTarget(pSelf, source, target);
-	std::thread *t = new std::thread(&CGameController_zCatch::MergeRankingIntoTarget, pSelf, source, target);
+	pSelf->AddThread(new std::thread(&CGameController_zCatch::MergeRankingIntoTarget, pSelf, source, target));
 
-	t->detach();
-
-	delete t;
 }
 
 
@@ -2483,11 +2478,8 @@ void CGameContext::ConMergeRecordsId(IConsole::IResult *pResult, void *pUserData
 		return;
 	}
 
-	std::thread *t = new std::thread(&CGameController_zCatch::MergeRankingIntoTarget, pSelf, source, target);
+	pSelf->AddThread(new std::thread(&CGameController_zCatch::MergeRankingIntoTarget, pSelf, source, target));
 	// source and target are freed after execution of the thread within the function MergeRankingIntoTarget
-	t->detach();
-
-	delete t;
 
 }
 
@@ -2541,16 +2533,7 @@ void CGameContext::OnConsoleInit()
 void CGameContext::ConSaveTeehistorian(IConsole::IResult *pResult, void *pUserData) {
 	CGameContext *pSelf = (CGameContext *)pUserData;
 
-	if (pSelf->m_TeeHistorian.GetTeeHistorianMode())
-	{
-		if (pSelf->m_TeeHistorian.GetTeeHistorianMode() == CTeeHistorian::MODE_SQLITE)
-		{
-
-		} else if (pSelf->m_TeeHistorian.GetTeeHistorianMode() == CTeeHistorian::MODE_TEE_HISTORIAN)
-		{
-			/* code */
-		}
-	}
+	pSelf->m_TeeHistorian.OnSave();
 }
 
 void CGameContext::OnInit(/*class IKernel *pKernel*/)
@@ -2712,6 +2695,7 @@ void CGameContext::OnInit(/*class IKernel *pKernel*/)
 
 void CGameContext::OnShutdown()
 {
+
 
 	m_TeeHistorian.OnShutDown();
 
