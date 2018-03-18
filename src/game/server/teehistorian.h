@@ -17,6 +17,7 @@
 #include <base/sqlite.h>
 
 #include <thread>
+#include <vector>
 
 struct CConfiguration;
 class CTuningParams;
@@ -49,7 +50,7 @@ public:
 	CTeeHistorian();
 	void RetrieveMode();
 	void OnInit(char *pFileName, IStorage *pStorage, IServer *pServer, IGameController *pController, CTuningParams *pTuning, CGameContext *pGameContext);
-	ASYNCIO *GetHistorianFile(){return m_pTeeHistorianFile;};
+	ASYNCIO *GetHistorianFile() {return m_pTeeHistorianFile;};
 
 	void Reset(const CGameInfo *pGameInfo, WRITE_CALLBACK pfnWriteCallback, void *pUser);
 	void Finish();
@@ -79,7 +80,7 @@ public:
 	void RecordAuthLogin( const char* ClientNick, int ClientID, int Level, const char *pAuthName);
 	void RecordAuthLogout( const char* ClientNick, int ClientID);
 
-	int GetTeeHistorianMode(){return m_HistorianMode;}
+	int GetTeeHistorianMode() {return m_HistorianMode;}
 	// SELECT FROM SQLite DB statements for later real time analysis.
 	//TODO: Create another analysis table which is updated using sql queries.
 
@@ -102,24 +103,23 @@ private:
 	void Write(const void *pData, int DataSize);
 
 
-	/*SQLitehistorian*/
 	/*SQLiteHistorian*/
-	int CreateDatabase(const char* filename);
+	void CreateDatabase(const char* filename);
 	void GeneralCheck();
 	void OptimizeDatabase();
 	void BeginTransaction();
 	void EndTransaction();
 	void MiddleTransaction();
 
-	int InsertIntoRconActivityTable(char *NickName, char* TimeStamp, char *Command, char *Arguments);
-	int InsertIntoPlayerMovementTable(int ClientJoinHash,  char *TimeStamp, int Tick, int x, int y, int old_x, int old_y);
-	int InsertIntoPlayerInputTable(int ClientJoinHash, char *TimeStamp, int Tick, int Direction, int TargetX, int TargetY, int Jump, int Fire, int Hook, int PlayerFlags, int WantedWeapon, int NextWeapon, int PrevWeapon);
-	int InsertIntoPlayerConnectedStateTable(int ClientJoinHash, char* NickName, int ClientID, char *TimeStamp, int Tick, bool ConnectedState, char* Reason);
+	void InsertIntoRconActivityTable(char *NickName, char* TimeStamp, char *Command, char *Arguments);
+	void InsertIntoPlayerMovementTable(int ClientJoinHash,  char *TimeStamp, int Tick, int x, int y, int old_x, int old_y);
+	void InsertIntoPlayerInputTable(int ClientJoinHash, char *TimeStamp, int Tick, int Direction, int TargetX, int TargetY, int Jump, int Fire, int Hook, int PlayerFlags, int WantedWeapon, int NextWeapon, int PrevWeapon);
+	void InsertIntoPlayerConnectedStateTable(int ClientJoinHash, char* NickName, int ClientID, char *TimeStamp, int Tick, bool ConnectedState, char* Reason);
 
-	int CreateRconActivityTable();
-	int CreatePlayerMovementTable();
-	int CreatePlayerInputTable();
-	int CreatePlayerConnectedStateTable();
+	void CreateRconActivityTable();
+	void CreatePlayerMovementTable();
+	void CreatePlayerInputTable();
+	void CreatePlayerConnectedStateTable();
 
 
 	char* GetTimeStamp();
@@ -155,15 +155,27 @@ private:
 	/*SQLiteHistorian*/
 	sqlite3 *m_SqliteDB;
 	std::timed_mutex m_SqliteMutex;
+	std::vector<std::thread*> m_Threads;
 
-	int m_LastWrittenTick;
-	bool m_TickWritten;
-	int m_Tick;
-	int m_PrevMaxClientID;
-	int m_MaxClientID;
-	bool m_TickTresholdReached;
-	CPlayer m_aPrevPlayers[MAX_CLIENTS];
-	CUuid m_GameUuid;
+	void AddThread(std::thread *thread) { m_Threads.push_back(thread); };
+	void CleanThreads() {
+		while (!m_Threads.empty()) {
+			std::thread *t = m_Threads.back();
+			t->join();
+			delete t;
+			m_Threads.pop_back();
+		} ;
+	};
+
+
+int m_LastWrittenTick;
+bool m_TickWritten;
+int m_Tick;
+int m_PrevMaxClientID;
+int m_MaxClientID;
+bool m_TickTresholdReached;
+CPlayer m_aPrevPlayers[MAX_CLIENTS];
+CUuid m_GameUuid;
 };
 
 #endif
