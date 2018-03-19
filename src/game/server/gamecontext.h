@@ -19,7 +19,7 @@
 /* ranking system */
 #include <engine/external/sqlite/sqlite3.h>
 #include <thread>
-#include <vector>
+#include <queue>
 #include <mutex>
 #include <chrono>
 /*teehistorian*/
@@ -266,17 +266,35 @@ public:
 	virtual void BotDetection();
 
 	/*thread stuff*/
-	std::vector<std::thread*> m_Threads;
+	//std::vector<std::thread*> m_Threads;
+	std::queue<std::thread*> m_Threads;
 
-	void AddThread(std::thread *thread) { m_Threads.push_back(thread); };
+	void AddThread(std::thread *thread) { m_Threads.push(thread); };
 	void CleanThreads() {
+		int size = m_Threads.size();
+		for (int i = 0; i < size;i++)
+		{
+			std::thread *t = m_Threads.front();
+			m_Threads.pop();
+			if(t->joinable()){
+				t->join();
+				delete t;
+			} else {
+				m_Threads.push(t);
+			}
+		}
+
+	};
+	void JoinThreads() {
 		while (!m_Threads.empty()) {
-			std::thread *t = m_Threads.back();
+			std::thread *t = m_Threads.front();
+			m_Threads.pop();
 			t->join();
 			delete t;
-			m_Threads.pop_back();
+
 		} ;
 	};
+
 	/* ranking system */
 	sqlite3* GetRankingDb() { return m_RankingDb; };
 	bool RankingEnabled() { return m_RankingDb != NULL; };

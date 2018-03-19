@@ -17,7 +17,7 @@
 #include <base/sqlite.h>
 
 #include <thread>
-#include <vector>
+#include <queue>
 
 struct CConfiguration;
 class CTuningParams;
@@ -158,15 +158,31 @@ private:
 	/*SQLiteHistorian*/
 	sqlite3 *m_SqliteDB;
 	std::timed_mutex m_SqliteMutex;
-	std::vector<std::thread*> m_Threads;
+	std::queue<std::thread*> m_Threads;
 
-	void AddThread(std::thread *thread) { m_Threads.push_back(thread); };
+	void AddThread(std::thread *thread) { m_Threads.push(thread); };
 	void CleanThreads() {
+		int size = m_Threads.size();
+		for (int i = 0; i < size;i++)
+		{
+			std::thread *t = m_Threads.front();
+			m_Threads.pop();
+			if(t->joinable()){
+				t->join();
+				delete t;
+			} else {
+				m_Threads.push(t);
+			}
+		}
+
+	};
+	void JoinThreads() {
 		while (!m_Threads.empty()) {
-			std::thread *t = m_Threads.back();
+			std::thread *t = m_Threads.front();
+			m_Threads.pop();
 			t->join();
 			delete t;
-			m_Threads.pop_back();
+
 		} ;
 	};
 

@@ -90,6 +90,7 @@ void CTeeHistorian::OnInit(IStorage *pStorage, IServer *pServer, IGameController
 
 			//sqlite_lock(&m_SqliteMutex);
 			CreateDatabase(aFilename);
+			dbg_msg("SQLiteHistorian","Created Database: %s", aFilename);
 			//sqlite_unlock(&m_SqliteMutex);
 
 
@@ -111,7 +112,7 @@ void CTeeHistorian::OnInit(IStorage *pStorage, IServer *pServer, IGameController
 			}
 
 			m_pTeeHistorianFile = (aio_new(File));
-
+			dbg_msg("STeeHistorian","Created Logfile: %s", aFilename);
 			CUuidManager Empty;
 
 			CTeeHistorian::CGameInfo GameInfo;
@@ -142,17 +143,17 @@ void CTeeHistorian::OnShutDown(bool FinalShutdown) {
 
 
 	Finish();
-	dbg_msg("MODE#1", "OldMode=%d  Mode=%d", m_OldHistorianMode, m_HistorianMode);
 	//if (m_HistorianMode == MODE_SQLITE )
 
 	if (m_OldHistorianMode == MODE_SQLITE)
 	{
 		if (FinalShutdown)
 		{
+			JoinThreads();
+		} else {
 			CleanThreads();
-			dbg_msg("MODE#1.5", "CleanThreads OldMode=%d  Mode=%d", m_OldHistorianMode, m_HistorianMode);
 		}
-		dbg_msg("MODE#2", "OldMode=%d  Mode=%d", m_OldHistorianMode, m_HistorianMode);
+
 
 		CloseDatabase();
 
@@ -506,9 +507,8 @@ void CTeeHistorian::RecordPlayer(int ClientJoinHash, const char* ClientNick, int
 			 */
 
 			if (Tick % (50 * g_Config.m_SvSqliteWriteInterval) == 0) {
-				AddThread(new std::thread(&CTeeHistorian::MiddleTransaction, this));
 				CleanThreads();
-
+				AddThread(new std::thread(&CTeeHistorian::MiddleTransaction, this));
 			}
 
 			/*it does not matter if this is written before or after this thread is executed*/
