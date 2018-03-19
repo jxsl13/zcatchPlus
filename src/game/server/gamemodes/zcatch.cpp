@@ -884,7 +884,7 @@ void CGameController_zCatch::ToggleLastStandingDeathmatchAndRelease(int Players_
 			}
 
 
-		if (m_OldAllowJoin != g_Config.m_SvAllowJoin)
+		if (g_Config.m_SvAllowJoin != 1)
 		{
 			m_OldAllowJoin = g_Config.m_SvAllowJoin;
 			g_Config.m_SvAllowJoin = 1;
