@@ -2536,7 +2536,10 @@ void CGameContext::OnConsoleInit()
 void CGameContext::ConSaveTeehistorian(IConsole::IResult *pResult, void *pUserData) {
 	CGameContext *pSelf = (CGameContext *)pUserData;
 
-	pSelf->m_TeeHistorian.OnSave();
+	pSelf->m_TeeHistorian.Stop();
+	std::thread *t = new std::thread(&CTeeHistorian::OnSave, &(pSelf->m_TeeHistorian));
+	t->detach();
+	delete t;
 }
 
 void CGameContext::OnInit(/*class IKernel *pKernel*/)
@@ -2668,7 +2671,7 @@ void CGameContext::OnShutdown()
 {
 
 
-	m_TeeHistorian.OnShutDown();
+	m_TeeHistorian.OnShutDown(true);
 
 	delete m_pController;
 	m_pController = 0;

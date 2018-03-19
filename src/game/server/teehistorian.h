@@ -49,13 +49,14 @@ public:
 
 	CTeeHistorian();
 	void RetrieveMode(bool OnInit);
+	void Stop();
 	void CheckHistorianModeToggled();
 	void OnInit(IStorage *pStorage, IServer *pServer, IGameController *pController, CTuningParams *pTuning, CGameContext *pGameContext);
 	ASYNCIO *GetHistorianFile() {return m_pTeeHistorianFile;};
 
 	void Reset(const CGameInfo *pGameInfo, WRITE_CALLBACK pfnWriteCallback, void *pUser);
 	void Finish();
-	void OnShutDown();
+	void OnShutDown(bool FinalShutdown);
 	void OnSave();
 	void CloseDatabase();
 	bool Starting() const { return m_State == STATE_START; }

@@ -88,9 +88,9 @@ void CTeeHistorian::OnInit(IStorage *pStorage, IServer *pServer, IGameController
 				str_format(aFilename, sizeof(aFilename), "teehistorian/%s.db", aGameUuid);
 			}
 
-			sqlite_lock(&m_SqliteMutex);
+			//sqlite_lock(&m_SqliteMutex);
 			CreateDatabase(aFilename);
-			sqlite_unlock(&m_SqliteMutex);
+			//sqlite_unlock(&m_SqliteMutex);
 
 
 
@@ -98,10 +98,6 @@ void CTeeHistorian::OnInit(IStorage *pStorage, IServer *pServer, IGameController
 
 
 			str_format(aFilename, sizeof(aFilename), "teehistorian/%s.teehistorian", aGameUuid);
-
-
-
-
 
 			IOHANDLE File = m_pStorage->OpenFile(aFilename, IOFLAG_WRITE, IStorage::TYPE_SAVE);
 			if (!File)
@@ -142,24 +138,28 @@ void CTeeHistorian::OnInit(IStorage *pStorage, IServer *pServer, IGameController
 
 }
 
-void CTeeHistorian::OnShutDown() {
+void CTeeHistorian::OnShutDown(bool FinalShutdown) {
 
 
 	Finish();
+	dbg_msg("MODE#1", "OldMode=%d  Mode=%d", m_OldHistorianMode, m_HistorianMode);
+	//if (m_HistorianMode == MODE_SQLITE )
 
-	if (m_HistorianMode == MODE_SQLITE)
+	if (m_OldHistorianMode == MODE_SQLITE)
 	{
-		CleanThreads();
+		if (FinalShutdown)
+		{
+			CleanThreads();
+			dbg_msg("MODE#1.5", "CleanThreads OldMode=%d  Mode=%d", m_OldHistorianMode, m_HistorianMode);
+		}
+		dbg_msg("MODE#2", "OldMode=%d  Mode=%d", m_OldHistorianMode, m_HistorianMode);
 
-		sqlite_lock(&m_SqliteMutex);
 		CloseDatabase();
-		m_HistorianMode = MODE_NONE;
-		m_OldHistorianMode = MODE_NONE;
-		sqlite_unlock(&m_SqliteMutex);
 
 
 
-	} else  if (m_HistorianMode == MODE_TEE_HISTORIAN)
+
+	} else if (m_OldHistorianMode == MODE_TEE_HISTORIAN)
 	{
 		aio_close(m_pTeeHistorianFile);
 		aio_wait(m_pTeeHistorianFile);
@@ -172,13 +172,17 @@ void CTeeHistorian::OnShutDown() {
 		aio_free(m_pTeeHistorianFile);
 
 	}
+
+	m_HistorianMode = MODE_NONE;
+	m_OldHistorianMode = MODE_NONE;
 }
 
 void CTeeHistorian::OnSave() {
 
-	OnShutDown();
-
+	sqlite_lock(&m_SqliteMutex);
+	OnShutDown(false);
 	OnInit(m_pStorage, m_pServer, m_pController, m_pTuning, m_pGameContext);
+	sqlite_unlock(&m_SqliteMutex);
 
 }
 
@@ -246,8 +250,8 @@ void CTeeHistorian::RetrieveMode(bool OnInit) {
 			m_HistorianMode = MODE_TEE_HISTORIAN;
 		}
 		if (OnInit) {
-		m_OldHistorianMode = m_HistorianMode;
-	}
+			m_OldHistorianMode = m_HistorianMode;
+		}
 	} else {
 		m_HistorianMode = MODE_NONE;
 		m_OldHistorianMode = MODE_NONE;
@@ -1083,7 +1087,14 @@ void CTeeHistorian::Finish()
 }
 
 
+void CTeeHistorian::Stop() {
+	if (m_OldHistorianMode != m_HistorianMode)
+	{
+		m_OldHistorianMode = m_HistorianMode;
+	}
 
+	m_HistorianMode = MODE_NONE;
+}
 
 void CTeeHistorian::CreateDatabase(const char* filename) {
 
