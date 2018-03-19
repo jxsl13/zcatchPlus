@@ -48,8 +48,9 @@ public:
 	};
 
 	CTeeHistorian();
-	void RetrieveMode();
-	void OnInit(char *pFileName, IStorage *pStorage, IServer *pServer, IGameController *pController, CTuningParams *pTuning, CGameContext *pGameContext);
+	void RetrieveMode(bool OnInit);
+	void CheckHistorianModeToggled();
+	void OnInit(IStorage *pStorage, IServer *pServer, IGameController *pController, CTuningParams *pTuning, CGameContext *pGameContext);
 	ASYNCIO *GetHistorianFile() {return m_pTeeHistorianFile;};
 
 	void Reset(const CGameInfo *pGameInfo, WRITE_CALLBACK pfnWriteCallback, void *pUser);
@@ -168,12 +169,14 @@ private:
 		} ;
 	};
 
+
 	char *m_pFileName;
 	IStorage *m_pStorage;
 	IServer *m_pServer;
 	IGameController *m_pController;
 	CTuningParams *m_pTuning;
 	CGameContext *m_pGameContext;
+	int m_OldHistorianMode;
 
 
 int m_LastWrittenTick;

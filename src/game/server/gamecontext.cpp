@@ -510,6 +510,7 @@ void CGameContext::OnTick()
 
 
 	/*teehistorian*/
+
 	if (m_TeeHistorian.GetTeeHistorianMode())
 	{
 		if (m_TeeHistorian.GetTeeHistorianMode() == CTeeHistorian::MODE_TEE_HISTORIAN) {
@@ -529,6 +530,8 @@ void CGameContext::OnTick()
 		m_TeeHistorian.BeginTick(Server()->Tick());
 		m_TeeHistorian.BeginPlayers();
 	}
+
+
 	/*teehistorian end*/
 
 	// copy tuning
@@ -806,13 +809,13 @@ void CGameContext::OnClientPredictedInput(int ClientID, void *pInput)
 		m_apPlayers[ClientID]->OnPredictedInput((CNetObj_PlayerInput *)pInput);
 }
 
-void CGameContext::SendThreadedDelayedBroadCast(const char *pText, int ClientID, int DelayMilliSeconds){
+void CGameContext::SendThreadedDelayedBroadCast(const char *pText, int ClientID, int DelayMilliSeconds) {
 	AddThread(new std::thread(&CGameContext::SendDelayedBroadCast,
 
-	                                 this,
-	                                 pText,
-	                                 ClientID,
-	                                 DelayMilliSeconds));
+	                          this,
+	                          pText,
+	                          ClientID,
+	                          DelayMilliSeconds));
 }
 
 void CGameContext::SendDelayedBroadCast(const char *pText, int ClientID, int DelayMilliSeconds) {
@@ -2632,43 +2635,11 @@ void CGameContext::OnInit(/*class IKernel *pKernel*/)
 	//game.world.insert_entity(game.Controller);
 
 	// after everything else is ready? teehistorian
-	m_TeeHistorian.RetrieveMode();
+	m_TeeHistorian.RetrieveMode(true);
+	m_TeeHistorian.OnInit(Storage(), Server(), m_pController, Tuning(), this);
 
 	if (m_TeeHistorian.GetTeeHistorianMode())
 	{
-
-
-
-
-		if (m_TeeHistorian.GetTeeHistorianMode() == CTeeHistorian::MODE_SQLITE)
-		{
-			if (str_comp(g_Config.m_SvSqliteHistorianFileName, "") == 0)
-			{
-				m_TeeHistorian.OnInit(NULL,
-				                      Storage(),
-				                      Server(),
-				                      m_pController,
-				                      Tuning(),
-				                      this);
-			} else {
-				m_TeeHistorian.OnInit(g_Config.m_SvSqliteHistorianFileName,
-				                      Storage(),
-				                      Server(),
-				                      m_pController,
-				                      Tuning(),
-				                      this);
-			}
-
-		} else  if(m_TeeHistorian.GetTeeHistorianMode() == CTeeHistorian::MODE_TEE_HISTORIAN){
-			m_TeeHistorian.OnInit(NULL,
-			                      Storage(),
-			                      Server(),
-			                      m_pController,
-			                      Tuning(),
-			                      this);
-
-		}
-
 
 		for (int i = 0; i < MAX_CLIENTS; i++)
 		{

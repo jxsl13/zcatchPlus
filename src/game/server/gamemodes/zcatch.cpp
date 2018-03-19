@@ -163,12 +163,14 @@ void CGameController_zCatch::DoWincheck()
 			else if (Players_Ingame < g_Config.m_SvLastStandingPlayers)
 			{
 				winner->HardModeRestart();
-				GameServer()->SendChatTarget(-1, "Too few players to end round.");
+
 
 				if (g_Config.m_SvLastStandingDeathmatch == 1) {
 					GameServer()->SendBroadcast("Cannot end the round, because we are playing the Release Game.", -1);
+					GameServer()->SendChatTarget(-1, "Cannot end the round, because the Release Game is enabled.");
 				} else {
 					GameServer()->SendBroadcast("Too few players to end round.", -1);
+					GameServer()->SendChatTarget(-1, "Too few players to end round.");
 				}
 
 			}
@@ -869,7 +871,7 @@ void CGameController_zCatch::ToggleLastStandingDeathmatchAndRelease(int Players_
 			if (m_OldPlayersIngame >= g_Config.m_SvLastStandingPlayers)
 			{
 
-				GameServer()->SendThreadedDelayedBroadCast("Not enough players to end the round again.", -1, 2000);
+				GameServer()->SendThreadedDelayedBroadCast("Not enough players to end the round again.", -1, 3000);
 			}
 
 			// old Joining settings are the same as the current ones and not the allow everyone to join option.
@@ -896,7 +898,7 @@ void CGameController_zCatch::ToggleLastStandingDeathmatchAndRelease(int Players_
 		{
 			if (m_OldPlayersIngame < g_Config.m_SvLastStandingPlayers)
 			{
-				GameServer()->SendThreadedDelayedBroadCast("Enough players to end the round. Let the fun begin!", -1, 5000);
+				GameServer()->SendThreadedDelayedBroadCast("Enough players to end the round. Let the fun begin!", -1, 1000);
 				m_OldPlayersIngame = Players_Ingame;
 			}
 		}
@@ -912,7 +914,7 @@ void CGameController_zCatch::ToggleLastStandingDeathmatchAndRelease(int Players_
 
 
 	if(m_OldPlayersIngame != Players_Ingame){
-		dbg_msg("TEST!", "OldPlayerIngame=%d PlayersIngame=%d", m_OldPlayersIngame, Players_Ingame);
+		//dbg_msg("TEST!", "OldPlayerIngame=%d PlayersIngame=%d", m_OldPlayersIngame, Players_Ingame);
 		m_OldPlayersIngame = Players_Ingame;
 	}
 }
