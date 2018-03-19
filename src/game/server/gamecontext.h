@@ -310,10 +310,8 @@ public:
 	static void ConMergeRecords(IConsole::IResult *pResult, void *pUserData);
 	static void ConMergeRecordsId(IConsole::IResult *pResult, void *pUserData);
 	static void ConSaveTeehistorian(IConsole::IResult *pResult, void *pUserData);
-	void SendThreadedDelayedBroadCast(const char *pText, int ClientID, int DelayMilliSeconds);
 
 private:
-	void SendDelayedBroadCast(const char *pText, int ClientID, int DelayMilliSeconds);
 
 
 };

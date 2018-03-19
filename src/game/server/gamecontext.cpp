@@ -809,19 +809,6 @@ void CGameContext::OnClientPredictedInput(int ClientID, void *pInput)
 		m_apPlayers[ClientID]->OnPredictedInput((CNetObj_PlayerInput *)pInput);
 }
 
-void CGameContext::SendThreadedDelayedBroadCast(const char *pText, int ClientID, int DelayMilliSeconds) {
-	AddThread(new std::thread(&CGameContext::SendDelayedBroadCast,
-
-	                          this,
-	                          pText,
-	                          ClientID,
-	                          DelayMilliSeconds));
-}
-
-void CGameContext::SendDelayedBroadCast(const char *pText, int ClientID, int DelayMilliSeconds) {
-	std::this_thread::sleep_for(std::chrono::milliseconds(DelayMilliSeconds));
-	SendBroadcast(pText, ClientID);
-}
 
 void CGameContext::OnClientEnter(int ClientID)
 {
@@ -851,8 +838,8 @@ void CGameContext::OnClientEnter(int ClientID)
 			SendBroadcast("You can join the game", ClientID);
 		}
 	}
-	// sv_allow_join 2: The player will join when the player with the most kills dies
-	else if (g_Config.m_SvAllowJoin == 2)
+	// sv_allow_join 0: The player will join when the player with the most kills dies
+	else if (g_Config.m_SvAllowJoin == 0)
 	{
 		for (int i = 0; i < MAX_CLIENTS; i++)
 			if (m_apPlayers[i] && ((leader && m_apPlayers[i]->m_zCatchNumKillsInARow > leader->m_zCatchNumKillsInARow) || (!leader && m_apPlayers[i]->m_zCatchNumKillsInARow)))
@@ -862,10 +849,6 @@ void CGameContext::OnClientEnter(int ClientID)
 		else
 			p->m_SpecExplicit = false;
 	}
-
-	if (g_Config.m_SvLastStandingDeathmatch == 1) {
-		SendBroadcast("We are currently playing the Release Game. You can join the game!", ClientID);
-	} ;
 
 
 
@@ -883,7 +866,7 @@ void CGameContext::OnClientEnter(int ClientID)
 
 	/* zCatch begin */
 	SendChatTarget(ClientID, "Welcome to zCatch! Type /info for more.");
-	if (g_Config.m_SvAllowJoin == 2 && leader)
+	if (g_Config.m_SvAllowJoin == 0 && leader)
 	{
 		char buf[128];
 		str_format(buf, sizeof(buf), "You will join the game when '%s' dies", Server()->ClientName(leader->GetCID()));

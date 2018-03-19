@@ -22,16 +22,17 @@ CGameController_zCatch::CGameController_zCatch(class CGameContext *pGameServer) 
 	// if treshold of players is reached.
 	m_OldAllowJoin = g_Config.m_SvAllowJoin;
 	m_OldPlayersIngame = 0;
+	m_ReleaseGameInfoSent = false;
 
 }
 
 CGameController_zCatch::~CGameController_zCatch() {
 	/* save all players */
-	for (int i = 0; i < MAX_CLIENTS; i++){
+	for (int i = 0; i < MAX_CLIENTS; i++) {
 		if (GameServer()->m_apPlayers[i])
 			SaveRanking(GameServer()->m_apPlayers[i]);
 	}
-	GameServer()->CleanThreads();
+	GameServer()->JoinThreads();
 }
 
 void CGameController_zCatch::CheckReleaseGameStatus() {
@@ -167,7 +168,7 @@ void CGameController_zCatch::DoWincheck()
 
 				if (g_Config.m_SvLastStandingDeathmatch == 1) {
 					GameServer()->SendBroadcast("Cannot end the round, because we are playing the Release Game.", -1);
-					GameServer()->SendChatTarget(-1, "Cannot end the round, because the Release Game is enabled.");
+					GameServer()->SendChatTarget(-1, "Cannot end the round, because we are too few players.");
 				} else {
 					GameServer()->SendBroadcast("Too few players to end round.", -1);
 					GameServer()->SendChatTarget(-1, "Too few players to end round.");
@@ -228,10 +229,15 @@ int CGameController_zCatch::OnCharacterDeath(class CCharacter *pVictim, class CP
 		if (pKiller->GetTeam() != TEAM_SPECTATORS && (!pVictim->m_KillerLastDieTickBeforceFiring || pVictim->m_KillerLastDieTickBeforceFiring == pKiller->m_DieTick))
 		{
 			++pKiller->m_zCatchNumKillsInARow;
-			pKiller->AddZCatchVictim(victim->GetCID(), CPlayer::ZCATCH_CAUGHT_REASON_KILLED);
-			char aBuf[256];
-			str_format(aBuf, sizeof(aBuf), "You are caught until '%s' dies.", Server()->ClientName(pKiller->GetCID()));
-			GameServer()->SendChatTarget(victim->GetCID(), aBuf);
+			//release game
+			if (!g_Config.m_SvLastStandingDeathmatch || numPlayers >= g_Config.m_SvLastStandingPlayers)
+			{
+				pKiller->AddZCatchVictim(victim->GetCID(), CPlayer::ZCATCH_CAUGHT_REASON_KILLED);
+				char aBuf[256];
+				str_format(aBuf, sizeof(aBuf), "You are caught until '%s' dies.", Server()->ClientName(pKiller->GetCID()));
+				GameServer()->SendChatTarget(victim->GetCID(), aBuf);
+			}
+
 		}
 
 	}
@@ -473,17 +479,17 @@ void CGameController_zCatch::SaveRanking(CPlayer *player)
 
 	/* give the points */
 	GameServer()->AddThread(new std::thread(&CGameController_zCatch::SaveScore,
-	                                 GameServer(), // gamecontext
-	                                 name, // username
-	                                 player->m_RankCache.m_Points, // score
-	                                 player->m_RankCache.m_NumWins, // numWins
-	                                 player->m_RankCache.m_NumKills, // numKills
-	                                 player->m_RankCache.m_NumKillsWallshot, // numKillsWallshot
-	                                 player->m_RankCache.m_NumDeaths, // numDeaths
-	                                 player->m_RankCache.m_NumShots, // numShots
-	                                 player->m_zCatchNumKillsInARow, // highestSpree
-	                                 player->m_RankCache.m_TimePlayed / Server()->TickSpeed() // timePlayed
-	                                ));
+	                                        GameServer(), // gamecontext
+	                                        name, // username
+	                                        player->m_RankCache.m_Points, // score
+	                                        player->m_RankCache.m_NumWins, // numWins
+	                                        player->m_RankCache.m_NumKills, // numKills
+	                                        player->m_RankCache.m_NumKillsWallshot, // numKillsWallshot
+	                                        player->m_RankCache.m_NumDeaths, // numDeaths
+	                                        player->m_RankCache.m_NumShots, // numShots
+	                                        player->m_zCatchNumKillsInARow, // highestSpree
+	                                        player->m_RankCache.m_TimePlayed / Server()->TickSpeed() // timePlayed
+	                                       ));
 
 	/* clean rank cache */
 	player->m_RankCache.m_Points = 0;
@@ -863,60 +869,34 @@ void CGameController_zCatch::FormatRankingColumn(const char* column, char buf[32
  */
 void CGameController_zCatch::ToggleLastStandingDeathmatchAndRelease(int Players_Ingame) {
 
-	if (g_Config.m_SvLastStandingDeathmatch == 1) {
 
-		if (Players_Ingame < g_Config.m_SvLastStandingPlayers)
+	if (g_Config.m_SvLastStandingDeathmatch) {
+
+		if (m_OldPlayersIngame >= g_Config.m_SvLastStandingPlayers && Players_Ingame < g_Config.m_SvLastStandingPlayers)
+			{
+
+				GameServer()->SendBroadcast("Not enough players to end the round again.", -1);
+				GameServer()->SendChatTarget(-1, "Back to Release Game.");
+			} else if (m_OldPlayersIngame < g_Config.m_SvLastStandingPlayers && Players_Ingame == g_Config.m_SvLastStandingPlayers)
+			{
+				GameServer()->SendBroadcast("Enough players to end the round. Let the fun begin!", -1);
+				GameServer()->SendChatTarget(-1, "End of Release Game.");
+			}
+
+
+		if (m_OldAllowJoin != g_Config.m_SvAllowJoin)
 		{
-
-			if (m_OldPlayersIngame >= g_Config.m_SvLastStandingPlayers)
-			{
-
-				GameServer()->SendThreadedDelayedBroadCast("Not enough players to end the round again.", -1, 3000);
-			}
-
-			// old Joining settings are the same as the current ones and not the allow everyone to join option.
-			if (m_OldAllowJoin == g_Config.m_SvAllowJoin && m_OldAllowJoin != 1)
-			{
-				// Allow players to freely join while last man standing treshold is not reached
-				g_Config.m_SvAllowJoin = 1;
-
-			} else if (m_OldAllowJoin == g_Config.m_SvAllowJoin && m_OldAllowJoin == 1) {
-				// do nothing
-			}
-
-
-			// Go through ingame players and release their victims while last man standing treshold is not met and
-			// Last man standig deathmatch is still enabled.
-			for (int i = 0; i < MAX_CLIENTS; i++) {
-				if (GameServer()->m_apPlayers[i] && GameServer()->m_apPlayers[i]->GetTeam() != TEAM_SPECTATORS)
-				{
-					GameServer()->m_apPlayers[i]->ReleaseZCatchVictim(CPlayer::ZCATCH_RELEASE_ALL);
-				}
-
-			}
-		} else if (Players_Ingame == g_Config.m_SvLastStandingPlayers)
-		{
-			if (m_OldPlayersIngame < g_Config.m_SvLastStandingPlayers)
-			{
-				GameServer()->SendThreadedDelayedBroadCast("Enough players to end the round. Let the fun begin!", -1, 1000);
-				m_OldPlayersIngame = Players_Ingame;
-			}
+			m_OldAllowJoin = g_Config.m_SvAllowJoin;
+			g_Config.m_SvAllowJoin = 1;
 		}
-
-
-		// Last man standing deathmatch aka release game/ gDM are disabled and the old joining option differs from the
-		// current one, so change it back.
-	} else if (g_Config.m_SvLastStandingDeathmatch == 0 && m_OldAllowJoin != g_Config.m_SvAllowJoin)
-	{
-		// reset AllowJoin config if it was changed and the last man standing settings changed.
-		g_Config.m_SvAllowJoin = m_OldAllowJoin;
+	} else {
+		if (g_Config.m_SvAllowJoin != m_OldAllowJoin)
+		{
+			g_Config.m_SvAllowJoin = m_OldAllowJoin;
+		}
 	}
+	m_OldPlayersIngame = Players_Ingame;
 
-
-	if(m_OldPlayersIngame != Players_Ingame){
-		//dbg_msg("TEST!", "OldPlayerIngame=%d PlayersIngame=%d", m_OldPlayersIngame, Players_Ingame);
-		m_OldPlayersIngame = Players_Ingame;
-	}
 }
 
 

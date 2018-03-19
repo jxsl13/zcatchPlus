@@ -94,7 +94,7 @@ MACRO_CONFIG_INT(DbgTuning, dbg_tuning, 0, 0, 1, CFGFLAG_CLIENT, "")
 
 //zCatch:
 MACRO_CONFIG_INT(SvMode, sv_mode, 1, 1, 5, CFGFLAG_SERVER|CFGFLAG_NONTEEHISTORIC, "1 - Instagib; 2 - Everything; 3 - Hammerparty; 4 - Grenade; 5 - Ninja")
-MACRO_CONFIG_INT(SvAllowJoin, sv_allow_join, 2, 1, 2, CFGFLAG_SERVER|CFGFLAG_NONTEEHISTORIC, "Allow new Players to join without waiting for the next round")
+MACRO_CONFIG_INT(SvAllowJoin, sv_allow_join, 0, 0, 1, CFGFLAG_SERVER|CFGFLAG_NONTEEHISTORIC, "Allow new Players to join without waiting for the next round")
 //1 = Allowed to join; 2 = Will join when person with the most kills die
 MACRO_CONFIG_INT(SvColorIndicator, sv_color_indicator, 1, 0, 1, CFGFLAG_SERVER, "Color tees apropriate to the number of currently caught players")
 MACRO_CONFIG_INT(SvBonus, sv_bonus, 0, 0, 100, CFGFLAG_SERVER, "Give the last player extra points")
