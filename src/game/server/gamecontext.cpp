@@ -550,10 +550,11 @@ void CGameContext::OnTick()
 	{
 		int players =0;
 		for (int i = 0; i < MAX_CLIENTS; i++)
-		{	
-			players++;
+		{
+
 			if (m_apPlayers[i] && m_apPlayers[i]->GetCharacter())
-			{
+			{	
+				players++;
 				CNetObj_CharacterCore Char;
 				m_apPlayers[i]->GetCharacter()->GetCore().Write(&Char);
 				m_TeeHistorian.RecordPlayer(Server()->ClientJoinHash(i), Server()->ClientName(i), i, &Char);
@@ -571,7 +572,7 @@ void CGameContext::OnTick()
 		// once every x ticks write data to sqlite database.
 		if (m_TeeHistorian.GetTeeHistorianMode() == CTeeHistorian::MODE_SQLITE)
 		{
-		if ( players &&  Server()->Tick() % g_Config.m_SvSqliteWriteInterval == 0)
+		if (players &&  Server()->Tick() % g_Config.m_SvSqliteWriteInterval == 0)
 			{
 				m_TeeHistorian.SqliteWrite();
 			}
