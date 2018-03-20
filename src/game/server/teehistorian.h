@@ -59,6 +59,7 @@ public:
 	void OnShutDown(bool FinalShutdown);
 	void OnSave();
 	void CloseDatabase();
+	void SqliteWrite();
 	bool Starting() const { return m_State == STATE_START; }
 
 	void BeginTick(int Tick);

@@ -137,7 +137,7 @@ MACRO_CONFIG_INT(SvShotgunRegenerationTime, sv_shotgun_regeneration_time, 1000, 
 
 MACRO_CONFIG_INT(SvSqliteHistorian, sv_sqlite_historian, 0, 0, 1, CFGFLAG_SERVER, "Enable SQLite logging: Needs sv_tee_historian 1 (enabled) in order to work.")
 MACRO_CONFIG_STR(SvSqliteHistorianFileName, sv_sqlite_historian_file, 64, "", CFGFLAG_SERVER, "Sqlite Historian file name. Change to have an own file format or leave as is to have the default format.")
-MACRO_CONFIG_INT(SvSqliteWriteInterval, sv_sqlite_write_interval, 12, 1, 3000, CFGFLAG_SERVER, "Changes the interval(in seconds) in which the collected data is written to the database. Default: 10 Min: 5 Max: 600 seconds.")
+MACRO_CONFIG_INT(SvSqliteWriteInterval, sv_sqlite_write_interval, 12, 1, 3000, CFGFLAG_SERVER, "Changes the interval(in ticks = 20ms) in which the collected data is written to the database. Default: 10 Min: 5 Max: 600 seconds.")
 MACRO_CONFIG_INT(SvSqlitePerformance, sv_sqlite_performance, 3, 0, 3, CFGFLAG_SERVER, "Toggle Sqlite performance flags - 0 - off, 1 - synchronous = OFF, 2 - journal_mode = MEMORY, 3 = both. A server crash/outage may cause a database corruption.")
-MACRO_CONFIG_INT(SvThreadCleanupInterval, sv_thread_cleanup_interval, 250, 3000, , CFGFLAG_SERVER, "How often to cleanup the thread list. Min: 50 * 5s seconds = 250 Ticks - Max: 3000 Ticks.")
+
 #endif

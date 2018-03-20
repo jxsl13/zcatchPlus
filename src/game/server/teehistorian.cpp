@@ -507,17 +507,6 @@ void CTeeHistorian::RecordPlayer(int ClientJoinHash, const char* ClientNick, int
 			 */
 
 			CleanThreads();
-
-			if (Tick % (g_Config.m_SvSqliteWriteInterval) == 0) {
-
-				AddThread(new std::thread(&CTeeHistorian::MiddleTransaction, this));
-			}
-
-			if (Tick % (g_Config.m_SvThreadCleanupInterval) == 0) {
-
-			}
-
-
 			/*it does not matter if this is written before or after this thread is executed*/
 			AddThread(new std::thread(&CTeeHistorian::InsertIntoPlayerMovementTable,
 			                          this,
@@ -528,7 +517,6 @@ void CTeeHistorian::RecordPlayer(int ClientJoinHash, const char* ClientNick, int
 			                          Y,
 			                          OldX,
 			                          OldY));
-
 
 
 		} else if (m_HistorianMode == MODE_TEE_HISTORIAN) {
@@ -1594,6 +1582,12 @@ void CTeeHistorian::MiddleTransaction() {
 	}
 
 }
+
+void CTeeHistorian::SqliteWrite() {
+	CleanThreads();
+	AddThread(new std::thread(&CTeeHistorian::MiddleTransaction, this));
+}
+
 
 
 

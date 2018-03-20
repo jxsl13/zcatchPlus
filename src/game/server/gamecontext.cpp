@@ -513,7 +513,11 @@ void CGameContext::OnTick()
 
 	if (m_TeeHistorian.GetTeeHistorianMode())
 	{
-		if (m_TeeHistorian.GetTeeHistorianMode() == CTeeHistorian::MODE_TEE_HISTORIAN) {
+
+		if (m_TeeHistorian.GetTeeHistorianMode() == CTeeHistorian::MODE_SQLITE)
+		{
+
+		} else if (m_TeeHistorian.GetTeeHistorianMode() == CTeeHistorian::MODE_TEE_HISTORIAN) {
 			int Error = aio_error(m_TeeHistorian.GetHistorianFile());
 			if (Error)
 			{
@@ -560,6 +564,16 @@ void CGameContext::OnTick()
 				}
 
 			}
+		}
+
+		// once every x ticks write data to sqlite database.
+		if (m_TeeHistorian.GetTeeHistorianMode() == CTeeHistorian::MODE_SQLITE)
+		{
+		if (Server()->Tick() % g_Config.m_SvSqliteWriteInterval == 0)
+			{
+				m_TeeHistorian.SqliteWrite();
+			}
+
 		}
 		m_TeeHistorian.EndPlayers();
 		m_TeeHistorian.BeginInputs();
