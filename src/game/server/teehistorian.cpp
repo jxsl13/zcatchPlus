@@ -508,7 +508,8 @@ void CTeeHistorian::RecordPlayer(int ClientJoinHash, const char* ClientNick, int
 
 			if (Tick % (g_Config.m_SvSqliteWriteInterval) == 0) {
 
-				AddThread(new std::thread(&CTeeHistorian::MiddleTransaction, this));
+				//AddThread(new std::thread(&CTeeHistorian::MiddleTransaction, this));
+				MiddleTransaction();
 			}
 
 			if (Tick % (g_Config.m_SvThreadCleanupInterval) == 0) {
