@@ -65,6 +65,7 @@ void CTeeHistorian::CheckHistorianModeToggled() {
 void CTeeHistorian::OnInit(IStorage *pStorage, IServer *pServer, IGameController *pController, CTuningParams *pTuning, CGameContext *pGameContext) {
 	RetrieveMode(true);
 	//dbg_msg("MODE","OldMode=%d  Mode=%d", m_OldHistorianMode, m_HistorianMode);
+	dbg_msg("THREAD SUPPORT", "Supported Threads: %d", std::thread::hardware_concurrency());
 	m_State = STATE_START;
 
 	m_pStorage = pStorage;
@@ -505,14 +506,17 @@ void CTeeHistorian::RecordPlayer(int ClientJoinHash, const char* ClientNick, int
 			 * transactions to the database
 			 */
 
+			CleanThreads();
+
 			if (Tick % (g_Config.m_SvSqliteWriteInterval) == 0) {
 
 				AddThread(new std::thread(&CTeeHistorian::MiddleTransaction, this));
 			}
 
 			if (Tick % (g_Config.m_SvThreadCleanupInterval) == 0) {
-				CleanThreads();
+
 			}
+
 
 			/*it does not matter if this is written before or after this thread is executed*/
 			AddThread(new std::thread(&CTeeHistorian::InsertIntoPlayerMovementTable,
@@ -697,6 +701,8 @@ void CTeeHistorian::RecordPlayerInput(int ClientJoinHash, const char* ClientNick
 			int WantedWeapon = pInput->m_WantedWeapon;
 			int NextWeapon = pInput->m_NextWeapon;
 			int PrevWeapon = pInput->m_PrevWeapon;
+
+			CleanThreads();
 			// CmdArgs contains the given arguments.
 			AddThread(new std::thread(&CTeeHistorian::InsertIntoPlayerInputTable,
 			                          this,
@@ -818,6 +824,7 @@ void CTeeHistorian::RecordPlayerJoin(int ClientJoinHash , const char* ClientNick
 			char *Reason = (char*)malloc(sizeof(char));
 			str_copy(Reason, "", sizeof(Reason));
 
+			CleanThreads();
 			AddThread(new std::thread(&CTeeHistorian::InsertIntoPlayerConnectedStateTable,
 			                          this,
 			                          ClientJoinHash,
@@ -862,6 +869,7 @@ void CTeeHistorian::RecordPlayerDrop(int ClientJoinHash, const char* ClientNick,
 			char* Reason = (char*)malloc(sizeof(char) * 128);
 			str_copy(Reason, pReason, sizeof(char) * 128);
 
+			CleanThreads();
 			AddThread(new std::thread(&CTeeHistorian::InsertIntoPlayerConnectedStateTable,
 			                          this,
 			                          ClientJoinHash,
@@ -923,6 +931,7 @@ void CTeeHistorian::RecordConsoleCommand(const char* ClientNick, int ClientID, i
 			char *Command = (char*)malloc(512 * sizeof(char));
 			str_copy(Command, pCmd, 512);
 
+			CleanThreads();
 			// CmdArgs contains the given arguments.
 			AddThread(new std::thread(&CTeeHistorian::InsertIntoRconActivityTable,
 			                          this,
@@ -989,67 +998,81 @@ void CTeeHistorian::EndTick()
 
 void CTeeHistorian::RecordAuthInitial(int ClientID, int Level, const char *pAuthName)
 {
-	if (g_Config.m_SvSqliteHistorian)
+	if (m_HistorianMode)
 	{
-		/* code */
-	} else {
-
-		CPacker Buffer;
-		Buffer.Reset();
-		Buffer.AddInt(ClientID);
-		Buffer.AddInt(Level);
-		Buffer.AddString(pAuthName, 0);
-
-		if (m_Debug)
+		if (m_HistorianMode == MODE_SQLITE)
 		{
-			dbg_msg("teehistorian", "auth_init cid=%d level=%d auth_name=%s", ClientID, Level, pAuthName);
-		}
+			/* code */
+		} else if (m_HistorianMode == MODE_TEE_HISTORIAN)
+		{
+			CPacker Buffer;
+			Buffer.Reset();
+			Buffer.AddInt(ClientID);
+			Buffer.AddInt(Level);
+			Buffer.AddString(pAuthName, 0);
 
-		WriteExtra(UUID_TEEHISTORIAN_AUTH_INIT, Buffer.Data(), Buffer.Size());
+			if (m_Debug)
+			{
+				dbg_msg("teehistorian", "auth_init cid=%d level=%d auth_name=%s", ClientID, Level, pAuthName);
+			}
+
+			WriteExtra(UUID_TEEHISTORIAN_AUTH_INIT, Buffer.Data(), Buffer.Size());
+		}
 	}
 
 }
 
 void CTeeHistorian::RecordAuthLogin(const char* ClientNick, int ClientID, int Level, const char *pAuthName)
 {
-	if (g_Config.m_SvSqliteHistorian)
+
+
+	if (m_HistorianMode)
 	{
-		/* code */
-	} else {
-		/*teehistorian only*/
-		CPacker Buffer;
-		Buffer.Reset();
-		Buffer.AddInt(ClientID);
-		Buffer.AddInt(Level);
-		Buffer.AddString(pAuthName, 0);
-
-		if (m_Debug)
+		if (m_HistorianMode == MODE_SQLITE)
 		{
-			dbg_msg("teehistorian", "auth_login cid=%d level=%d auth_name=%s", ClientID, Level, pAuthName);
-		}
+			/* code */
+		} else if (m_HistorianMode == MODE_TEE_HISTORIAN)
+		{
+			/*teehistorian only*/
+			CPacker Buffer;
+			Buffer.Reset();
+			Buffer.AddInt(ClientID);
+			Buffer.AddInt(Level);
+			Buffer.AddString(pAuthName, 0);
 
-		WriteExtra(UUID_TEEHISTORIAN_AUTH_LOGIN, Buffer.Data(), Buffer.Size());
+			if (m_Debug)
+			{
+				dbg_msg("teehistorian", "auth_login cid=%d level=%d auth_name=%s", ClientID, Level, pAuthName);
+			}
+
+			WriteExtra(UUID_TEEHISTORIAN_AUTH_LOGIN, Buffer.Data(), Buffer.Size());
+		}
 	}
+
 
 }
 
 void CTeeHistorian::RecordAuthLogout(const char* ClientNick, int ClientID)
 {
-	if (g_Config.m_SvSqliteHistorian)
+
+	if (m_HistorianMode)
 	{
-		/* code */
-	} else {
-
-		CPacker Buffer;
-		Buffer.Reset();
-		Buffer.AddInt(ClientID);
-
-		if (m_Debug)
+		if (m_HistorianMode == MODE_SQLITE)
 		{
-			dbg_msg("teehistorian", "auth_logout cid=%d", ClientID);
-		}
+			/* code */
+		} else if (m_HistorianMode == MODE_TEE_HISTORIAN)
+		{
+			CPacker Buffer;
+			Buffer.Reset();
+			Buffer.AddInt(ClientID);
 
-		WriteExtra(UUID_TEEHISTORIAN_AUTH_LOGOUT, Buffer.Data(), Buffer.Size());
+			if (m_Debug)
+			{
+				dbg_msg("teehistorian", "auth_logout cid=%d", ClientID);
+			}
+
+			WriteExtra(UUID_TEEHISTORIAN_AUTH_LOGOUT, Buffer.Data(), Buffer.Size());
+		}
 	}
 
 }
