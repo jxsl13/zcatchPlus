@@ -276,10 +276,10 @@ public:
 		{
 			std::thread *t = m_Threads.front();
 			m_Threads.pop();
-			if(!(t->joinable())){
+			if(t && !(t->joinable())){
 				t->join();
 				delete t;
-			} else {
+			} else if(t){
 				m_Threads.push(t);
 			}
 		}
