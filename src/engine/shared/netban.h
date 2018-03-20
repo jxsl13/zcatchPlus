@@ -69,7 +69,7 @@ protected:
 		int m_Hash;
 		int m_HashIndex;	// matching parts for ranges, 0 for addr
 
-		CNetHash() {}	
+		CNetHash() {};
 		CNetHash(const NETADDR *pAddr);
 		CNetHash(const CNetRange *pRange);
 
