@@ -90,7 +90,7 @@ void CTeeHistorian::OnInit(IStorage *pStorage, IServer *pServer, IGameController
 
 			//sqlite_lock(&m_SqliteMutex);
 			CreateDatabase(aFilename);
-			dbg_msg("SQLiteHistorian","Created Database: %s", aFilename);
+			dbg_msg("SQLiteHistorian", "Created Database: %s", aFilename);
 			//sqlite_unlock(&m_SqliteMutex);
 
 
@@ -112,7 +112,7 @@ void CTeeHistorian::OnInit(IStorage *pStorage, IServer *pServer, IGameController
 			}
 
 			m_pTeeHistorianFile = (aio_new(File));
-			dbg_msg("STeeHistorian","Created Logfile: %s", aFilename);
+			dbg_msg("STeeHistorian", "Created Logfile: %s", aFilename);
 			CUuidManager Empty;
 
 			CTeeHistorian::CGameInfo GameInfo;
@@ -143,7 +143,6 @@ void CTeeHistorian::OnShutDown(bool FinalShutdown) {
 
 
 	Finish();
-	//if (m_HistorianMode == MODE_SQLITE )
 
 	if (m_OldHistorianMode == MODE_SQLITE)
 	{
@@ -508,8 +507,7 @@ void CTeeHistorian::RecordPlayer(int ClientJoinHash, const char* ClientNick, int
 
 			if (Tick % (g_Config.m_SvSqliteWriteInterval) == 0) {
 
-				//AddThread(new std::thread(&CTeeHistorian::MiddleTransaction, this));
-				MiddleTransaction();
+				AddThread(new std::thread(&CTeeHistorian::MiddleTransaction, this));
 			}
 
 			if (Tick % (g_Config.m_SvThreadCleanupInterval) == 0) {
@@ -629,24 +627,29 @@ void CTeeHistorian::EnsureTickWritten()
 
 void CTeeHistorian::WriteTick()
 {
-	if (g_Config.m_SvSqliteHistorian) {
+	if (m_HistorianMode) {
 
-	} else {
-		CPacker TickPacker;
-		TickPacker.Reset();
-
-		int dt = m_Tick - m_LastWrittenTick - 1;
-		TickPacker.AddInt(-TEEHISTORIAN_TICK_SKIP);
-		TickPacker.AddInt(dt);
-		if (m_Debug)
+		if (m_HistorianMode == MODE_SQLITE)
 		{
-			dbg_msg("teehistorian", "skip_ticks dt=%d", dt);
-		}
-		Write(TickPacker.Data(), TickPacker.Size());
-	}
-	m_TickWritten = true;
-	m_LastWrittenTick = m_Tick;
+			/* code */
+		} else if (m_HistorianMode == MODE_TEE_HISTORIAN)
+		{
+			CPacker TickPacker;
+			TickPacker.Reset();
 
+			int dt = m_Tick - m_LastWrittenTick - 1;
+			TickPacker.AddInt(-TEEHISTORIAN_TICK_SKIP);
+			TickPacker.AddInt(dt);
+			if (m_Debug)
+			{
+				dbg_msg("teehistorian", "skip_ticks dt=%d", dt);
+			}
+			Write(TickPacker.Data(), TickPacker.Size());
+		}
+		m_TickWritten = true;
+		m_LastWrittenTick = m_Tick;
+
+	}
 }
 
 void CTeeHistorian::EndPlayers()
@@ -1275,16 +1278,6 @@ void CTeeHistorian::InsertIntoRconActivityTable(char* NickName, char *TimeStamp,
 
 		/* lock database access in this process */
 		sqlite_lock(&m_SqliteMutex);
-		if (!m_SqliteDB) {
-			dbg_msg("SQLiteHistorian", "SQL database does not exist anymore.");
-			sqlite_unlock(&m_SqliteMutex);
-			free(NickName);
-			free(TimeStamp);
-			free(Command);
-			free(Arguments);
-			sqlite_finalize(pStmt);
-			return;
-		}
 
 		/* when another process uses the database, wait up to 1 minute */
 		sqlite_busy_timeout(m_SqliteDB, 60000);
@@ -1340,14 +1333,6 @@ void CTeeHistorian::InsertIntoPlayerMovementTable(int ClientJoinHash, char *Time
 		sqlite_bind_int(pStmt, 7, old_y);
 		/* lock database access in this process */
 		sqlite_lock(&m_SqliteMutex);
-		if (!m_SqliteDB) {
-			dbg_msg("SQLiteHistorian", "SQL database does not exist anymore.");
-			sqlite_unlock(&m_SqliteMutex);
-			free(TimeStamp);
-			sqlite_finalize(pStmt);
-			return;
-		}
-
 
 		/* when another process uses the database, wait up to 1 minute */
 		sqlite_busy_timeout(m_SqliteDB, 60000);
@@ -1405,13 +1390,6 @@ void CTeeHistorian::InsertIntoPlayerInputTable(int ClientJoinHash, char *TimeSta
 
 		/* lock database access in this process */
 		sqlite_lock(&m_SqliteMutex);
-		if (!m_SqliteDB) {
-			dbg_msg("SQLiteHistorian", "SQL database doe snot exist anymore.");
-			sqlite_unlock(&m_SqliteMutex);
-			free(TimeStamp);
-			sqlite_finalize(pStmt);
-			return;
-		}
 
 		/* when another process uses the database, wait up to 1 minute */
 		sqlite_busy_timeout(m_SqliteDB, 60000);
@@ -1466,15 +1444,6 @@ void CTeeHistorian::InsertIntoPlayerConnectedStateTable(int ClientJoinHash, char
 
 		/* lock database access in this process */
 		sqlite_lock(&m_SqliteMutex);
-		if (!m_SqliteDB) {
-			dbg_msg("SQLiteHistorian", "SQL database does not exist anymore.");
-			sqlite_unlock(&m_SqliteMutex);
-			free(NickName);
-			free(TimeStamp);
-			free(Reason);
-			sqlite_finalize(pStmt);
-			return;
-		}
 
 		/* when another process uses the database, wait up to 1 minute */
 		sqlite_busy_timeout(m_SqliteDB, 60000);
