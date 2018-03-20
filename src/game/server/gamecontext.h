@@ -271,7 +271,7 @@ public:
 
 	void AddThread(std::thread *thread) { m_Threads.push(thread); };
 	void CleanThreads() {
-		int size = m_Threads.size();
+		unsigned int size = m_Threads.size();
 		for (int i = 0; i < size;i++)
 		{
 			std::thread *t = m_Threads.front();
