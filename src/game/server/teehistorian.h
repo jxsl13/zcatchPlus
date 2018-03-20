@@ -163,19 +163,19 @@ private:
 	void AddThread(std::thread *thread) { m_Threads.push(thread); };
 	void CleanThreads() {
 		unsigned int size = m_Threads.size();
-		for (int i = 0; i < size;i++)
+		for (unsigned int i = 0; i < size; i++)
 		{
 			std::thread *t = m_Threads.front();
 			m_Threads.pop();
-			if(t && !(t->joinable())){
+			if (t && !(t->joinable())) {
 				t->join();
 				delete t;
-			} else if(t){
+			} else if (t) {
 				m_Threads.push(t);
 			}
 		}
 		// OS supported thread limit should be compiled with.
-		while(size >= (std::thread::hardware_concurrency()-1))
+		while (size >= (std::thread::hardware_concurrency() - 1))
 		{
 			std::thread *t = m_Threads.front();
 			m_Threads.pop();
@@ -205,14 +205,14 @@ private:
 	int m_OldHistorianMode;
 
 
-int m_LastWrittenTick;
-bool m_TickWritten;
-int m_Tick;
-int m_PrevMaxClientID;
-int m_MaxClientID;
-bool m_TickTresholdReached;
-CPlayer m_aPrevPlayers[MAX_CLIENTS];
-CUuid m_GameUuid;
+	int m_LastWrittenTick;
+	bool m_TickWritten;
+	int m_Tick;
+	int m_PrevMaxClientID;
+	int m_MaxClientID;
+	bool m_TickTresholdReached;
+	CPlayer m_aPrevPlayers[MAX_CLIENTS];
+	CUuid m_GameUuid;
 };
 
 #endif
