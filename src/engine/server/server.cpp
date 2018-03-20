@@ -34,7 +34,7 @@
 #include <string.h>
 #include <string>
 #include <map>
-#include <signal.h>
+#include <csignal>
 
 
 #if defined(CONF_FAMILY_WINDOWS)
@@ -2424,12 +2424,13 @@ int main(int argc, const char **argv) // ignore_convention
 	pEngine->InitLogfile();
 
 
-	// unexpected shotdown with ctrl-c handling
-	struct sigaction sigIntHandler;
-	sigIntHandler.sa_handler = ErrorSignalHandler;
-	sigemptyset(&sigIntHandler.sa_mask);
-	sigIntHandler.sa_flags = 0;
-	sigaction(SIGINT, &sigIntHandler, NULL);
+	// unexpected shutdown with ctrl-c handling
+	// struct sigaction sigIntHandler;
+	// sigIntHandler.sa_handler = ErrorSignalHandler;
+	// sigemptyset(&sigIntHandler.sa_mask);
+	// sigIntHandler.sa_flags = 0;
+	// sigaction(SIGINT, &sigIntHandler, NULL);
+	std::signal(SIGINT, ErrorSignalHandler);
 
 
 	// run the server
