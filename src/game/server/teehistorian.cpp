@@ -198,8 +198,8 @@ void CTeeHistorian::DatabaseWriter() {
 		if (GetMode() == MODE_SQLITE)
 		{
 			std::this_thread::sleep_for(std::chrono::milliseconds(CACHE_EMPTY_INTERVAL));
-			dbg_msg("TEST", "Cache Primary Size: %lu ", strlen(m_QueryCachePrimary) + 1);
-			dbg_msg("TEST", "Cache Secondary Size: %lu ", strlen(m_QueryCacheSecondary) + 1);
+			//dbg_msg("TEST", "Cache Primary Size: %lu ", strlen(m_QueryCachePrimary) + 1);
+			//dbg_msg("TEST", "Cache Secondary Size: %lu ", strlen(m_QueryCacheSecondary) + 1);
 
 			if (sqlite_lock(&m_PrimaryCacheMutex))
 			{
@@ -256,8 +256,8 @@ void CTeeHistorian::DatabaseWriter() {
 			sqlite_unlock(&m_SecondaryCacheMutex);
 
 
-			dbg_msg("TEST", "Cache Primary Size POST: %lu ", strlen(m_QueryCachePrimary) + 1);
-			dbg_msg("TEST", "Cache Secondary Size POST: %lu ", strlen(m_QueryCacheSecondary) + 1);
+			//dbg_msg("TEST", "Cache Primary Size POST: %lu ", strlen(m_QueryCachePrimary) + 1);
+			//dbg_msg("TEST", "Cache Secondary Size POST: %lu ", strlen(m_QueryCacheSecondary) + 1);
 
 		} else {
 			break;

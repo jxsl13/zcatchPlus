@@ -147,8 +147,8 @@ private:
 
 	enum
 	{
-		CACHE_EMPTY_INTERVAL = 1000,
-		CACHE_SIZE = MAX_CLIENTS * 16384 * (int)(CACHE_EMPTY_INTERVAL / 1000) * sizeof(char),
+		CACHE_EMPTY_INTERVAL = 500,
+		CACHE_SIZE = (int)(MAX_CLIENTS * 16384 * (CACHE_EMPTY_INTERVAL / 1000) * sizeof(char)),
 	};
 
 	struct CPlayer
