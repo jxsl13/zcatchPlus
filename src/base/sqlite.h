@@ -160,5 +160,25 @@
  *
  * @return [description]
  */
- const unsigned char *  sqlite_column_text(sqlite3_stmt* Statement, int Column);
+ const unsigned char * sqlite_column_text(sqlite3_stmt* Statement, int Column);
+
+
+
+/**
+ * @brief Returns sqlite query from given statement.
+ * @details [long description]
+ * 
+ * @param pStmt [description]
+ * @return [description]
+ */
+ char *sqlite_expand(sqlite3_stmt *pStmt);
+
+
+/**
+ * @brief frees allocated memory from sqlite error messages
+ * @details [long description]
+ * 
+ * @param ErrMsg [description]
+ */
+void sqlite_free(void *ErrMsg);
 

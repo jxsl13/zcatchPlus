@@ -134,7 +134,7 @@ void CGameContext::CommandCallback(int ClientID, int FlagMask, const char *pCmd,
 {
 	CGameContext *pSelf = (CGameContext *)pUser;
 
-	if (pSelf->m_TeeHistorian.GetTeeHistorianMode())
+	if (pSelf->m_TeeHistorian.GetMode())
 	{
 		pSelf->m_TeeHistorian.RecordConsoleCommand(pSelf->Server()->ClientName(ClientID), ClientID, FlagMask, pCmd, pResult);
 	}
@@ -511,13 +511,13 @@ void CGameContext::OnTick()
 
 	/*teehistorian*/
 
-	if (m_TeeHistorian.GetTeeHistorianMode())
+	if (m_TeeHistorian.GetMode())
 	{
 
-		if (m_TeeHistorian.GetTeeHistorianMode() == CTeeHistorian::MODE_SQLITE)
+		if (m_TeeHistorian.GetMode() == CTeeHistorian::MODE_SQLITE)
 		{
 
-		} else if (m_TeeHistorian.GetTeeHistorianMode() == CTeeHistorian::MODE_TEE_HISTORIAN) {
+		} else if (m_TeeHistorian.GetMode() == CTeeHistorian::MODE_TEE_HISTORIAN) {
 			int Error = aio_error(m_TeeHistorian.GetHistorianFile());
 			if (Error)
 			{
@@ -546,7 +546,7 @@ void CGameContext::OnTick()
 	m_pController->Tick();
 
 	/*teehistorian*/
-	if (m_TeeHistorian.GetTeeHistorianMode())
+	if (m_TeeHistorian.GetMode())
 	{
 		int players =0;
 		for (int i = 0; i < MAX_CLIENTS; i++)
@@ -561,7 +561,7 @@ void CGameContext::OnTick()
 			}
 			else
 			{
-				if (m_TeeHistorian.GetTeeHistorianMode() == CTeeHistorian::MODE_TEE_HISTORIAN)
+				if (m_TeeHistorian.GetMode() == CTeeHistorian::MODE_TEE_HISTORIAN)
 				{
 					m_TeeHistorian.RecordDeadPlayer(i);
 				}
@@ -569,15 +569,7 @@ void CGameContext::OnTick()
 			}
 		}
 
-		// once every x ticks write data to sqlite database.
-		if (m_TeeHistorian.GetTeeHistorianMode() == CTeeHistorian::MODE_SQLITE)
-		{
-		if (players &&  Server()->Tick() % g_Config.m_SvSqliteWriteInterval == 0)
-			{
-				m_TeeHistorian.SqliteWrite();
-			}
 
-		}
 		m_TeeHistorian.EndPlayers();
 		m_TeeHistorian.BeginInputs();
 	}
@@ -814,7 +806,7 @@ void CGameContext::OnClientDirectInput(const char* ClientNick, int ClientID, voi
 		m_apPlayers[ClientID]->OnDirectInput((CNetObj_PlayerInput *)pInput);
 
 	/*teehistorian*/
-	if (m_TeeHistorian.GetTeeHistorianMode())
+	if (m_TeeHistorian.GetMode())
 	{
 		m_TeeHistorian.RecordPlayerInput(Server()->ClientJoinHash(ClientID), ClientNick, ClientID, (CNetObj_PlayerInput *)pInput);
 	}
@@ -951,7 +943,7 @@ void CGameContext::OnClientDrop(int ClientID, const char *pReason)
  */
 void CGameContext::OnClientEngineJoin(int ClientID)
 {
-	if (m_TeeHistorian.GetTeeHistorianMode())
+	if (m_TeeHistorian.GetMode())
 	{
 		m_TeeHistorian.RecordPlayerJoin(Server()->ClientJoinHash(ClientID), Server()->ClientName(ClientID), ClientID, Server()->Tick());
 	}
@@ -959,7 +951,7 @@ void CGameContext::OnClientEngineJoin(int ClientID)
 
 void CGameContext::OnClientEngineDrop(int ClientID, const char *pReason)
 {
-	if (m_TeeHistorian.GetTeeHistorianMode())
+	if (m_TeeHistorian.GetMode())
 	{
 		m_TeeHistorian.RecordPlayerDrop(Server()->ClientJoinHash(ClientID), Server()->ClientName(ClientID), ClientID, Server()->Tick(), pReason);
 	}
@@ -994,7 +986,7 @@ void CGameContext::OnMessage(int MsgID, CUnpacker *pUnpacker, int ClientID)
 	CPlayer *pPlayer = m_apPlayers[ClientID];
 
 	/*teehistorian*/
-	if (m_TeeHistorian.GetTeeHistorianMode())
+	if (m_TeeHistorian.GetMode())
 	{
 		if (m_NetObjHandler.TeeHistorianRecordMsg(MsgID))
 		{
@@ -1829,7 +1821,7 @@ void CGameContext::OnSetAuthed(int ClientID, int Level)
 			Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "CGameContext", "Aborted vote by admin login.");
 		}
 	}
-	if (m_TeeHistorian.GetTeeHistorianMode())
+	if (m_TeeHistorian.GetMode())
 	{
 		if (Level)
 		{
@@ -2641,7 +2633,7 @@ void CGameContext::OnInit(/*class IKernel *pKernel*/)
 	m_TeeHistorian.RetrieveMode(true);
 	m_TeeHistorian.OnInit(Storage(), Server(), m_pController, Tuning(), this);
 
-	if (m_TeeHistorian.GetTeeHistorianMode())
+	if (m_TeeHistorian.GetMode())
 	{
 
 		for (int i = 0; i < MAX_CLIENTS; i++)

@@ -55,7 +55,7 @@ void CTeeHistorian::CheckHistorianModeToggled() {
 
 	RetrieveMode(false);
 
-	if (m_HistorianMode != m_OldHistorianMode)
+	if (GetMode() != GetOldMode())
 	{
 		OnSave();
 		//m_OldHistorianMode = m_HistorianMode;
@@ -75,13 +75,13 @@ void CTeeHistorian::OnInit(IStorage *pStorage, IServer *pServer, IGameController
 	m_pGameContext = pGameContext;
 	m_GameUuid = RandomUuid();
 
-	if (m_HistorianMode) {
+	if (GetMode()) {
 		char aGameUuid[UUID_MAXSTRSIZE];
 		FormatUuid(m_GameUuid, aGameUuid, sizeof(aGameUuid));
 		char aFilename[64];
 
 
-		if (m_HistorianMode == MODE_SQLITE)
+		if (GetMode() == MODE_SQLITE)
 		{
 			if (str_comp(g_Config.m_SvSqliteHistorianFileName, "") != 0) {
 				str_format(aFilename, sizeof(aFilename), "teehistorian/%s.db", g_Config.m_SvSqliteHistorianFileName);
@@ -89,14 +89,19 @@ void CTeeHistorian::OnInit(IStorage *pStorage, IServer *pServer, IGameController
 				str_format(aFilename, sizeof(aFilename), "teehistorian/%s.db", aGameUuid);
 			}
 
-			//sqlite_lock(&m_SqliteMutex);
 			CreateDatabase(aFilename);
 			dbg_msg("SQLiteHistorian", "Created Database: %s", aFilename);
-			//sqlite_unlock(&m_SqliteMutex);
+			dbg_msg("CACHE", "Size: %d", CACHE_SIZE);
+			free(m_QueryCachePrimary);
+			free(m_QueryCacheSecondary);
+			m_QueryCachePrimary = (char*)malloc(CACHE_SIZE);
+			m_QueryCacheSecondary = (char*)malloc(CACHE_SIZE);
+
+			AddThread(new std::thread(&CTeeHistorian::DatabaseWriter, this));
 
 
 
-		} else if (m_HistorianMode == MODE_TEE_HISTORIAN) {
+		} else if (GetMode() == MODE_TEE_HISTORIAN) {
 
 
 			str_format(aFilename, sizeof(aFilename), "teehistorian/%s.teehistorian", aGameUuid);
@@ -113,7 +118,7 @@ void CTeeHistorian::OnInit(IStorage *pStorage, IServer *pServer, IGameController
 			}
 
 			m_pTeeHistorianFile = (aio_new(File));
-			dbg_msg("STeeHistorian", "Created Logfile: %s", aFilename);
+			dbg_msg("TeeHistorian", "Created Logfile: %s", aFilename);
 			CUuidManager Empty;
 
 			CTeeHistorian::CGameInfo GameInfo;
@@ -145,13 +150,14 @@ void CTeeHistorian::OnShutDown(bool FinalShutdown) {
 
 	Finish();
 
-	if (m_OldHistorianMode == MODE_SQLITE)
+	if (GetOldMode() == MODE_SQLITE)
 	{
+		SetMode(MODE_NONE);
+		SetOldMode(MODE_NONE);
+
 		if (FinalShutdown)
 		{
 			JoinThreads();
-		} else {
-			CleanThreads();
 		}
 
 
@@ -160,7 +166,7 @@ void CTeeHistorian::OnShutDown(bool FinalShutdown) {
 
 
 
-	} else if (m_OldHistorianMode == MODE_TEE_HISTORIAN)
+	} else if (GetOldMode() == MODE_TEE_HISTORIAN)
 	{
 		aio_close(m_pTeeHistorianFile);
 		aio_wait(m_pTeeHistorianFile);
@@ -171,11 +177,11 @@ void CTeeHistorian::OnShutDown(bool FinalShutdown) {
 			//GameContext->Server()->SetErrorShutdown("teehistorian close error");
 		}
 		aio_free(m_pTeeHistorianFile);
-
 	}
 
-	m_HistorianMode = MODE_NONE;
-	m_OldHistorianMode = MODE_NONE;
+	SetMode(MODE_NONE);
+	SetOldMode(MODE_NONE);
+
 }
 
 void CTeeHistorian::OnSave() {
@@ -185,6 +191,54 @@ void CTeeHistorian::OnSave() {
 	OnInit(m_pStorage, m_pServer, m_pController, m_pTuning, m_pGameContext);
 	sqlite_unlock(&m_SqliteMutex);
 
+}
+
+void CTeeHistorian::DatabaseWriter() {
+	while (GetMode()) {
+		if (GetMode() == MODE_SQLITE)
+		{
+			std::this_thread::sleep_for(std::chrono::milliseconds(CACHE_EMPTY_INTERVAL));
+			dbg_msg("TEST", "Cache Primary Size: %lu ", strlen(m_QueryCachePrimary) + 1);
+			dbg_msg("TEST", "Cache Secondary Size: %lu ", strlen(m_QueryCacheSecondary) + 1);
+
+			if (sqlite_lock(&m_PrimaryCacheMutex))
+			{
+
+				sqlite_lock(&m_SqliteMutex);
+				char *ErrMsg;
+
+				sqlite_exec(m_SqliteDB, m_QueryCachePrimary, &ErrMsg);
+				sqlite_exec(m_SqliteDB, "END TRANSACTION", &ErrMsg);
+				sqlite_exec(m_SqliteDB, "BEGIN TRANSACTION", &ErrMsg);
+				sqlite_unlock(&m_SqliteMutex);
+
+				if (ErrMsg)
+				{
+					dbg_msg("SQLiteHistorian", "Error while executing a query: %s", ErrMsg);
+				}
+
+				//m_QueryCachePrimary = (char*)realloc(m_QueryCachePrimary,CACHE_SIZE);
+				memset(m_QueryCachePrimary, 0, CACHE_SIZE);
+				if (!m_QueryCachePrimary)
+				{
+					dbg_msg("SQLiteHistorian", "Error resetting memory for primary cache.");
+				}
+				
+				sqlite_free(ErrMsg);
+
+				sqlite_unlock(&m_PrimaryCacheMutex);
+
+
+			} else if (sqlite_lock(&m_SecondaryCacheMutex))
+			{
+				dbg_msg("TEST", "Cache Secondary Size: %lu ", strlen(m_QueryCachePrimary) + 1);
+				sqlite_unlock(&m_SecondaryCacheMutex);
+			}
+
+		} else {
+			break;
+		}
+	}
 }
 
 static char *EscapeJson(char *pBuffer, int BufferSize, const char *pString)
@@ -234,9 +288,18 @@ CTeeHistorian::CTeeHistorian()
 	m_State = STATE_START;
 	m_pfnWriteCallback = 0;
 	m_pWriteCallbackUserdata = 0;
-	m_HistorianMode = MODE_NONE;
-	m_OldHistorianMode = MODE_NONE;
+	m_HistorianMode = (int*)malloc(sizeof(int));
+	m_OldHistorianMode = (int*)malloc(sizeof(int));
+	SetMode(MODE_NONE);
+	SetOldMode(MODE_NONE);
 	m_GameUuid = RandomUuid();
+
+}
+CTeeHistorian::~CTeeHistorian() {
+	free(m_HistorianMode);
+	free(m_OldHistorianMode);
+	free(m_QueryCachePrimary);
+	free(m_QueryCacheSecondary);
 }
 
 
@@ -246,16 +309,16 @@ void CTeeHistorian::RetrieveMode(bool OnInit) {
 	{
 		if (g_Config.m_SvSqliteHistorian)
 		{
-			m_HistorianMode = MODE_SQLITE;
+			SetMode(MODE_SQLITE);
 		} else {
-			m_HistorianMode = MODE_TEE_HISTORIAN;
+			SetMode(MODE_TEE_HISTORIAN);
 		}
 		if (OnInit) {
-			m_OldHistorianMode = m_HistorianMode;
+			SetOldMode(GetMode());
 		}
 	} else {
-		m_HistorianMode = MODE_NONE;
-		m_OldHistorianMode = MODE_NONE;
+		SetMode(MODE_NONE);
+		SetOldMode(MODE_NONE);
 	}
 
 
@@ -264,7 +327,7 @@ void CTeeHistorian::RetrieveMode(bool OnInit) {
 
 void CTeeHistorian::Reset(const CGameInfo *pGameInfo, WRITE_CALLBACK pfnWriteCallback, void *pUser)
 {
-	if (m_HistorianMode) {
+	if (GetMode()) {
 
 
 		dbg_assert(m_State == STATE_START || m_State == STATE_BEFORE_TICK, "invalid teehistorian state");
@@ -284,10 +347,10 @@ void CTeeHistorian::Reset(const CGameInfo *pGameInfo, WRITE_CALLBACK pfnWriteCal
 		}
 
 
-		if (m_HistorianMode == MODE_SQLITE)
+		if (GetMode() == MODE_SQLITE)
 		{
 			/* code */
-		} else if (m_HistorianMode == MODE_TEE_HISTORIAN) {
+		} else if (GetMode() == MODE_TEE_HISTORIAN) {
 			m_pfnWriteCallback = pfnWriteCallback;
 			m_pWriteCallbackUserdata = pUser;
 			WriteHeader(pGameInfo);
@@ -427,7 +490,7 @@ void CTeeHistorian::BeginTick(int Tick)
 {
 
 
-	if (m_HistorianMode)
+	if (GetMode())
 	{
 		dbg_assert(m_State == STATE_START || m_State == STATE_BEFORE_TICK, "invalid teehistorian state");
 
@@ -445,7 +508,7 @@ void CTeeHistorian::BeginTick(int Tick)
 
 void CTeeHistorian::BeginPlayers()
 {
-	if (m_HistorianMode)
+	if (GetMode())
 	{
 		dbg_assert(m_State == STATE_BEFORE_PLAYERS, "invalid teehistorian state");
 
@@ -477,14 +540,14 @@ void CTeeHistorian::EnsureTickWrittenPlayerData(int ClientID)
 void CTeeHistorian::RecordPlayer(int ClientJoinHash, const char* ClientNick, int ClientID, const CNetObj_CharacterCore *pChar)
 {
 
-	if (m_HistorianMode) {
+	if (GetMode()) {
 
 
 		dbg_assert(m_State == STATE_PLAYERS, "invalid teehistorian state");
 
 		CPlayer *pPrev = &m_aPrevPlayers[ClientID];
 
-		if (m_HistorianMode == MODE_SQLITE) {
+		if (GetMode() == MODE_SQLITE) {
 
 			//if (!pPrev->m_Alive || pPrev->m_X != pChar->m_X || pPrev->m_Y != pChar->m_Y) // doesn't write every tick
 
@@ -506,20 +569,12 @@ void CTeeHistorian::RecordPlayer(int ClientJoinHash, const char* ClientNick, int
 			 * transactions to the database
 			 */
 
-			CleanThreads();
+
 			/*it does not matter if this is written before or after this thread is executed*/
-			AddThread(new std::thread(&CTeeHistorian::InsertIntoPlayerMovementTable,
-			                          this,
-			                          ClientJoinHash,
-			                          aDate,
-			                          Tick,
-			                          X,
-			                          Y,
-			                          OldX,
-			                          OldY));
+			InsertIntoPlayerMovementTable(ClientJoinHash, aDate, Tick, X, Y, OldX, OldY);
 
 
-		} else if (m_HistorianMode == MODE_TEE_HISTORIAN) {
+		} else if (GetMode() == MODE_TEE_HISTORIAN) {
 
 			if (!pPrev->m_Alive || pPrev->m_X != pChar->m_X || pPrev->m_Y != pChar->m_Y)
 			{
@@ -566,7 +621,7 @@ void CTeeHistorian::RecordPlayer(int ClientJoinHash, const char* ClientNick, int
 
 void CTeeHistorian::RecordDeadPlayer(int ClientID)
 {
-	if (m_HistorianMode)
+	if (GetMode())
 	{
 		dbg_assert(m_State == STATE_PLAYERS, "invalid teehistorian state");
 		CPlayer *pPrev = &m_aPrevPlayers[ClientID];
@@ -575,9 +630,9 @@ void CTeeHistorian::RecordDeadPlayer(int ClientID)
 			EnsureTickWrittenPlayerData(ClientID);
 		}
 
-		if (m_HistorianMode == MODE_SQLITE) {
+		if (GetMode() == MODE_SQLITE) {
 
-		} else if (m_HistorianMode == MODE_TEE_HISTORIAN) {
+		} else if (GetMode() == MODE_TEE_HISTORIAN) {
 			if (pPrev->m_Alive) {
 				CPacker Buffer;
 				Buffer.Reset();
@@ -598,10 +653,10 @@ void CTeeHistorian::RecordDeadPlayer(int ClientID)
 
 void CTeeHistorian::Write(const void *pData, int DataSize)
 {
-	if (m_HistorianMode == MODE_SQLITE)
+	if (GetMode() == MODE_SQLITE)
 	{
 		/* code */
-	} else if (m_HistorianMode == MODE_TEE_HISTORIAN) {
+	} else if (GetMode() == MODE_TEE_HISTORIAN) {
 		m_pfnWriteCallback(pData, DataSize, m_pWriteCallbackUserdata);
 	}
 
@@ -619,12 +674,12 @@ void CTeeHistorian::EnsureTickWritten()
 
 void CTeeHistorian::WriteTick()
 {
-	if (m_HistorianMode) {
+	if (GetMode()) {
 
-		if (m_HistorianMode == MODE_SQLITE)
+		if (GetMode() == MODE_SQLITE)
 		{
 			/* code */
-		} else if (m_HistorianMode == MODE_TEE_HISTORIAN)
+		} else if (GetMode() == MODE_TEE_HISTORIAN)
 		{
 			CPacker TickPacker;
 			TickPacker.Reset();
@@ -646,7 +701,7 @@ void CTeeHistorian::WriteTick()
 
 void CTeeHistorian::EndPlayers()
 {
-	if (m_HistorianMode)
+	if (GetMode())
 	{
 		dbg_assert(m_State == STATE_PLAYERS, "invalid teehistorian state");
 
@@ -656,7 +711,7 @@ void CTeeHistorian::EndPlayers()
 
 void CTeeHistorian::BeginInputs()
 {
-	if (m_HistorianMode)
+	if (GetMode())
 	{
 		dbg_assert(m_State == STATE_BEFORE_INPUTS, "invalid teehistorian state");
 
@@ -667,12 +722,12 @@ void CTeeHistorian::BeginInputs()
 
 void CTeeHistorian::RecordPlayerInput(int ClientJoinHash, const char* ClientNick, int ClientID, const CNetObj_PlayerInput * pInput)
 {
-	if (m_HistorianMode)
+	if (GetMode())
 	{
 
 		CPlayer *pPrev = &m_aPrevPlayers[ClientID];
 
-		if (m_HistorianMode == MODE_SQLITE)
+		if (GetMode() == MODE_SQLITE)
 		{
 
 			char *TimeStamp = GetTimeStamp();
@@ -690,26 +745,11 @@ void CTeeHistorian::RecordPlayerInput(int ClientJoinHash, const char* ClientNick
 			int NextWeapon = pInput->m_NextWeapon;
 			int PrevWeapon = pInput->m_PrevWeapon;
 
-			CleanThreads();
 			// CmdArgs contains the given arguments.
-			AddThread(new std::thread(&CTeeHistorian::InsertIntoPlayerInputTable,
-			                          this,
-			                          ClientJoinHash,
-			                          TimeStamp,
-			                          Tick,
-			                          Direction,
-			                          TargetX,
-			                          TargetY,
-			                          Jump,
-			                          Fire,
-			                          Hook,
-			                          PlayerFlags,
-			                          WantedWeapon,
-			                          NextWeapon,
-			                          PrevWeapon));
+			InsertIntoPlayerInputTable(ClientJoinHash, TimeStamp, Tick, Direction, TargetX, TargetY, Jump, Fire, Hook, PlayerFlags, WantedWeapon, NextWeapon, PrevWeapon);
 
 
-		} else if (m_HistorianMode == MODE_TEE_HISTORIAN) {
+		} else if (GetMode() == MODE_TEE_HISTORIAN) {
 
 			CPacker Buffer;
 
@@ -764,12 +804,12 @@ void CTeeHistorian::RecordPlayerInput(int ClientJoinHash, const char* ClientNick
 void CTeeHistorian::RecordPlayerMessage(int ClientID, const void *pMsg, int MsgSize)
 {
 
-	if (m_HistorianMode) {
+	if (GetMode()) {
 
-		if (m_HistorianMode == MODE_SQLITE)
+		if (GetMode() == MODE_SQLITE)
 		{
 			/* code */
-		} else  if (m_HistorianMode == MODE_TEE_HISTORIAN) {
+		} else  if (GetMode() == MODE_TEE_HISTORIAN) {
 
 			EnsureTickWritten();
 
@@ -800,9 +840,9 @@ void CTeeHistorian::RecordPlayerMessage(int ClientID, const void *pMsg, int MsgS
 
 void CTeeHistorian::RecordPlayerJoin(int ClientJoinHash , const char* ClientNick, int ClientID, int Tick)
 {
-	if (m_HistorianMode)
+	if (GetMode())
 	{
-		if (m_HistorianMode == MODE_SQLITE)
+		if (GetMode() == MODE_SQLITE)
 		{
 			char *Nick = (char*)malloc(MAX_NAME_LENGTH * sizeof(char));
 			str_copy(Nick, ClientNick, MAX_NAME_LENGTH * sizeof(char));
@@ -812,18 +852,10 @@ void CTeeHistorian::RecordPlayerJoin(int ClientJoinHash , const char* ClientNick
 			char *Reason = (char*)malloc(sizeof(char));
 			str_copy(Reason, "", sizeof(Reason));
 
-			CleanThreads();
-			AddThread(new std::thread(&CTeeHistorian::InsertIntoPlayerConnectedStateTable,
-			                          this,
-			                          ClientJoinHash,
-			                          Nick,
-			                          ClientID,
-			                          TimeStamp,
-			                          Tick,
-			                          true,
-			                          Reason));
 
-		} else if (m_HistorianMode == MODE_TEE_HISTORIAN)
+			InsertIntoPlayerConnectedStateTable(ClientJoinHash, Nick, ClientID, TimeStamp, Tick, true, Reason);
+
+		} else if (GetMode() == MODE_TEE_HISTORIAN)
 		{
 			EnsureTickWritten();
 
@@ -845,9 +877,9 @@ void CTeeHistorian::RecordPlayerJoin(int ClientJoinHash , const char* ClientNick
 
 void CTeeHistorian::RecordPlayerDrop(int ClientJoinHash, const char* ClientNick, int ClientID, int Tick, const char *pReason)
 {
-	if (m_HistorianMode)
+	if (GetMode())
 	{
-		if (m_HistorianMode == MODE_SQLITE)
+		if (GetMode() == MODE_SQLITE)
 		{
 			char *Nick = (char*)malloc(MAX_NAME_LENGTH * sizeof(char));
 			str_copy(Nick, ClientNick, MAX_NAME_LENGTH * sizeof(char));
@@ -857,21 +889,13 @@ void CTeeHistorian::RecordPlayerDrop(int ClientJoinHash, const char* ClientNick,
 			char* Reason = (char*)malloc(sizeof(char) * 128);
 			str_copy(Reason, pReason, sizeof(char) * 128);
 
-			CleanThreads();
-			AddThread(new std::thread(&CTeeHistorian::InsertIntoPlayerConnectedStateTable,
-			                          this,
-			                          ClientJoinHash,
-			                          Nick,
-			                          ClientID,
-			                          TimeStamp,
-			                          Tick,
-			                          false,
-			                          Reason));
+
+			InsertIntoPlayerConnectedStateTable(ClientJoinHash, Nick, ClientID, TimeStamp, Tick, false, Reason);
 
 			/*write to database if player leaves.*/
 
 
-		} else if (m_HistorianMode == MODE_TEE_HISTORIAN)
+		} else if (GetMode() == MODE_TEE_HISTORIAN)
 		{
 
 			EnsureTickWritten();
@@ -895,9 +919,9 @@ void CTeeHistorian::RecordPlayerDrop(int ClientJoinHash, const char* ClientNick,
 
 void CTeeHistorian::RecordConsoleCommand(const char* ClientNick, int ClientID, int FlagMask, const char *pCmd, IConsole::IResult * pResult)
 {
-	if (m_HistorianMode)
+	if (GetMode())
 	{
-		if (m_HistorianMode == MODE_SQLITE)
+		if (GetMode() == MODE_SQLITE)
 		{
 			/*sqlitehistorian*/
 			char *CmdArgs = (char*)malloc(512 * sizeof(char));
@@ -919,16 +943,11 @@ void CTeeHistorian::RecordConsoleCommand(const char* ClientNick, int ClientID, i
 			char *Command = (char*)malloc(512 * sizeof(char));
 			str_copy(Command, pCmd, 512);
 
-			CleanThreads();
-			// CmdArgs contains the given arguments.
-			AddThread(new std::thread(&CTeeHistorian::InsertIntoRconActivityTable,
-			                          this,
-			                          Nick,
-			                          aDate,
-			                          Command,
-			                          CmdArgs));
 
-		} else if (m_HistorianMode == MODE_TEE_HISTORIAN)
+			// CmdArgs contains the given arguments.
+			InsertIntoRconActivityTable(Nick, aDate, Command, CmdArgs);
+
+		} else if (GetMode() == MODE_TEE_HISTORIAN)
 		{
 			EnsureTickWritten();
 			CPacker Buffer;
@@ -959,12 +978,12 @@ void CTeeHistorian::RecordConsoleCommand(const char* ClientNick, int ClientID, i
 void CTeeHistorian::RecordTestExtra()
 {
 
-	if (m_HistorianMode)
+	if (GetMode())
 	{
-		if (m_HistorianMode == MODE_SQLITE)
+		if (GetMode() == MODE_SQLITE)
 		{
 			/* code */
-		} else if (m_HistorianMode == MODE_TEE_HISTORIAN) {
+		} else if (GetMode() == MODE_TEE_HISTORIAN) {
 			WriteExtra(UUID_TEEHISTORIAN_TEST, "", 0);
 		}
 	}
@@ -986,12 +1005,12 @@ void CTeeHistorian::EndTick()
 
 void CTeeHistorian::RecordAuthInitial(int ClientID, int Level, const char *pAuthName)
 {
-	if (m_HistorianMode)
+	if (GetMode())
 	{
-		if (m_HistorianMode == MODE_SQLITE)
+		if (GetMode() == MODE_SQLITE)
 		{
 			/* code */
-		} else if (m_HistorianMode == MODE_TEE_HISTORIAN)
+		} else if (GetMode() == MODE_TEE_HISTORIAN)
 		{
 			CPacker Buffer;
 			Buffer.Reset();
@@ -1014,12 +1033,12 @@ void CTeeHistorian::RecordAuthLogin(const char* ClientNick, int ClientID, int Le
 {
 
 
-	if (m_HistorianMode)
+	if (GetMode())
 	{
-		if (m_HistorianMode == MODE_SQLITE)
+		if (GetMode() == MODE_SQLITE)
 		{
 			/* code */
-		} else if (m_HistorianMode == MODE_TEE_HISTORIAN)
+		} else if (GetMode() == MODE_TEE_HISTORIAN)
 		{
 			/*teehistorian only*/
 			CPacker Buffer;
@@ -1043,12 +1062,12 @@ void CTeeHistorian::RecordAuthLogin(const char* ClientNick, int ClientID, int Le
 void CTeeHistorian::RecordAuthLogout(const char* ClientNick, int ClientID)
 {
 
-	if (m_HistorianMode)
+	if (GetMode())
 	{
-		if (m_HistorianMode == MODE_SQLITE)
+		if (GetMode() == MODE_SQLITE)
 		{
 			/* code */
-		} else if (m_HistorianMode == MODE_TEE_HISTORIAN)
+		} else if (GetMode() == MODE_TEE_HISTORIAN)
 		{
 			CPacker Buffer;
 			Buffer.Reset();
@@ -1067,14 +1086,14 @@ void CTeeHistorian::RecordAuthLogout(const char* ClientNick, int ClientID)
 
 void CTeeHistorian::Finish()
 {
-	if (m_HistorianMode) {
+	if (GetMode()) {
 		dbg_assert(m_State == STATE_START || m_State == STATE_INPUTS || m_State == STATE_BEFORE_ENDTICK || m_State == STATE_BEFORE_TICK, "invalid teehistorian state");
 
-		if (m_HistorianMode == MODE_SQLITE)
+		if (GetMode() == MODE_SQLITE)
 		{
 
 
-		} else if (m_HistorianMode == MODE_TEE_HISTORIAN) {
+		} else if (GetMode() == MODE_TEE_HISTORIAN) {
 
 			CPacker Buffer;
 			Buffer.Reset();
@@ -1107,14 +1126,18 @@ void CTeeHistorian::Finish()
 
 
 void CTeeHistorian::Stop() {
-	if (m_OldHistorianMode != m_HistorianMode)
+	if (GetOldMode() != GetMode())
 	{
-		m_OldHistorianMode = m_HistorianMode;
+		SetOldMode(GetMode());
 	}
 
-	m_HistorianMode = MODE_NONE;
+	SetMode(MODE_NONE);
 }
 
+/**
+ * @brief Non locking
+ * @details [long description]
+ */
 void CTeeHistorian::CreateDatabase(const char* filename) {
 
 	int err = sqlite_open(filename, &m_SqliteDB);
@@ -1125,16 +1148,24 @@ void CTeeHistorian::CreateDatabase(const char* filename) {
 		CreatePlayerInputTable();
 		CreateRconActivityTable();
 		CreatePlayerConnectedStateTable();
-
-		BeginTransaction();
 		OptimizeDatabase();
-
+		char *ErrMsg;
+		sqlite_exec(m_SqliteDB, "BEGIN TRANSACTION", &ErrMsg);
+		if (ErrMsg)
+		{
+			dbg_msg("SQLiteHistorian", "Error while creating database: %s", ErrMsg);
+		}
+		sqlite_free(ErrMsg);
 	} else {
 		dbg_msg("SQLiteHistorian", "Error in CreateDatabase");
-		m_HistorianMode = MODE_NONE;
+		SetMode(MODE_NONE);
 	}
 }
 
+/**
+ * @brief Non locking
+ * @details [long description]
+ */
 void CTeeHistorian::CreateRconActivityTable() {
 	char* ErrMsg;
 	int err = sqlite_exec(m_SqliteDB,
@@ -1155,12 +1186,16 @@ void CTeeHistorian::CreateRconActivityTable() {
 	if (err != SQLITE_OK) {
 		dbg_msg("ERROR SQLITE", "CreateRconActivityTable:");
 		dbg_msg("SQLiteHistorian", "SQL error (#%d): %s\n", err, ErrMsg);
-		sqlite3_free(ErrMsg);
-		m_HistorianMode = MODE_NONE;
+		sqlite_free(ErrMsg);
+		SetMode(MODE_NONE);
 	}
 
 }
 
+/**
+ * @brief Non locking
+ * @details [long description]
+ */
 void CTeeHistorian::CreatePlayerMovementTable() {
 	char* ErrMsg;
 	int err = sqlite_exec(m_SqliteDB,
@@ -1187,11 +1222,16 @@ void CTeeHistorian::CreatePlayerMovementTable() {
 	if (err != SQLITE_OK) {
 		dbg_msg("ERROR SQLITE", "CreatePlayerMovementTable:");
 		dbg_msg("SQLiteHistorian", "SQL error (#%d): %s\n", err, ErrMsg);
-		sqlite3_free(ErrMsg);
-		m_HistorianMode = MODE_NONE;
+		sqlite_free(ErrMsg);
+		SetMode(MODE_NONE);
 	}
 
 }
+
+/**
+ * @brief Non locking
+ * @details [long description]
+ */
 void CTeeHistorian::CreatePlayerInputTable() {
 	char* ErrMsg;
 	int err = sqlite_exec(m_SqliteDB,
@@ -1230,13 +1270,16 @@ void CTeeHistorian::CreatePlayerInputTable() {
 	if (err != SQLITE_OK) {
 		dbg_msg("ERROR SQLITE", "CreatePlayerInputTable:");
 		dbg_msg("SQLiteHistorian", "SQL error (#%d): %s\n", err, ErrMsg);
-		sqlite3_free(ErrMsg);
-		m_HistorianMode = MODE_NONE;
+		sqlite_free(ErrMsg);
+		SetMode(MODE_NONE);
 	}
 
 }
 
-
+/**
+ * @brief Non locking
+ * @details [long description]
+ */
 void CTeeHistorian::CreatePlayerConnectedStateTable() {
 	char* ErrMsg;
 	int err = sqlite_exec(m_SqliteDB ,
@@ -1263,12 +1306,20 @@ void CTeeHistorian::CreatePlayerConnectedStateTable() {
 	if (err != SQLITE_OK) {
 		dbg_msg("ERROR SQLITE", "CreatePlayerInputTable:");
 		dbg_msg("SQLiteHistorian", "SQL error (#%d): %s\n", err, ErrMsg);
-		sqlite3_free(ErrMsg);
-		m_HistorianMode = MODE_NONE;
+		sqlite_free(ErrMsg);
+		SetMode(MODE_NONE);
 	}
 }
 
-
+/**
+ * @brief Locks caches
+ * @details [long description]
+ *
+ * @param NickName [description]
+ * @param TimeStamp [description]
+ * @param Command [description]
+ * @param Arguments [description]
+ */
 void CTeeHistorian::InsertIntoRconActivityTable(char* NickName, char *TimeStamp, char *Command, char *Arguments) {
 	/* prepare */
 	const char *zTail;
@@ -1287,27 +1338,7 @@ void CTeeHistorian::InsertIntoRconActivityTable(char* NickName, char *TimeStamp,
 		sqlite_bind_text(pStmt, 3, Command);
 		sqlite_bind_text(pStmt, 4, Arguments);
 
-		/* lock database access in this process */
-		sqlite_lock(&m_SqliteMutex);
-
-		/* when another process uses the database, wait up to 1 minute */
-		sqlite_busy_timeout(m_SqliteDB, 60000);
-
-		/* save to database */
-		switch (sqlite_step(pStmt))
-		{
-		case SQLITE_DONE:
-			/* nothing */
-			break;
-		case SQLITE_BUSY:
-			dbg_msg("SQLiteHistorian", "Error: could not save records (timeout).");
-			break;
-		default:
-			dbg_msg("SQLiteHistorian", "SQL error (#%d): %s", rc, sqlite_errmsg(m_SqliteDB));
-		}
-
-		/* unlock database access */
-		sqlite_unlock(&m_SqliteMutex);
+		AppendQuery(sqlite_expand(pStmt));
 	}
 	else
 	{
@@ -1321,6 +1352,18 @@ void CTeeHistorian::InsertIntoRconActivityTable(char* NickName, char *TimeStamp,
 	sqlite_finalize(pStmt);
 }
 
+/**
+ * @brief Locks caches
+ * @details [long description]
+ *
+ * @param ClientJoinHash [description]
+ * @param TimeStamp [description]
+ * @param Tick [description]
+ * @param x [description]
+ * @param y [description]
+ * @param old_x [description]
+ * @param old_y [description]
+ */
 void CTeeHistorian::InsertIntoPlayerMovementTable(int ClientJoinHash, char *TimeStamp, int Tick, int x, int y, int old_x, int old_y) {
 
 	/* prepare */
@@ -1342,27 +1385,8 @@ void CTeeHistorian::InsertIntoPlayerMovementTable(int ClientJoinHash, char *Time
 		sqlite_bind_int(pStmt, 5, y);
 		sqlite_bind_int(pStmt, 6, old_x);
 		sqlite_bind_int(pStmt, 7, old_y);
-		/* lock database access in this process */
-		sqlite_lock(&m_SqliteMutex);
 
-		/* when another process uses the database, wait up to 1 minute */
-		sqlite_busy_timeout(m_SqliteDB, 60000);
-
-		/* save to database */
-		switch (sqlite_step(pStmt))
-		{
-		case SQLITE_DONE:
-			/* nothing */
-			break;
-		case SQLITE_BUSY:
-			dbg_msg("SQLiteHistorian", "Error: could not save records (timeout).");
-			break;
-		default:
-			dbg_msg("SQLiteHistorian", "SQL error (#%d): %s", rc, sqlite_errmsg(m_SqliteDB));
-		}
-
-		/* unlock database access */
-		sqlite_unlock(&m_SqliteMutex);
+		AppendQuery(sqlite_expand(pStmt));
 	}
 	else
 	{
@@ -1372,6 +1396,25 @@ void CTeeHistorian::InsertIntoPlayerMovementTable(int ClientJoinHash, char *Time
 	free(TimeStamp);
 	sqlite_finalize(pStmt);
 }
+
+/**
+ * @brief Locks caches
+ * @details [long description]
+ *
+ * @param ClientJoinHash [description]
+ * @param TimeStamp [description]
+ * @param Tick [description]
+ * @param Direction [description]
+ * @param TargetX [description]
+ * @param TargetY [description]
+ * @param Jump [description]
+ * @param Fire [description]
+ * @param Hook [description]
+ * @param PlayerFlags [description]
+ * @param WantedWeapon [description]
+ * @param NextWeapon [description]
+ * @param PrevWeapon [description]
+ */
 void CTeeHistorian::InsertIntoPlayerInputTable(int ClientJoinHash, char *TimeStamp, int Tick, int Direction, int TargetX, int TargetY, int Jump, int Fire, int Hook, int PlayerFlags, int WantedWeapon, int NextWeapon, int PrevWeapon) {
 	/* prepare */
 	const char *zTail;
@@ -1399,27 +1442,7 @@ void CTeeHistorian::InsertIntoPlayerInputTable(int ClientJoinHash, char *TimeSta
 		sqlite_bind_int(pStmt, 12, NextWeapon);
 		sqlite_bind_int(pStmt, 13, PrevWeapon);
 
-		/* lock database access in this process */
-		sqlite_lock(&m_SqliteMutex);
-
-		/* when another process uses the database, wait up to 1 minute */
-		sqlite_busy_timeout(m_SqliteDB, 60000);
-
-		/* save to database */
-		switch (sqlite_step(pStmt))
-		{
-		case SQLITE_DONE:
-			/* nothing */
-			break;
-		case SQLITE_BUSY:
-			dbg_msg("SQLiteHistorian", "Error: could not save records (timeout).");
-			break;
-		default:
-			dbg_msg("SQLiteHistorian", "SQL error (#%d): %s", rc, sqlite_errmsg(m_SqliteDB));
-		}
-
-		/* unlock database access */
-		sqlite_unlock(&m_SqliteMutex);
+		AppendQuery(sqlite_expand(pStmt));
 	}
 	else
 	{
@@ -1432,6 +1455,18 @@ void CTeeHistorian::InsertIntoPlayerInputTable(int ClientJoinHash, char *TimeSta
 }
 
 
+/**
+ * @brief Locks caches
+ * @details [long description]
+ *
+ * @param ClientJoinHash [description]
+ * @param NickName [description]
+ * @param ClientID [description]
+ * @param TimeStamp [description]
+ * @param Tick [description]
+ * @param ConnectedState [description]
+ * @param Reason [description]
+ */
 void CTeeHistorian::InsertIntoPlayerConnectedStateTable(int ClientJoinHash, char  *NickName, int ClientID, char *TimeStamp, int Tick, bool ConnectedState, char *Reason) {
 	/* prepare */
 	const char *zTail;
@@ -1453,27 +1488,7 @@ void CTeeHistorian::InsertIntoPlayerConnectedStateTable(int ClientJoinHash, char
 		sqlite_bind_text(pStmt, 6, ConnectedState ? "joined" : "left");
 		sqlite_bind_text(pStmt, 7, Reason);
 
-		/* lock database access in this process */
-		sqlite_lock(&m_SqliteMutex);
-
-		/* when another process uses the database, wait up to 1 minute */
-		sqlite_busy_timeout(m_SqliteDB, 60000);
-
-		/* save to database */
-		switch (sqlite_step(pStmt))
-		{
-		case SQLITE_DONE:
-			/* nothing */
-			break;
-		case SQLITE_BUSY:
-			dbg_msg("SQLiteHistorian", "Error: could not save records (timeout).");
-			break;
-		default:
-			dbg_msg("SQLiteHistorian", "SQL error (#%d): %s", rc, sqlite_errmsg(m_SqliteDB));
-		}
-
-		/* unlock database access */
-		sqlite_unlock(&m_SqliteMutex);
+		AppendQuery(sqlite_expand(pStmt));
 	}
 	else
 	{
@@ -1487,6 +1502,10 @@ void CTeeHistorian::InsertIntoPlayerConnectedStateTable(int ClientJoinHash, char
 
 }
 
+/**
+ * @brief Non locking
+ * @details [long description]
+ */
 void CTeeHistorian::CloseDatabase() {
 
 	EndTransaction();
@@ -1509,23 +1528,28 @@ char* CTeeHistorian::GetTimeStamp() {
 	str_format(aBuf, 25 * sizeof(char), "%s.%ld", aDate, milli);
 	return aBuf;
 }
+
+/**
+ * @brief Non Locking
+ * @details [long description]
+ */
 void CTeeHistorian::OptimizeDatabase() {
 	if (m_SqliteDB) {
 		char* ErrMsg = 0;
-		sqlite_lock(&m_SqliteMutex, 1000);
+
 		sqlite_busy_timeout(m_SqliteDB, 3000);
 		switch (g_Config.m_SvSqlitePerformance)
 		{
-		case 1: sqlite3_exec(m_SqliteDB, "PRAGMA synchronous = OFF", NULL, NULL, &ErrMsg); break;
-		case 2: sqlite3_exec(m_SqliteDB, "PRAGMA journal_mode = MEMORY", NULL, NULL, &ErrMsg); break;
-		case 3: sqlite3_exec(m_SqliteDB, "PRAGMA synchronous = OFF", NULL, NULL, &ErrMsg);
-			sqlite3_exec(m_SqliteDB, "PRAGMA journal_mode = MEMORY", NULL, NULL, &ErrMsg);
+		case 1: sqlite_exec(m_SqliteDB, "PRAGMA synchronous = OFF", &ErrMsg); break;
+		case 2: sqlite_exec(m_SqliteDB, "PRAGMA journal_mode = MEMORY", &ErrMsg); break;
+		case 3: sqlite_exec(m_SqliteDB, "PRAGMA synchronous = OFF", &ErrMsg);
+			sqlite_exec(m_SqliteDB, "PRAGMA journal_mode = MEMORY", &ErrMsg);
 			break;
 		default: break;
 			/* code */
 		}
-		sqlite_unlock(&m_SqliteMutex);
-		sqlite3_free(ErrMsg);
+
+		sqlite_free(ErrMsg);
 	}
 }
 
@@ -1534,14 +1558,7 @@ void CTeeHistorian::OptimizeDatabase() {
  * @details [long description]
  */
 void CTeeHistorian::BeginTransaction() {
-	if (m_SqliteDB) {
-		char* ErrMsg;
-
-		sqlite_busy_timeout(m_SqliteDB, 3000);
-		sqlite_exec(m_SqliteDB, "BEGIN TRANSACTION", &ErrMsg);
-
-		sqlite3_free(ErrMsg);
-	}
+	AppendQuery("BEGIN TRANSACTION;");
 
 }
 
@@ -1550,43 +1567,42 @@ void CTeeHistorian::BeginTransaction() {
  * @details [long description]
  */
 void CTeeHistorian::EndTransaction() {
-	if (m_SqliteDB) {
-		char* ErrMsg;
-
-		sqlite_busy_timeout(m_SqliteDB, 3000);
-		sqlite_exec(m_SqliteDB, "END TRANSACTION", &ErrMsg);
+	AppendQuery("END TRANSACTION;");
+}
 
 
-		if (ErrMsg) {
-			dbg_msg("SQLiteHistorian", "SQL error: %s", sqlite_errmsg(m_SqliteDB));
+void CTeeHistorian::AppendQuery(const char *Query) {
+	if (sqlite_lock(&m_PrimaryCacheMutex))
+	{
+		if (m_QueryCachePrimary && !m_QueryCachePrimary[0])
+		{
+			str_copy(m_QueryCachePrimary, Query, CACHE_SIZE);
+		} else if (m_QueryCachePrimary && m_QueryCachePrimary[0])
+		{
+			str_append(m_QueryCachePrimary, Query, CACHE_SIZE);
+		} else {
+			dbg_msg("ERROR SQLiteHistorian", "Could not append query due to primary cache error(%d, %d): %s", m_QueryCachePrimary ? 1 : 0, m_QueryCachePrimary[0] ? 1 : 0,  Query);
 		}
-		sqlite3_free(ErrMsg);
-	}
-}
-
-void CTeeHistorian::MiddleTransaction() {
-	if (m_SqliteDB) {
-
-		/**
-		 * lock mutex - this needs to be locked for
-		 * both transactions in order to have a consistent database.
-		 */
-		sqlite_lock(&m_SqliteMutex, 1500);
-		sqlite_busy_timeout(m_SqliteDB, 2500);
-
-		EndTransaction();
-		BeginTransaction();
-
-		sqlite_unlock(&m_SqliteMutex);
-
+		sqlite_unlock(&m_PrimaryCacheMutex);
+	} else if (sqlite_lock(&m_SecondaryCacheMutex))
+	{
+		if (m_QueryCacheSecondary && !m_QueryCacheSecondary[0])
+		{
+			str_copy(m_QueryCacheSecondary, Query, CACHE_SIZE);
+		} else if (m_QueryCacheSecondary && m_QueryCacheSecondary[0])
+		{
+			str_append(m_QueryCacheSecondary, Query, CACHE_SIZE);
+		} else {
+			dbg_msg("ERROR SQLiteHistorian", "Could not append query due to secondary cache error(%d, %d): %s", m_QueryCacheSecondary ? 1 : 0, m_QueryCacheSecondary[0] ? 1 : 0,  Query);
+		}
+		dbg_msg("SQLiteHistorian", "Appened to SECONDARY");
+		sqlite_unlock(&m_SecondaryCacheMutex);
+	} else {
+		dbg_msg("ERROR SQLiteHistorian", "Could not append query due to both caches being locked: %s", Query);
 	}
 
 }
 
-void CTeeHistorian::SqliteWrite() {
-	CleanThreads();
-	AddThread(new std::thread(&CTeeHistorian::MiddleTransaction, this));
-}
 
 
 

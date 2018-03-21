@@ -10,8 +10,8 @@
  *
  * @return [description]
  */
-int sqlite_open(const char *filename, sqlite3 **DbHandle){
-  return sqlite3_open(filename, DbHandle);
+int sqlite_open(const char *filename, sqlite3 **DbHandle) {
+	return sqlite3_open(filename, DbHandle);
 }
 
 /**
@@ -207,4 +207,22 @@ int  sqlite_column_int(sqlite3_stmt *Statement, int Column)
 const unsigned char *  sqlite_column_text(sqlite3_stmt *Statement, int Column)
 {
 	return  sqlite3_column_text(Statement,  Column);
+}
+
+
+/**
+ * @brief Returns a character string of given sql statement with bound variables in place.
+ * @details [long description]
+ *
+ * @param pStmt [description]
+ * @return [description]
+ */
+char *sqlite_expand(sqlite3_stmt *pStmt) {
+	return sqlite3_expanded_sql(pStmt);
+}
+
+
+
+void sqlite_free(void *ErrMsg){
+	sqlite3_free(ErrMsg);
 }

@@ -48,6 +48,7 @@ public:
 	};
 
 	CTeeHistorian();
+	~CTeeHistorian();
 	void RetrieveMode(bool OnInit);
 	void Stop();
 	void CheckHistorianModeToggled();
@@ -59,7 +60,6 @@ public:
 	void OnShutDown(bool FinalShutdown);
 	void OnSave();
 	void CloseDatabase();
-	void SqliteWrite();
 	bool Starting() const { return m_State == STATE_START; }
 
 	void BeginTick(int Tick);
@@ -84,7 +84,7 @@ public:
 	void RecordAuthLogin( const char* ClientNick, int ClientID, int Level, const char *pAuthName);
 	void RecordAuthLogout( const char* ClientNick, int ClientID);
 
-	int GetTeeHistorianMode() {return m_HistorianMode;}
+	int GetMode() {return *m_HistorianMode;};
 	// SELECT FROM SQLite DB statements for later real time analysis.
 	//TODO: Create another analysis table which is updated using sql queries.
 
@@ -99,6 +99,9 @@ public:
 private:
 
 	/*teehistorian*/
+	void SetMode(int Mode){*m_HistorianMode = Mode;};
+	void SetOldMode(int Mode){*m_OldHistorianMode = Mode;};
+	int GetOldMode(){return *m_OldHistorianMode;};
 	void WriteHeader(const CGameInfo *pGameInfo);
 	void WriteExtra(CUuid Uuid, const void *pData, int DataSize);
 	void EnsureTickWrittenPlayerData(int ClientID);
@@ -109,11 +112,13 @@ private:
 
 	/*SQLiteHistorian*/
 	void CreateDatabase(const char* filename);
+	void DatabaseWriter();
 	void GeneralCheck();
 	void OptimizeDatabase();
 	void BeginTransaction();
 	void EndTransaction();
 	void MiddleTransaction();
+	void AppendQuery(const char* Query);
 
 	void InsertIntoRconActivityTable(char *NickName, char* TimeStamp, char *Command, char *Arguments);
 	void InsertIntoPlayerMovementTable(int ClientJoinHash,  char *TimeStamp, int Tick, int x, int y, int old_x, int old_y);
@@ -140,6 +145,12 @@ private:
 		NUM_STATES,
 	};
 
+	enum
+	{
+		CACHE_EMPTY_INTERVAL = 1000,
+		CACHE_SIZE = MAX_CLIENTS * 16384 * (int)(CACHE_EMPTY_INTERVAL / 1000),
+	};
+
 	struct CPlayer
 	{
 		bool m_Alive;
@@ -154,12 +165,19 @@ private:
 	void *m_pWriteCallbackUserdata;
 
 	int m_State;
-	int m_HistorianMode;
+	int *m_HistorianMode;
+	int *m_OldHistorianMode;
 	ASYNCIO *m_pTeeHistorianFile;
 	/*SQLiteHistorian*/
 	sqlite3 *m_SqliteDB;
+
 	std::timed_mutex m_SqliteMutex;
 	std::queue<std::thread*> m_Threads;
+
+	char* m_QueryCachePrimary;
+	char* m_QueryCacheSecondary;
+	std::timed_mutex m_PrimaryCacheMutex;
+	std::timed_mutex m_SecondaryCacheMutex;
 
 	void AddThread(std::thread *thread) { m_Threads.push(thread); };
 	void CleanThreads() {
@@ -203,7 +221,7 @@ private:
 	IGameController *m_pController;
 	CTuningParams *m_pTuning;
 	CGameContext *m_pGameContext;
-	int m_OldHistorianMode;
+
 
 
 	int m_LastWrittenTick;
