@@ -235,6 +235,9 @@ void CTeeHistorian::DatabaseWriter() {
 				sqlite_unlock(&m_SecondaryCacheMutex);
 			}
 
+			dbg_msg("TEST", "Cache Primary Size POST: %lu ", strlen(m_QueryCachePrimary) + 1);
+			dbg_msg("TEST", "Cache Secondary Size POST: %lu ", strlen(m_QueryCacheSecondary) + 1);
+
 		} else {
 			break;
 		}
