@@ -223,17 +223,38 @@ void CTeeHistorian::DatabaseWriter() {
 				{
 					dbg_msg("SQLiteHistorian", "Error resetting memory for primary cache.");
 				}
-				
+
 				sqlite_free(ErrMsg);
 
 				sqlite_unlock(&m_PrimaryCacheMutex);
 
 
-			} else if (sqlite_lock(&m_SecondaryCacheMutex))
-			{
-				dbg_msg("TEST", "Cache Secondary Size: %lu ", strlen(m_QueryCachePrimary) + 1);
-				sqlite_unlock(&m_SecondaryCacheMutex);
 			}
+
+			sqlite_block_lock(&m_SecondaryCacheMutex);
+			char *ErrMsg;
+
+			sqlite_lock(&m_SqliteMutex);
+			sqlite_exec(m_SqliteDB, m_QueryCacheSecondary, &ErrMsg);
+			sqlite_exec(m_SqliteDB, "END TRANSACTION", &ErrMsg);
+			sqlite_exec(m_SqliteDB, "BEGIN TRANSACTION", &ErrMsg);
+			sqlite_unlock(&m_SqliteMutex);
+
+			if (ErrMsg)
+			{
+				dbg_msg("SQLiteHistorian", "Error while executing a query: %s", ErrMsg);
+			}
+
+			memset(m_QueryCacheSecondary, 0, CACHE_SIZE);
+			if (!m_QueryCacheSecondary)
+			{
+				dbg_msg("SQLiteHistorian", "Error resetting memory for secondary cache.");
+			}
+
+			sqlite_free(ErrMsg);
+
+			sqlite_unlock(&m_SecondaryCacheMutex);
+
 
 			dbg_msg("TEST", "Cache Primary Size POST: %lu ", strlen(m_QueryCachePrimary) + 1);
 			dbg_msg("TEST", "Cache Secondary Size POST: %lu ", strlen(m_QueryCacheSecondary) + 1);
