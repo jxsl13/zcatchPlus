@@ -147,7 +147,7 @@ private:
 
 	enum
 	{
-		CACHE_EMPTY_INTERVAL = 1000,
+		CACHE_EMPTY_INTERVAL = 5000,
 		CACHE_SIZE = MAX_CLIENTS * 16384 * (int)(CACHE_EMPTY_INTERVAL / 1000) * sizeof(char),
 	};
 
@@ -168,6 +168,7 @@ private:
 	int *m_HistorianMode;
 	int *m_OldHistorianMode;
 	ASYNCIO *m_pTeeHistorianFile;
+
 	/*SQLiteHistorian*/
 	// database handling
 	sqlite3 *m_SqliteDB;
