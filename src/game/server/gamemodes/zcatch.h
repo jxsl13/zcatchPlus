@@ -26,7 +26,7 @@ class CGameController_zCatch: public IGameController
 	static void FormatRankingColumn(const char* column, char buf[32], int value);
 
 	// jxsl13 added
-	void ToggleLastStandingDeathmatchAndRelease(int Players_Ingame);
+	void ToggleLastStandingDeathmatchAndRelease(int Players_Ingame, int caughtPlayers);
 	void CheckReleaseGameStatus();
 	static char* GetGameModeTableName();
 

@@ -119,6 +119,8 @@ void CGameController_zCatch::DoWincheck()
 	{
 		int Players = 0, Players_Spec = 0, Players_SpecExplicit = 0;
 		int winnerId = -1;
+		int caughtPlayers = 0;
+
 		CPlayer *winner = NULL;
 
 		for (int i = 0; i < MAX_CLIENTS; i++)
@@ -126,6 +128,7 @@ void CGameController_zCatch::DoWincheck()
 			if (GameServer()->m_apPlayers[i])
 			{
 				Players++;
+				caughtPlayers += GameServer()->m_apPlayers[i]->m_zCatchNumVictims;
 				if (GameServer()->m_apPlayers[i]->GetTeam() == TEAM_SPECTATORS)
 					Players_Spec++;
 				else
@@ -197,7 +200,7 @@ void CGameController_zCatch::DoWincheck()
 
 			// checks release game stuff before the last man standing treshold is reached.
 		} else {
-			ToggleLastStandingDeathmatchAndRelease(Players_Ingame);
+			ToggleLastStandingDeathmatchAndRelease(Players_Ingame, caughtPlayers);
 		}
 
 		IGameController::DoWincheck(); //do also usual wincheck
@@ -215,9 +218,33 @@ int CGameController_zCatch::OnCharacterDeath(class CCharacter *pVictim, class CP
 	{
 		/* count players playing */
 		int numPlayers = 0;
+		int playersIngame =0;
+		int playersCaught = 0;
+		int playersExplicitSpec = 0;
+		int maxCaughtVictims = 0;
+
 		for (int i = 0; i < MAX_CLIENTS; i++)
-			if (GameServer()->m_apPlayers[i] && !GameServer()->m_apPlayers[i]->m_SpecExplicit)
+		{
+			if (GameServer()->m_apPlayers[i])
+			{	
+				numPlayers++;
+				if(GameServer()->m_apPlayers[i]->m_zCatchNumVictims > maxCaughtVictims){
+					maxCaughtVictims = GameServer()->m_apPlayers[i]->m_zCatchNumVictims;
+				}
+				if (GameServer()->m_apPlayers[i]->m_SpecExplicit)
+				{
+					playersExplicitSpec++;
+				}
+			}
+		}
+
+		playersIngame = numPlayers - playersExplicitSpec;
+
+		for (int i = 0; i < MAX_CLIENTS; i++)
+			if (GameServer()->m_apPlayers[i] && !GameServer()->m_apPlayers[i]->m_SpecExplicit){
 				++numPlayers;
+
+			}
 
 
 		/* you can at max get that many points as there are players playing */
@@ -230,7 +257,8 @@ int CGameController_zCatch::OnCharacterDeath(class CCharacter *pVictim, class CP
 		{
 			++pKiller->m_zCatchNumKillsInARow;
 			//release game
-			if (!g_Config.m_SvLastStandingDeathmatch || numPlayers >= g_Config.m_SvLastStandingPlayers)
+			if (!g_Config.m_SvLastStandingDeathmatch || numPlayers >= g_Config.m_SvLastStandingPlayers || 
+				(g_Config.m_SvLastStandingDeathmatch && maxCaughtVictims >= (g_Config.m_SvLastStandingPlayers -1)))
 			{
 				pKiller->AddZCatchVictim(victim->GetCID(), CPlayer::ZCATCH_CAUGHT_REASON_KILLED);
 				char aBuf[256];
@@ -867,14 +895,14 @@ void CGameController_zCatch::FormatRankingColumn(const char* column, char buf[32
  *
  * @param Players_Ingame Count of players actually playing without those, which are explicidly spectating.
  */
-void CGameController_zCatch::ToggleLastStandingDeathmatchAndRelease(int Players_Ingame) {
+void CGameController_zCatch::ToggleLastStandingDeathmatchAndRelease(int Players_Ingame, int caughtPlayers) {
 
 
 	if (g_Config.m_SvLastStandingDeathmatch) {
 
-		if (m_OldPlayersIngame >= g_Config.m_SvLastStandingPlayers && Players_Ingame < g_Config.m_SvLastStandingPlayers)
+		if (m_OldPlayersIngame >= g_Config.m_SvLastStandingPlayers && Players_Ingame < g_Config.m_SvLastStandingPlayers && !caughtPlayers)
 			{
-
+				// announce only if nobody is caught and there are not enough players ingame to end a round.
 				GameServer()->SendBroadcast("Not enough players to end the round again.", -1);
 				GameServer()->SendChatTarget(-1, "Back to Release Game.");
 			} else if (m_OldPlayersIngame < g_Config.m_SvLastStandingPlayers && Players_Ingame == g_Config.m_SvLastStandingPlayers)

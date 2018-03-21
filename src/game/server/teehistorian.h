@@ -147,7 +147,7 @@ private:
 
 	enum
 	{
-		CACHE_EMPTY_INTERVAL = 500,
+		CACHE_EMPTY_INTERVAL = 400,
 		CACHE_SIZE = (int)(MAX_CLIENTS * 16384 * (CACHE_EMPTY_INTERVAL / 1000) * sizeof(char)),
 	};
 
