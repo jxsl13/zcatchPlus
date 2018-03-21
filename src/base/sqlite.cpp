@@ -41,12 +41,24 @@ bool sqlite_lock(std::timed_mutex *MutexForDB, int MiliSecondsToLock)
 
 	if (MiliSecondsToLock < 0)
 	{
-		MutexForDB->lock();
-		return true;
+		return MutexForDB->try_lock();
 	}
 	return MutexForDB->try_lock_for(std::chrono::milliseconds(MiliSecondsToLock));
 
 }
+
+
+/**
+ * @brief Locks mutex, blocks current thread if mutex is not available.
+ * @details [long description]
+ * 
+ * @param MutexForDB [description]
+ * @return [description]
+ */
+void sqlite_block_lock(std::timed_mutex* MutexForDB){
+	MutexForDB->lock();
+}
+
 
 /**
  * @brief Unlock given mutex object

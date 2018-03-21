@@ -148,7 +148,7 @@ private:
 	enum
 	{
 		CACHE_EMPTY_INTERVAL = 1000,
-		CACHE_SIZE = MAX_CLIENTS * 16384 * (int)(CACHE_EMPTY_INTERVAL / 1000),
+		CACHE_SIZE = MAX_CLIENTS * 16384 * (int)(CACHE_EMPTY_INTERVAL / 1000) * sizeof(char),
 	};
 
 	struct CPlayer
@@ -169,16 +169,18 @@ private:
 	int *m_OldHistorianMode;
 	ASYNCIO *m_pTeeHistorianFile;
 	/*SQLiteHistorian*/
+	// database handling
 	sqlite3 *m_SqliteDB;
-
 	std::timed_mutex m_SqliteMutex;
-	std::queue<std::thread*> m_Threads;
 
+	// in memory cache handling
 	char* m_QueryCachePrimary;
 	char* m_QueryCacheSecondary;
 	std::timed_mutex m_PrimaryCacheMutex;
 	std::timed_mutex m_SecondaryCacheMutex;
 
+	// thread handling
+	std::queue<std::thread*> m_Threads;
 	void AddThread(std::thread *thread) { m_Threads.push(thread); };
 	void CleanThreads() {
 		unsigned int size = m_Threads.size();
