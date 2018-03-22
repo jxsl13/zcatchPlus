@@ -276,12 +276,21 @@ public:
 		{
 			std::thread *t = m_Threads.front();
 			m_Threads.pop();
-			if (t && !(t->joinable())) {
-				t->join();
-				delete t;
-			} else if (t) {
-				m_Threads.push(t);
+			if (t)
+			{
+				if (!(t->joinable()))
+				{
+					t->join();
+					delete t;
+					dbg_msg("GAMECONTEXT","Popped Threads: Deleted");
+				} else {
+					dbg_msg("GAMECONTEXT","Popped Threads: Is joinable, pushed back into queue");
+					m_Threads.push(t);
+				}
+			} else {
+				dbg_msg("GAMECONTEXT","Popped Threads: Does not exist t = NULL");
 			}
+
 		}
 		// // OS supported thread limit should be compiled with.
 		// while (size >= (std::thread::hardware_concurrency() - 1))
