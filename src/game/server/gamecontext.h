@@ -278,7 +278,7 @@ public:
 			m_Threads.pop();
 			if (t)
 			{
-				if (!(t->joinable()))
+				if ((t->joinable()))
 				{
 					t->join();
 					delete t;

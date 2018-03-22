@@ -10,6 +10,7 @@
 #include <game/server/player.h>
 #include "zcatch.h"
 #include <string.h>
+#include <future>
 
 CGameController_zCatch::CGameController_zCatch(class CGameContext *pGameServer) :
 	IGameController(pGameServer)
