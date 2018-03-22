@@ -240,15 +240,9 @@ int CGameController_zCatch::OnCharacterDeath(class CCharacter *pVictim, class CP
 
 		playersIngame = numPlayers - playersExplicitSpec;
 
-		for (int i = 0; i < MAX_CLIENTS; i++)
-			if (GameServer()->m_apPlayers[i] && !GameServer()->m_apPlayers[i]->m_SpecExplicit){
-				++numPlayers;
-
-			}
-
 
 		/* you can at max get that many points as there are players playing */
-		pKiller->m_Score += min(victim->m_zCatchNumKillsInARow + 1, numPlayers);
+		pKiller->m_Score += min(victim->m_zCatchNumKillsInARow + 1, playersIngame);
 		++pKiller->m_Kills;
 		++victim->m_Deaths;
 
@@ -256,8 +250,8 @@ int CGameController_zCatch::OnCharacterDeath(class CCharacter *pVictim, class CP
 		if (pKiller->GetTeam() != TEAM_SPECTATORS && (!pVictim->m_KillerLastDieTickBeforceFiring || pVictim->m_KillerLastDieTickBeforceFiring == pKiller->m_DieTick))
 		{
 			++pKiller->m_zCatchNumKillsInARow;
-			//release game
-			if (!g_Config.m_SvLastStandingDeathmatch || numPlayers >= g_Config.m_SvLastStandingPlayers || 
+			//release game only add victims if these conditions are met.
+			if (!g_Config.m_SvLastStandingDeathmatch || playersIngame >= g_Config.m_SvLastStandingPlayers ||
 				(g_Config.m_SvLastStandingDeathmatch && maxCaughtVictims >= (g_Config.m_SvLastStandingPlayers -1)))
 			{
 				pKiller->AddZCatchVictim(victim->GetCID(), CPlayer::ZCATCH_CAUGHT_REASON_KILLED);
