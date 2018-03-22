@@ -92,8 +92,7 @@ void CTeeHistorian::OnInit(IStorage *pStorage, IServer *pServer, IGameController
 			CreateDatabase(aFilename);
 			dbg_msg("SQLiteHistorian", "Created Database: %s", aFilename);
 			dbg_msg("CACHE", "Primary: %d  Secondary: %d", PRIMARY_CACHE_SIZE, SECONDARY_CACHE_SIZE);
-			free(m_QueryCachePrimary);
-			free(m_QueryCacheSecondary);
+
 			m_QueryCachePrimary = (char*)malloc(PRIMARY_CACHE_SIZE);
 			m_QueryCacheSecondary = (char*)malloc(SECONDARY_CACHE_SIZE);
 
@@ -158,9 +157,12 @@ void CTeeHistorian::OnShutDown(bool FinalShutdown) {
 		if (FinalShutdown)
 		{
 			JoinThreads();
+		} else {
+			CleanThreads();
 		}
 
-
+		free(m_QueryCachePrimary);
+		free(m_QueryCacheSecondary);
 		CloseDatabase();
 
 
