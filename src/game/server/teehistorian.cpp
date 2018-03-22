@@ -196,7 +196,7 @@ void CTeeHistorian::OnSave() {
 }
 
 void CTeeHistorian::DatabaseWriter() {
-	while (GetMode()) {
+	while (GetMode() && m_SqliteDB) {
 		if (GetMode() == MODE_SQLITE)
 		{
 			std::this_thread::sleep_for(std::chrono::milliseconds(CACHE_EMPTY_INTERVAL));
@@ -207,6 +207,7 @@ void CTeeHistorian::DatabaseWriter() {
 			{
 				//dbg_msg("TEST", "Writing Primary Cache(%d) ", m_PrimaryCacheSize);
 				sqlite_lock(&m_SqliteMutex);
+
 				char *ErrMsg;
 
 				sqlite_exec(m_SqliteDB, m_QueryCachePrimary, &ErrMsg);
