@@ -1624,7 +1624,7 @@ void CTeeHistorian::AppendQuery(const char *Query) {
 		} else {
 			dbg_msg("ERROR SQLiteHistorian", "Could not append query due to secondary cache error(%d, %d): %s", m_QueryCacheSecondary ? 1 : 0, m_QueryCacheSecondary[0] ? 1 : 0,  Query);
 		}
-		dbg_msg("SQLiteHistorian", "Appened to SECONDARY: %s", Query);
+
 		sqlite_unlock(&m_SecondaryCacheMutex);
 	} else {
 		dbg_msg("ERROR SQLiteHistorian", "Could not append query due to both caches being locked and/or full: %s", Query);
