@@ -1534,7 +1534,7 @@ void CTeeHistorian::InsertIntoPlayerConnectedStateTable(int ClientJoinHash, char
  */
 void CTeeHistorian::CloseDatabase() {
 	char *ErrMsg;
-	if (sqlite_lock(&m_SqliteMutex))
+	if (sqlite_lock(&m_SqliteMutex, 2000))
 	{
 		sqlite_exec(m_SqliteDB, "END TRANSACTION", &ErrMsg);
 
