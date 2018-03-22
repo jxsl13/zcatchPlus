@@ -218,17 +218,16 @@ int CGameController_zCatch::OnCharacterDeath(class CCharacter *pVictim, class CP
 	{
 		/* count players playing */
 		int numPlayers = 0;
-		int playersIngame =0;
-		int playersCaught = 0;
+		int playersIngame = 0;
 		int playersExplicitSpec = 0;
 		int maxCaughtVictims = 0;
 
 		for (int i = 0; i < MAX_CLIENTS; i++)
 		{
 			if (GameServer()->m_apPlayers[i])
-			{	
+			{
 				numPlayers++;
-				if(GameServer()->m_apPlayers[i]->m_zCatchNumVictims > maxCaughtVictims){
+				if (GameServer()->m_apPlayers[i]->m_zCatchNumVictims > maxCaughtVictims) {
 					maxCaughtVictims = GameServer()->m_apPlayers[i]->m_zCatchNumVictims;
 				}
 				if (GameServer()->m_apPlayers[i]->m_SpecExplicit)
@@ -252,7 +251,7 @@ int CGameController_zCatch::OnCharacterDeath(class CCharacter *pVictim, class CP
 			++pKiller->m_zCatchNumKillsInARow;
 			//release game only add victims if these conditions are met.
 			if (!g_Config.m_SvLastStandingDeathmatch || playersIngame >= g_Config.m_SvLastStandingPlayers ||
-				(g_Config.m_SvLastStandingDeathmatch && maxCaughtVictims >= (g_Config.m_SvLastStandingPlayers -1)))
+			        (g_Config.m_SvLastStandingDeathmatch && maxCaughtVictims >= (g_Config.m_SvLastStandingPlayers - 1)))
 			{
 				pKiller->AddZCatchVictim(victim->GetCID(), CPlayer::ZCATCH_CAUGHT_REASON_KILLED);
 				char aBuf[256];
@@ -895,15 +894,15 @@ void CGameController_zCatch::ToggleLastStandingDeathmatchAndRelease(int Players_
 	if (g_Config.m_SvLastStandingDeathmatch) {
 
 		if (m_OldPlayersIngame >= g_Config.m_SvLastStandingPlayers && Players_Ingame < g_Config.m_SvLastStandingPlayers && !caughtPlayers)
-			{
-				// announce only if nobody is caught and there are not enough players ingame to end a round.
-				GameServer()->SendBroadcast("Not enough players to end the round again.", -1);
-				GameServer()->SendChatTarget(-1, "Back to Release Game.");
-			} else if (m_OldPlayersIngame < g_Config.m_SvLastStandingPlayers && Players_Ingame == g_Config.m_SvLastStandingPlayers)
-			{
-				GameServer()->SendBroadcast("Enough players to end the round. Let the fun begin!", -1);
-				GameServer()->SendChatTarget(-1, "End of Release Game.");
-			}
+		{
+			// announce only if nobody is caught and there are not enough players ingame to end a round.
+			GameServer()->SendBroadcast("Not enough players to end the round again.", -1);
+			GameServer()->SendChatTarget(-1, "Back to Release Game.");
+		} else if (m_OldPlayersIngame < g_Config.m_SvLastStandingPlayers && Players_Ingame == g_Config.m_SvLastStandingPlayers)
+		{
+			GameServer()->SendBroadcast("Enough players to end the round. Let the fun begin!", -1);
+			GameServer()->SendChatTarget(-1, "End of Release Game.");
+		}
 
 
 		if (g_Config.m_SvAllowJoin != 1)
