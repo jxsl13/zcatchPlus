@@ -1599,13 +1599,13 @@ void CTeeHistorian::EndTransaction() {
 void CTeeHistorian::AppendQuery(const char *Query) {
 	int size = (strlen(Query) + 1) * sizeof(char);
 
-	if (m_PrimaryCacheSize + size < (PRIMARY_CACHE_SIZE - 1) && sqlite_lock(&m_PrimaryCacheMutex))
+	if (m_QueryCachePrimary && m_PrimaryCacheSize + size < (PRIMARY_CACHE_SIZE - 1) && sqlite_lock(&m_PrimaryCacheMutex))
 	{
-		if (m_QueryCachePrimary && !m_QueryCachePrimary[0])
+		if (!m_QueryCachePrimary[0])
 		{
 			str_copy(m_QueryCachePrimary, Query, PRIMARY_CACHE_SIZE);
 			m_PrimaryCacheSize += (size - sizeof(char));
-		} else if (m_QueryCachePrimary && m_QueryCachePrimary[0])
+		} else if (m_QueryCachePrimary[0])
 		{
 			str_append(m_QueryCachePrimary, Query, PRIMARY_CACHE_SIZE);
 			m_PrimaryCacheSize += (size - sizeof(char));
@@ -1613,13 +1613,13 @@ void CTeeHistorian::AppendQuery(const char *Query) {
 			dbg_msg("ERROR SQLiteHistorian", "Could not append query due to primary cache error(%d, %d): %s", m_QueryCachePrimary ? 1 : 0, m_QueryCachePrimary[0] ? 1 : 0,  Query);
 		}
 		sqlite_unlock(&m_PrimaryCacheMutex);
-	} else if (m_SecondaryCacheSize + size < (SECONDARY_CACHE_SIZE - 1) && sqlite_lock(&m_SecondaryCacheMutex))
+	} else if (m_QueryCacheSecondary && m_SecondaryCacheSize + size < (SECONDARY_CACHE_SIZE - 1) && sqlite_lock(&m_SecondaryCacheMutex))
 	{
-		if (m_QueryCacheSecondary && !m_QueryCacheSecondary[0])
+		if (!m_QueryCacheSecondary[0])
 		{
 			str_copy(m_QueryCacheSecondary, Query, SECONDARY_CACHE_SIZE);
 			m_SecondaryCacheSize += (size - sizeof(char));
-		} else if (m_QueryCacheSecondary && m_QueryCacheSecondary[0])
+		} else if (m_QueryCacheSecondary[0])
 		{
 			str_append(m_QueryCacheSecondary, Query, SECONDARY_CACHE_SIZE);
 			m_SecondaryCacheSize += (size - sizeof(char));
@@ -1629,6 +1629,7 @@ void CTeeHistorian::AppendQuery(const char *Query) {
 
 		sqlite_unlock(&m_SecondaryCacheMutex);
 	} else {
+		dbg_msg("ERROR SQLiteHistorian", "Cache Status: Primary(%d) Secondary(%d)", m_QueryCachePrimary ? 1 : 0, m_QueryCacheSecondary ? 1 : 0 );
 		dbg_msg("ERROR SQLiteHistorian", "Could not append query due to both caches being locked and/or full: %s", Query);
 	}
 
