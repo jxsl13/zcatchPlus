@@ -1553,8 +1553,6 @@ void CTeeHistorian::CloseDatabase() {
 	if (err != SQLITE_OK) {
 		dbg_msg("SQLiteHistorian", "Error on closing sqlite database(%li).(%d)", (long)m_SqliteDB , err);
 	}
-	free(m_QueryCachePrimary);
-	free(m_QueryCacheSecondary);
 
 }
 
