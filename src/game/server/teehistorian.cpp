@@ -198,8 +198,8 @@ void CTeeHistorian::DatabaseWriter() {
 		if (GetMode() == MODE_SQLITE)
 		{
 			std::this_thread::sleep_for(std::chrono::milliseconds(CACHE_EMPTY_INTERVAL));
-			dbg_msg("TEST", "Cache Primary Size: %lu ", strlen(m_QueryCachePrimary) + 1);
-			dbg_msg("TEST", "Cache Secondary Size: %lu ", strlen(m_QueryCacheSecondary) + 1);
+			// dbg_msg("TEST", "Cache Primary Size: %lu ", strlen(m_QueryCachePrimary) + 1);
+			// dbg_msg("TEST", "Cache Secondary Size: %lu ", strlen(m_QueryCacheSecondary) + 1);
 
 			if (sqlite_lock(&m_PrimaryCacheMutex))
 			{
@@ -1607,7 +1607,6 @@ void CTeeHistorian::AppendQuery(const char *Query) {
 		} else {
 			dbg_msg("ERROR SQLiteHistorian", "Could not append query due to primary cache error(%d, %d): %s", m_QueryCachePrimary ? 1 : 0, m_QueryCachePrimary[0] ? 1 : 0,  Query);
 		}
-		dbg_msg("SQLiteHistorian", "Appened to Primary: %s", Query);
 		sqlite_unlock(&m_PrimaryCacheMutex);
 	} else if (sqlite_lock(&m_SecondaryCacheMutex))
 	{
@@ -1620,7 +1619,7 @@ void CTeeHistorian::AppendQuery(const char *Query) {
 		} else {
 			dbg_msg("ERROR SQLiteHistorian", "Could not append query due to secondary cache error(%d, %d): %s", m_QueryCacheSecondary ? 1 : 0, m_QueryCacheSecondary[0] ? 1 : 0,  Query);
 		}
-		dbg_msg("SQLiteHistorian", "Appened to SECONDARY");
+		// dbg_msg("SQLiteHistorian", "Appened to SECONDARY");
 		sqlite_unlock(&m_SecondaryCacheMutex);
 	} else {
 		dbg_msg("ERROR SQLiteHistorian", "Could not append query due to both caches being locked: %s", Query);
