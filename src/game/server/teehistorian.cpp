@@ -6,7 +6,7 @@
 #include <engine/shared/protocol.h>
 #include <sys/time.h>
 #include <game/server/gamecontext.h>
-
+#include <cstdlib>
 
 static const char TEEHISTORIAN_NAME[] = "teehistorian@ddnet.tw";
 static const CUuid TEEHISTORIAN_UUID = CalculateUuid(TEEHISTORIAN_NAME);
