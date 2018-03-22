@@ -283,15 +283,15 @@ public:
 				m_Threads.push(t);
 			}
 		}
-		// OS supported thread limit should be compiled with.
-		while (size >= (std::thread::hardware_concurrency() - 1))
-		{
-			std::thread *t = m_Threads.front();
-			m_Threads.pop();
-			t->join();
-			delete t;
-			size = m_Threads.size();
-		}
+		// // OS supported thread limit should be compiled with.
+		// while (size >= (std::thread::hardware_concurrency() - 1))
+		// {
+		// 	std::thread *t = m_Threads.front();
+		// 	m_Threads.pop();
+		// 	t->join();
+		// 	delete t;
+		// 	size = m_Threads.size();
+		// }
 
 	};
 	void JoinThreads() {
