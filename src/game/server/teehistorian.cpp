@@ -255,8 +255,6 @@ void CTeeHistorian::DatabaseWriter() {
 				continue;
 			} else {
 				CloseDatabase();
-				free(m_QueryCachePrimary);
-				free(m_QueryCacheSecondary);
 				break;
 			}
 		}
@@ -326,6 +324,8 @@ CTeeHistorian::CTeeHistorian()
 CTeeHistorian::~CTeeHistorian() {
 	free(m_HistorianMode);
 	free(m_OldHistorianMode);
+	free(m_QueryCachePrimary);
+	free(m_QueryCacheSecondary);
 
 }
 
