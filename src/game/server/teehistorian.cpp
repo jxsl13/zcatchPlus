@@ -1541,8 +1541,10 @@ void CTeeHistorian::CloseDatabase() {
 		sqlite_unlock(&m_SqliteMutex);
 		if (ErrMsg)
 		{
-			dbg_msg("ERROR", "Error on closing database: %s", ErrMsg);
+			dbg_msg("ERROR", "Error on executing END TRANSACTION before closing database: %s", ErrMsg);
 		}
+	} else {
+		dbg_msg("ERROR", "Error on closing database: Could not lock database mutex.");
 	}
 
 	int err = sqlite_close(m_SqliteDB);
