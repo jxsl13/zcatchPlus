@@ -620,6 +620,7 @@ void CGameController_zCatch::SaveScore(CGameContext* GameServer, char *name, int
 
 	sqlite3_finalize(pStmt);
 	free(name);
+	dbg_msg("TEST", "FINISHED");
 }
 
 /* when a player typed /top into the chat */
