@@ -192,75 +192,77 @@ void CTeeHistorian::OnSave() {
 void CTeeHistorian::DatabaseWriter() {
 	while (true) {
 
-			std::this_thread::sleep_for(std::chrono::milliseconds(CACHE_EMPTY_INTERVAL));
-			// dbg_msg("TEST", "Cache Primary Size: %lu ", strlen(m_QueryCachePrimary) + 1);
-			// dbg_msg("TEST", "Cache Secondary Size: %lu ", strlen(m_QueryCacheSecondary) + 1);
+		std::this_thread::sleep_for(std::chrono::milliseconds(CACHE_EMPTY_INTERVAL));
+		// dbg_msg("TEST", "Cache Primary Size: %lu ", strlen(m_QueryCachePrimary) + 1);
+		// dbg_msg("TEST", "Cache Secondary Size: %lu ", strlen(m_QueryCacheSecondary) + 1);
 
-			if (m_PrimaryCacheSize > 0 && sqlite_lock(&m_PrimaryCacheMutex, 1000))
+		if (m_PrimaryCacheSize > 0 && sqlite_lock(&m_PrimaryCacheMutex, 1000))
+		{
+			//dbg_msg("TEST", "Writing Primary Cache(%d) ", m_PrimaryCacheSize);
+			sqlite_lock(&m_SqliteMutex);
+
+			char *ErrMsg;
+
+			sqlite_exec(m_SqliteDB, m_QueryCachePrimary, &ErrMsg);
+			sqlite_exec(m_SqliteDB, "END TRANSACTION", &ErrMsg);
+			sqlite_exec(m_SqliteDB, "BEGIN TRANSACTION", &ErrMsg);
+			sqlite_unlock(&m_SqliteMutex);
+
+			if (ErrMsg)
 			{
-				//dbg_msg("TEST", "Writing Primary Cache(%d) ", m_PrimaryCacheSize);
-				sqlite_lock(&m_SqliteMutex);
-
-				char *ErrMsg;
-
-				sqlite_exec(m_SqliteDB, m_QueryCachePrimary, &ErrMsg);
-				sqlite_exec(m_SqliteDB, "END TRANSACTION", &ErrMsg);
-				sqlite_exec(m_SqliteDB, "BEGIN TRANSACTION", &ErrMsg);
-				sqlite_unlock(&m_SqliteMutex);
-
-				if (ErrMsg)
-				{
-					dbg_msg("SQLiteHistorian", "Error while executing a query: %s", ErrMsg);
-				}
-
-				memset(m_QueryCachePrimary, 0, PRIMARY_CACHE_SIZE);
-				if (!m_QueryCachePrimary)
-				{
-					dbg_msg("SQLiteHistorian", "Error resetting memory for primary cache.");
-				}
-				m_PrimaryCacheSize = 0;
-				sqlite_unlock(&m_PrimaryCacheMutex);
-				sqlite_free(ErrMsg);
+				dbg_msg("SQLiteHistorian", "Error while executing a query: %s", ErrMsg);
 			}
 
-			if (m_SecondaryCacheSize > 0  && sqlite_lock(&m_SecondaryCacheMutex, 2000))
-			{	char *ErrMsg;
-				//dbg_msg("TEST", "Writing Secondary Cache(%d): %s ", m_SecondaryCacheSize, m_QueryCacheSecondary);
-				sqlite_lock(&m_SqliteMutex);
-				sqlite_exec(m_SqliteDB, m_QueryCacheSecondary, &ErrMsg);
-				sqlite_exec(m_SqliteDB, "END TRANSACTION", &ErrMsg);
-				sqlite_exec(m_SqliteDB, "BEGIN TRANSACTION", &ErrMsg);
-				sqlite_unlock(&m_SqliteMutex);
-
-				if (ErrMsg)
-				{
-					dbg_msg("SQLiteHistorian", "Error while executing a query: %s", ErrMsg);
-				}
-
-				memset(m_QueryCacheSecondary, 0, SECONDARY_CACHE_SIZE);
-				if (!m_QueryCacheSecondary)
-				{
-					dbg_msg("SQLiteHistorian", "Error resetting memory for secondary cache.");
-				}
-				m_SecondaryCacheSize = 0;
-				sqlite_unlock(&m_SecondaryCacheMutex);
-				sqlite_free(ErrMsg);
-			}
-
-
-			if (GetMode() != MODE_SQLITE)
+			memset(m_QueryCachePrimary, 0, PRIMARY_CACHE_SIZE);
+			if (!m_QueryCachePrimary)
 			{
-				if (m_PrimaryCacheSize > 0 || m_SecondaryCacheSize > 0 )
-				{
-					continue;
-				} else{
-					CloseDatabase();
-					break;
-				}
+				dbg_msg("SQLiteHistorian", "Error resetting memory for primary cache.");
+			}
+			m_PrimaryCacheSize = 0;
+			sqlite_unlock(&m_PrimaryCacheMutex);
+			sqlite_free(ErrMsg);
+		}
+
+		if (m_SecondaryCacheSize > 0  && sqlite_lock(&m_SecondaryCacheMutex, 2000))
+		{	char *ErrMsg;
+			//dbg_msg("TEST", "Writing Secondary Cache(%d): %s ", m_SecondaryCacheSize, m_QueryCacheSecondary);
+			sqlite_lock(&m_SqliteMutex);
+			sqlite_exec(m_SqliteDB, m_QueryCacheSecondary, &ErrMsg);
+			sqlite_exec(m_SqliteDB, "END TRANSACTION", &ErrMsg);
+			sqlite_exec(m_SqliteDB, "BEGIN TRANSACTION", &ErrMsg);
+			sqlite_unlock(&m_SqliteMutex);
+
+			if (ErrMsg)
+			{
+				dbg_msg("SQLiteHistorian", "Error while executing a query: %s", ErrMsg);
 			}
 
-			//dbg_msg("TEST", "Cache Primary Size POST: %lu ", strlen(m_QueryCachePrimary) + 1);
-			//dbg_msg("TEST", "Cache Secondary Size POST: %lu ", strlen(m_QueryCacheSecondary) + 1);
+			memset(m_QueryCacheSecondary, 0, SECONDARY_CACHE_SIZE);
+			if (!m_QueryCacheSecondary)
+			{
+				dbg_msg("SQLiteHistorian", "Error resetting memory for secondary cache.");
+			}
+			m_SecondaryCacheSize = 0;
+			sqlite_unlock(&m_SecondaryCacheMutex);
+			sqlite_free(ErrMsg);
+		}
+
+
+		if (GetMode() != MODE_SQLITE)
+		{
+			if (m_PrimaryCacheSize > 0 || m_SecondaryCacheSize > 0 )
+			{
+				continue;
+			} else {
+				CloseDatabase();
+				free(m_QueryCachePrimary);
+				free(m_QueryCacheSecondary);
+				break;
+			}
+		}
+
+		//dbg_msg("TEST", "Cache Primary Size POST: %lu ", strlen(m_QueryCachePrimary) + 1);
+		//dbg_msg("TEST", "Cache Secondary Size POST: %lu ", strlen(m_QueryCacheSecondary) + 1);
 
 	}
 }
@@ -324,8 +326,7 @@ CTeeHistorian::CTeeHistorian()
 CTeeHistorian::~CTeeHistorian() {
 	free(m_HistorianMode);
 	free(m_OldHistorianMode);
-	free(m_QueryCachePrimary);
-	free(m_QueryCacheSecondary);
+
 }
 
 
@@ -747,8 +748,8 @@ void CTeeHistorian::BeginInputs()
 }
 
 void CTeeHistorian::RecordPlayerInput(int ClientJoinHash, const char* ClientNick, int ClientID, const CNetObj_PlayerInput * pInput)
-{	
-	dbg_msg("TEEHISTORIAN","Threads: %d", m_Threads.size());
+{
+	dbg_msg("TEEHISTORIAN", "Threads: %d", m_Threads.size());
 	if (GetMode())
 	{
 
