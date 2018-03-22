@@ -91,11 +91,11 @@ void CTeeHistorian::OnInit(IStorage *pStorage, IServer *pServer, IGameController
 
 			CreateDatabase(aFilename);
 			dbg_msg("SQLiteHistorian", "Created Database: %s", aFilename);
-			dbg_msg("CACHE", "Size: %d", CACHE_SIZE);
+			dbg_msg("CACHE", "Primary: %d  Secondary: %d", PRIMARY_CACHE_SIZE, SECONDARY_CACHE_SIZE);
 			free(m_QueryCachePrimary);
 			free(m_QueryCacheSecondary);
-			m_QueryCachePrimary = (char*)malloc(CACHE_SIZE);
-			m_QueryCacheSecondary = (char*)malloc(CACHE_SIZE);
+			m_QueryCachePrimary = (char*)malloc(PRIMARY_CACHE_SIZE);
+			m_QueryCacheSecondary = (char*)malloc(SECONDARY_CACHE_SIZE);
 
 			AddThread(new std::thread(&CTeeHistorian::DatabaseWriter, this));
 
@@ -201,9 +201,9 @@ void CTeeHistorian::DatabaseWriter() {
 			// dbg_msg("TEST", "Cache Primary Size: %lu ", strlen(m_QueryCachePrimary) + 1);
 			// dbg_msg("TEST", "Cache Secondary Size: %lu ", strlen(m_QueryCacheSecondary) + 1);
 
-			if (sqlite_lock(&m_PrimaryCacheMutex))
+			if (m_PrimaryCacheSize > 0 && sqlite_lock(&m_PrimaryCacheMutex, 1000))
 			{
-
+				//dbg_msg("TEST", "Writing Primary Cache(%d) ", m_PrimaryCacheSize);
 				sqlite_lock(&m_SqliteMutex);
 				char *ErrMsg;
 
@@ -217,43 +217,40 @@ void CTeeHistorian::DatabaseWriter() {
 					dbg_msg("SQLiteHistorian", "Error while executing a query: %s", ErrMsg);
 				}
 
-				//m_QueryCachePrimary = (char*)realloc(m_QueryCachePrimary,CACHE_SIZE);
-				memset(m_QueryCachePrimary, 0, CACHE_SIZE);
+				memset(m_QueryCachePrimary, 0, PRIMARY_CACHE_SIZE);
 				if (!m_QueryCachePrimary)
 				{
 					dbg_msg("SQLiteHistorian", "Error resetting memory for primary cache.");
 				}
-
-				sqlite_free(ErrMsg);
-
+				m_PrimaryCacheSize = 0;
 				sqlite_unlock(&m_PrimaryCacheMutex);
-
-
+				sqlite_free(ErrMsg);
 			}
 
-			sqlite_block_lock(&m_SecondaryCacheMutex);
-			char *ErrMsg;
+			if (m_SecondaryCacheSize > 0  && sqlite_lock(&m_SecondaryCacheMutex, 2000))
+			{	char *ErrMsg;
+				//dbg_msg("TEST", "Writing Secondary Cache(%d): %s ", m_SecondaryCacheSize, m_QueryCacheSecondary);
+				sqlite_lock(&m_SqliteMutex);
+				sqlite_exec(m_SqliteDB, m_QueryCacheSecondary, &ErrMsg);
+				sqlite_exec(m_SqliteDB, "END TRANSACTION", &ErrMsg);
+				sqlite_exec(m_SqliteDB, "BEGIN TRANSACTION", &ErrMsg);
+				sqlite_unlock(&m_SqliteMutex);
 
-			sqlite_lock(&m_SqliteMutex);
-			sqlite_exec(m_SqliteDB, m_QueryCacheSecondary, &ErrMsg);
-			sqlite_exec(m_SqliteDB, "END TRANSACTION", &ErrMsg);
-			sqlite_exec(m_SqliteDB, "BEGIN TRANSACTION", &ErrMsg);
-			sqlite_unlock(&m_SqliteMutex);
+				if (ErrMsg)
+				{
+					dbg_msg("SQLiteHistorian", "Error while executing a query: %s", ErrMsg);
+				}
 
-			if (ErrMsg)
-			{
-				dbg_msg("SQLiteHistorian", "Error while executing a query: %s", ErrMsg);
+				memset(m_QueryCacheSecondary, 0, SECONDARY_CACHE_SIZE);
+				if (!m_QueryCacheSecondary)
+				{
+					dbg_msg("SQLiteHistorian", "Error resetting memory for secondary cache.");
+				}
+				m_SecondaryCacheSize = 0;
+				sqlite_unlock(&m_SecondaryCacheMutex);
+				sqlite_free(ErrMsg);
 			}
 
-			memset(m_QueryCacheSecondary, 0, CACHE_SIZE);
-			if (!m_QueryCacheSecondary)
-			{
-				dbg_msg("SQLiteHistorian", "Error resetting memory for secondary cache.");
-			}
-
-			sqlite_free(ErrMsg);
-
-			sqlite_unlock(&m_SecondaryCacheMutex);
 
 
 			//dbg_msg("TEST", "Cache Primary Size POST: %lu ", strlen(m_QueryCachePrimary) + 1);
@@ -314,6 +311,8 @@ CTeeHistorian::CTeeHistorian()
 	m_pWriteCallbackUserdata = 0;
 	m_HistorianMode = (int*)malloc(sizeof(int));
 	m_OldHistorianMode = (int*)malloc(sizeof(int));
+	m_PrimaryCacheSize = 0;
+	m_SecondaryCacheSize = 0;
 	SetMode(MODE_NONE);
 	SetOldMode(MODE_NONE);
 	m_GameUuid = RandomUuid();
@@ -1596,33 +1595,39 @@ void CTeeHistorian::EndTransaction() {
 
 
 void CTeeHistorian::AppendQuery(const char *Query) {
-	if (sqlite_lock(&m_PrimaryCacheMutex))
+	int size = (strlen(Query) + 1) * sizeof(char);
+
+	if (m_PrimaryCacheSize + size < (PRIMARY_CACHE_SIZE - 1) && sqlite_lock(&m_PrimaryCacheMutex))
 	{
 		if (m_QueryCachePrimary && !m_QueryCachePrimary[0])
 		{
-			str_copy(m_QueryCachePrimary, Query, CACHE_SIZE);
+			str_copy(m_QueryCachePrimary, Query, PRIMARY_CACHE_SIZE);
+			m_PrimaryCacheSize += (size - sizeof(char));
 		} else if (m_QueryCachePrimary && m_QueryCachePrimary[0])
 		{
-			str_append(m_QueryCachePrimary, Query, CACHE_SIZE);
+			str_append(m_QueryCachePrimary, Query, PRIMARY_CACHE_SIZE);
+			m_PrimaryCacheSize += (size - sizeof(char));
 		} else {
 			dbg_msg("ERROR SQLiteHistorian", "Could not append query due to primary cache error(%d, %d): %s", m_QueryCachePrimary ? 1 : 0, m_QueryCachePrimary[0] ? 1 : 0,  Query);
 		}
 		sqlite_unlock(&m_PrimaryCacheMutex);
-	} else if (sqlite_lock(&m_SecondaryCacheMutex))
+	} else if (m_SecondaryCacheSize + size < (SECONDARY_CACHE_SIZE - 1) && sqlite_lock(&m_SecondaryCacheMutex))
 	{
 		if (m_QueryCacheSecondary && !m_QueryCacheSecondary[0])
 		{
-			str_copy(m_QueryCacheSecondary, Query, CACHE_SIZE);
+			str_copy(m_QueryCacheSecondary, Query, SECONDARY_CACHE_SIZE);
+			m_SecondaryCacheSize += (size - sizeof(char));
 		} else if (m_QueryCacheSecondary && m_QueryCacheSecondary[0])
 		{
-			str_append(m_QueryCacheSecondary, Query, CACHE_SIZE);
+			str_append(m_QueryCacheSecondary, Query, SECONDARY_CACHE_SIZE);
+			m_SecondaryCacheSize += (size - sizeof(char));
 		} else {
 			dbg_msg("ERROR SQLiteHistorian", "Could not append query due to secondary cache error(%d, %d): %s", m_QueryCacheSecondary ? 1 : 0, m_QueryCacheSecondary[0] ? 1 : 0,  Query);
 		}
-		// dbg_msg("SQLiteHistorian", "Appened to SECONDARY");
+		dbg_msg("SQLiteHistorian", "Appened to SECONDARY: %s", Query);
 		sqlite_unlock(&m_SecondaryCacheMutex);
 	} else {
-		dbg_msg("ERROR SQLiteHistorian", "Could not append query due to both caches being locked: %s", Query);
+		dbg_msg("ERROR SQLiteHistorian", "Could not append query due to both caches being locked and/or full: %s", Query);
 	}
 
 }

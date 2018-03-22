@@ -99,9 +99,9 @@ public:
 private:
 
 	/*teehistorian*/
-	void SetMode(int Mode){*m_HistorianMode = Mode;};
-	void SetOldMode(int Mode){*m_OldHistorianMode = Mode;};
-	int GetOldMode(){return *m_OldHistorianMode;};
+	void SetMode(int Mode) {*m_HistorianMode = Mode;};
+	void SetOldMode(int Mode) {*m_OldHistorianMode = Mode;};
+	int GetOldMode() {return *m_OldHistorianMode;};
 	void WriteHeader(const CGameInfo *pGameInfo);
 	void WriteExtra(CUuid Uuid, const void *pData, int DataSize);
 	void EnsureTickWrittenPlayerData(int ClientID);
@@ -147,8 +147,9 @@ private:
 
 	enum
 	{
-		CACHE_EMPTY_INTERVAL = 400,
-		CACHE_SIZE = (int)(MAX_CLIENTS * 16384 * (CACHE_EMPTY_INTERVAL / 1000.f) * sizeof(char)),
+		CACHE_EMPTY_INTERVAL = 5000,
+		PRIMARY_CACHE_SIZE = (int)(MAX_CLIENTS * 16384 * (CACHE_EMPTY_INTERVAL / 1000.f) * sizeof(char)),
+		SECONDARY_CACHE_SIZE = (int)(PRIMARY_CACHE_SIZE / 10),
 	};
 
 	struct CPlayer
@@ -179,6 +180,8 @@ private:
 	char* m_QueryCacheSecondary;
 	std::timed_mutex m_PrimaryCacheMutex;
 	std::timed_mutex m_SecondaryCacheMutex;
+	unsigned int m_PrimaryCacheSize;
+	unsigned int m_SecondaryCacheSize;
 
 	// thread handling
 	std::queue<std::thread*> m_Threads;
