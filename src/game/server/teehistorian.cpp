@@ -161,12 +161,6 @@ void CTeeHistorian::OnShutDown(bool FinalShutdown) {
 			CleanThreads();
 		}
 
-		free(m_QueryCachePrimary);
-		free(m_QueryCacheSecondary);
-		CloseDatabase();
-
-
-
 
 	} else if (GetOldMode() == MODE_TEE_HISTORIAN)
 	{
@@ -196,9 +190,8 @@ void CTeeHistorian::OnSave() {
 }
 
 void CTeeHistorian::DatabaseWriter() {
-	while (GetMode() && m_SqliteDB) {
-		if (GetMode() == MODE_SQLITE)
-		{
+	while (true) {
+
 			std::this_thread::sleep_for(std::chrono::milliseconds(CACHE_EMPTY_INTERVAL));
 			// dbg_msg("TEST", "Cache Primary Size: %lu ", strlen(m_QueryCachePrimary) + 1);
 			// dbg_msg("TEST", "Cache Secondary Size: %lu ", strlen(m_QueryCacheSecondary) + 1);
@@ -255,13 +248,20 @@ void CTeeHistorian::DatabaseWriter() {
 			}
 
 
+			if (GetMode() != MODE_SQLITE)
+			{
+				if (m_PrimaryCacheSize > 0 || m_SecondaryCacheSize > 0 )
+				{
+					continue;
+				} else{
+					CloseDatabase();
+					break;
+				}
+			}
 
 			//dbg_msg("TEST", "Cache Primary Size POST: %lu ", strlen(m_QueryCachePrimary) + 1);
 			//dbg_msg("TEST", "Cache Secondary Size POST: %lu ", strlen(m_QueryCacheSecondary) + 1);
 
-		} else {
-			break;
-		}
 	}
 }
 
@@ -1533,13 +1533,24 @@ void CTeeHistorian::InsertIntoPlayerConnectedStateTable(int ClientJoinHash, char
  * @details [long description]
  */
 void CTeeHistorian::CloseDatabase() {
+	char *ErrMsg;
+	if (sqlite_lock(&m_SqliteMutex))
+	{
+		sqlite_exec(m_SqliteDB, "END TRANSACTION", &ErrMsg);
 
-	EndTransaction();
+		sqlite_unlock(&m_SqliteMutex);
+		if (ErrMsg)
+		{
+			dbg_msg("ERROR", "Error on closing database: %s", ErrMsg);
+		}
+	}
 
 	int err = sqlite_close(m_SqliteDB);
 	if (err != SQLITE_OK) {
 		dbg_msg("SQLiteHistorian", "Error on closing sqlite database(%li).(%d)", (long)m_SqliteDB , err);
 	}
+	free(m_QueryCachePrimary);
+	free(m_QueryCacheSecondary);
 
 }
 
