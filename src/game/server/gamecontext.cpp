@@ -506,6 +506,7 @@ void CGameContext::SwapTeams()
 void CGameContext::OnTick()
 {
 	dbg_msg("GAMECONTEXT","Threads: %d", m_Threads.size());
+	CleanThreads();
 	// check tuning
 	CheckPureTuning();
 

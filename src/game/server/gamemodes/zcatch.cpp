@@ -103,7 +103,6 @@ void CGameController_zCatch::Tick()
 {
 	IGameController::Tick();
 	CheckReleaseGameStatus();
-	GameServer()->CleanThreads();
 
 	if (m_OldMode != g_Config.m_SvMode && !GameServer()->m_World.m_Paused)
 	{
