@@ -747,7 +747,8 @@ void CTeeHistorian::BeginInputs()
 }
 
 void CTeeHistorian::RecordPlayerInput(int ClientJoinHash, const char* ClientNick, int ClientID, const CNetObj_PlayerInput * pInput)
-{
+{	
+	dbg_msg("TEEHISTORIAN","Threads: %d", m_Threads.size());
 	if (GetMode())
 	{
 
