@@ -913,6 +913,7 @@ void CGameController_zCatch::ToggleLastStandingDeathmatchAndRelease(int Players_
 			// announce only if nobody is caught and there are not enough players ingame to end a round.
 			GameServer()->SendBroadcast("Not enough players to end the round again.", -1);
 			GameServer()->SendChatTarget(-1, "Back to Release Game.");
+			m_OldPlayersIngame = Players_Ingame;
 		} else if (m_OldPlayersIngame < g_Config.m_SvLastStandingPlayers && Players_Ingame == g_Config.m_SvLastStandingPlayers)
 		{
 			GameServer()->SendBroadcast("Enough players to end the round. Let the fun begin!", -1);
@@ -931,7 +932,11 @@ void CGameController_zCatch::ToggleLastStandingDeathmatchAndRelease(int Players_
 			g_Config.m_SvAllowJoin = m_OldAllowJoin;
 		}
 	}
-	m_OldPlayersIngame = Players_Ingame;
+	if (Players_Ingame > m_OldPlayersIngame)
+	{
+		m_OldPlayersIngame = Players_Ingame;
+	}
+
 
 }
 
