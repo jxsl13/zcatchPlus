@@ -33,7 +33,7 @@ CGameController_zCatch::~CGameController_zCatch() {
 		if (GameServer()->m_apPlayers[i])
 			SaveRanking(GameServer()->m_apPlayers[i]);
 	}
-	GameServer()->JoinThreads();
+
 }
 
 void CGameController_zCatch::CheckReleaseGameStatus() {
@@ -104,6 +104,7 @@ void CGameController_zCatch::Tick()
 {
 	IGameController::Tick();
 	CheckReleaseGameStatus();
+	GameServer()->CleanFutures();
 
 	if (m_OldMode != g_Config.m_SvMode && !GameServer()->m_World.m_Paused)
 	{
@@ -499,18 +500,30 @@ void CGameController_zCatch::SaveRanking(CPlayer *player)
 	str_copy(name, GameServer()->Server()->ClientName(player->GetCID()), MAX_NAME_LENGTH);
 
 	/* give the points */
-	GameServer()->AddThread(new std::thread(&CGameController_zCatch::SaveScore,
-	                                        GameServer(), // gamecontext
-	                                        name, // username
-	                                        player->m_RankCache.m_Points, // score
-	                                        player->m_RankCache.m_NumWins, // numWins
-	                                        player->m_RankCache.m_NumKills, // numKills
-	                                        player->m_RankCache.m_NumKillsWallshot, // numKillsWallshot
-	                                        player->m_RankCache.m_NumDeaths, // numDeaths
-	                                        player->m_RankCache.m_NumShots, // numShots
-	                                        player->m_zCatchNumKillsInARow, // highestSpree
-	                                        player->m_RankCache.m_TimePlayed / Server()->TickSpeed() // timePlayed
-	                                       ));
+	GameServer()->AddFuture(std::async(std::launch::async, &CGameController_zCatch::SaveScore,
+	                                      GameServer(), // gamecontext
+	                                      name, // username
+	                                      player->m_RankCache.m_Points, // score
+	                                      player->m_RankCache.m_NumWins, // numWins
+	                                      player->m_RankCache.m_NumKills, // numKills
+	                                      player->m_RankCache.m_NumKillsWallshot, // numKillsWallshot
+	                                      player->m_RankCache.m_NumDeaths, // numDeaths
+	                                      player->m_RankCache.m_NumShots, // numShots
+	                                      player->m_zCatchNumKillsInARow, // highestSpree
+	                                      player->m_RankCache.m_TimePlayed / Server()->TickSpeed() // timePlayed
+	                                     ));
+	// GameServer()->AddThread(new std::thread(&CGameController_zCatch::SaveScore,
+	//                                         GameServer(), // gamecontext
+	//                                         name, // username
+	//                                         player->m_RankCache.m_Points, // score
+	//                                         player->m_RankCache.m_NumWins, // numWins
+	//                                         player->m_RankCache.m_NumKills, // numKills
+	//                                         player->m_RankCache.m_NumKillsWallshot, // numKillsWallshot
+	//                                         player->m_RankCache.m_NumDeaths, // numDeaths
+	//                                         player->m_RankCache.m_NumShots, // numShots
+	//                                         player->m_zCatchNumKillsInARow, // highestSpree
+	//                                         player->m_RankCache.m_TimePlayed / Server()->TickSpeed() // timePlayed
+	//                                        ));
 
 	/* clean rank cache */
 	player->m_RankCache.m_Points = 0;
@@ -621,7 +634,6 @@ void CGameController_zCatch::SaveScore(CGameContext* GameServer, char *name, int
 
 	sqlite3_finalize(pStmt);
 	free(name);
-	dbg_msg("TEST", "FINISHED");
 }
 
 /* when a player typed /top into the chat */
@@ -668,7 +680,8 @@ void CGameController_zCatch::OnChatCommandTop(CPlayer *pPlayer, const char *cate
 		return;
 	}
 
-	GameServer()->AddThread(new std::thread(&CGameController_zCatch::ChatCommandTopFetchDataAndPrint, GameServer(), pPlayer->GetCID(), column));
+	//GameServer()->AddThread(new std::thread(&CGameController_zCatch::ChatCommandTopFetchDataAndPrint, GameServer(), pPlayer->GetCID(), column));
+	GameServer()->AddFuture(std::async(std::launch::async, &CGameController_zCatch::ChatCommandTopFetchDataAndPrint, GameServer(), pPlayer->GetCID(), column));
 }
 
 /* get the top players */
@@ -751,7 +764,8 @@ void CGameController_zCatch::OnChatCommandRank(CPlayer *pPlayer, const char *nam
 	str_copy(queryName, name, MAX_NAME_LENGTH);
 
 	// executes function with the parameters given afterwards
-	GameServer()->AddThread(new std::thread(&CGameController_zCatch::ChatCommandRankFetchDataAndPrint, GameServer(), pPlayer->GetCID(), queryName));
+	//GameServer()->AddThread(new std::thread(&CGameController_zCatch::ChatCommandRankFetchDataAndPrint, GameServer(), pPlayer->GetCID(), queryName));
+	GameServer()->AddFuture(std::async(std::launch::async, &CGameController_zCatch::ChatCommandRankFetchDataAndPrint, GameServer(), pPlayer->GetCID(), queryName));
 	// detaches thread, meaning that the thread can outlive the main thread.
 }
 

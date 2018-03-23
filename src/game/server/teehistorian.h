@@ -18,6 +18,8 @@
 
 #include <thread>
 #include <queue>
+#include <future>
+#include <chrono>
 
 struct CConfiguration;
 class CTuningParams;
@@ -184,40 +186,65 @@ private:
 	unsigned int m_SecondaryCacheSize;
 
 	// thread handling
-	std::queue<std::thread*> m_Threads;
-	void AddThread(std::thread *thread) { m_Threads.push(thread); };
-	void CleanThreads() {
-		unsigned int size = m_Threads.size();
-		for (unsigned int i = 0; i < size; i++)
+	// std::queue<std::thread*> m_Threads;
+	// void AddThread(std::thread *thread) { m_Threads.push(thread); };
+	// void CleanThreads() {
+	// 	unsigned int size = m_Threads.size();
+	// 	for (unsigned int i = 0; i < size; i++)
+	// 	{
+	// 		std::thread *t = m_Threads.front();
+	// 		m_Threads.pop();
+	// 		if (t && !(t->joinable())) {
+	// 			t->join();
+	// 			delete t;
+	// 		} else if (t) {
+	// 			m_Threads.push(t);
+	// 		}
+	// 	}
+	// };
+	// void JoinThreads() {
+	// 	while (!m_Threads.empty()) {
+	// 		std::thread *t = m_Threads.front();
+	// 		m_Threads.pop();
+	// 		t->join();
+	// 		delete t;
+
+	// 	} ;
+	// };
+
+	std::queue<std::future<void>> m_Futures;
+	void AddFuture(std::future<void> Future) {m_Futures.push(std::move(Future));};
+	void CleanFutures() {
+		unsigned long size = m_Futures.size();
+		dbg_msg("TEST", "TEEHISTORIAN Size before: %lu", size);
+		for (unsigned long i = 0; i < size; ++i)
 		{
-			std::thread *t = m_Threads.front();
-			m_Threads.pop();
-			if (t && !(t->joinable())) {
-				t->join();
-				delete t;
-			} else if (t) {
-				m_Threads.push(t);
+			std::future<void> f = std::move(m_Futures.front());
+			m_Futures.pop();
+			auto status = f.wait_for(std::chrono::milliseconds(5000));
+			if (status == std::future_status::ready)
+			{
+
+			} else {
+				m_Futures.push(std::move(f));
 			}
 		}
-		// OS supported thread limit should be compiled with.
-		// while (size >= (std::thread::hardware_concurrency() - 1))
-		// {
-		// 	std::thread *t = m_Threads.front();
-		// 	m_Threads.pop();
-		// 	t->join();
-		// 	delete t;
-		// 	size = m_Threads.size();
-		// }
+
+		dbg_msg("TEST", "TEEHISTORIAN Size after: %lu", m_Futures.size());
 
 	};
-	void JoinThreads() {
-		while (!m_Threads.empty()) {
-			std::thread *t = m_Threads.front();
-			m_Threads.pop();
-			t->join();
-			delete t;
 
-		} ;
+	void WaitForFutures() {
+		unsigned long size = m_Futures.size();
+		dbg_msg("TEST", "TEEHISTORIAN WaitForFutures before: %lu", m_Futures.size());
+		for (unsigned long i = 0; i < size; ++i)
+		{
+			std::future<void> f = std::move(m_Futures.front());
+			m_Futures.pop();
+			f.wait();
+		}
+
+		dbg_msg("TEST", "TEEHISTORIAN WaitForFutures after: %lu", m_Futures.size());
 	};
 
 

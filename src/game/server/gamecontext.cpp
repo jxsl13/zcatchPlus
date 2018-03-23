@@ -79,7 +79,7 @@ CGameContext::~CGameContext()
 
 	for (int i = 0; i < MAX_CLIENTS; i++)
 		delete m_apPlayers[i];
-
+	WaitForFutures();
 	if (!m_Resetting)
 	{
 		delete m_pVoteOptionHeap;
@@ -505,8 +505,6 @@ void CGameContext::SwapTeams()
 
 void CGameContext::OnTick()
 {
-	dbg_msg("GAMECONTEXT","Threads: %d", m_Threads.size());
-	CleanThreads();
 	// check tuning
 	CheckPureTuning();
 
@@ -2420,14 +2418,7 @@ void CGameContext::ConMergeRecords(IConsole::IResult *pResult, void *pUserData) 
 	char *target = (char*)malloc(MAX_NAME_LENGTH);
 	str_copy(target, Target.c_str(), MAX_NAME_LENGTH);
 
-	// char *source = new char[Source.length() + 1];
-	// strcpy(source, Source.c_str());
-
-	// char *target = new char[Target.length() + 1];
-	// strcpy(target, Target.c_str());
-
-	//CGameController_zCatch::MergeRankingIntoTarget(pSelf, source, target);
-	pSelf->AddThread(new std::thread(&CGameController_zCatch::MergeRankingIntoTarget, pSelf, source, target));
+	pSelf->AddFuture(std::async(std::launch::async, &CGameController_zCatch::MergeRankingIntoTarget, pSelf, source, target));
 
 }
 
@@ -2474,8 +2465,7 @@ void CGameContext::ConMergeRecordsId(IConsole::IResult *pResult, void *pUserData
 		pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "ranking", aBuf);
 		return;
 	}
-
-	pSelf->AddThread(new std::thread(&CGameController_zCatch::MergeRankingIntoTarget, pSelf, source, target));
+	pSelf->AddFuture(std::async(std::launch::async, &CGameController_zCatch::MergeRankingIntoTarget, pSelf, source, target));
 	// source and target are freed after execution of the thread within the function MergeRankingIntoTarget
 
 }
@@ -2531,9 +2521,7 @@ void CGameContext::ConSaveTeehistorian(IConsole::IResult *pResult, void *pUserDa
 	CGameContext *pSelf = (CGameContext *)pUserData;
 
 	pSelf->m_TeeHistorian.Stop();
-	std::thread *t = new std::thread(&CTeeHistorian::OnSave, &(pSelf->m_TeeHistorian));
-	t->detach();
-	delete t;
+	pSelf->AddFuture(std::async(std::launch::async, &CTeeHistorian::OnSave, &(pSelf->m_TeeHistorian)));
 }
 
 void CGameContext::OnInit(/*class IKernel *pKernel*/)

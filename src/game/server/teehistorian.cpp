@@ -64,8 +64,8 @@ void CTeeHistorian::CheckHistorianModeToggled() {
 
 void CTeeHistorian::OnInit(IStorage *pStorage, IServer *pServer, IGameController *pController, CTuningParams *pTuning, CGameContext *pGameContext) {
 	RetrieveMode(true);
-	//dbg_msg("MODE","OldMode=%d  Mode=%d", m_OldHistorianMode, m_HistorianMode);
-	dbg_msg("THREAD SUPPORT", "Supported Threads: %d", std::thread::hardware_concurrency());
+
+	//dbg_msg("THREAD SUPPORT", "Supported Threads: %d", std::thread::hardware_concurrency());
 	m_State = STATE_START;
 
 	m_pStorage = pStorage;
@@ -96,7 +96,8 @@ void CTeeHistorian::OnInit(IStorage *pStorage, IServer *pServer, IGameController
 			m_QueryCachePrimary = (char*)malloc(PRIMARY_CACHE_SIZE);
 			m_QueryCacheSecondary = (char*)malloc(SECONDARY_CACHE_SIZE);
 
-			AddThread(new std::thread(&CTeeHistorian::DatabaseWriter, this));
+			AddFuture(std::async(std::launch::async, &CTeeHistorian::DatabaseWriter, this));
+
 
 
 
@@ -156,9 +157,10 @@ void CTeeHistorian::OnShutDown(bool FinalShutdown) {
 
 		if (FinalShutdown)
 		{
-			JoinThreads();
+			WaitForFutures();
+			dbg_msg("TeeHistorian", "Joining Threads.");
 		} else {
-			CleanThreads();
+			CleanFutures();
 		}
 
 
@@ -193,8 +195,6 @@ void CTeeHistorian::DatabaseWriter() {
 	while (true) {
 
 		std::this_thread::sleep_for(std::chrono::milliseconds(CACHE_EMPTY_INTERVAL));
-		// dbg_msg("TEST", "Cache Primary Size: %lu ", strlen(m_QueryCachePrimary) + 1);
-		// dbg_msg("TEST", "Cache Secondary Size: %lu ", strlen(m_QueryCacheSecondary) + 1);
 
 		if (m_PrimaryCacheSize > 0 && sqlite_lock(&m_PrimaryCacheMutex, 1000))
 		{
@@ -259,10 +259,8 @@ void CTeeHistorian::DatabaseWriter() {
 			}
 		}
 
-		//dbg_msg("TEST", "Cache Primary Size POST: %lu ", strlen(m_QueryCachePrimary) + 1);
-		//dbg_msg("TEST", "Cache Secondary Size POST: %lu ", strlen(m_QueryCacheSecondary) + 1);
-
 	}
+	dbg_msg("SQLiteHistorian", "Shut down Logging");
 }
 
 static char *EscapeJson(char *pBuffer, int BufferSize, const char *pString)
@@ -749,7 +747,6 @@ void CTeeHistorian::BeginInputs()
 
 void CTeeHistorian::RecordPlayerInput(int ClientJoinHash, const char* ClientNick, int ClientID, const CNetObj_PlayerInput * pInput)
 {
-	dbg_msg("TEEHISTORIAN", "Threads: %d", m_Threads.size());
 	if (GetMode())
 	{
 
