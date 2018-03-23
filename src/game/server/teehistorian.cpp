@@ -1585,10 +1585,11 @@ void CTeeHistorian::OptimizeDatabase() {
 		sqlite_busy_timeout(m_SqliteDB, 3000);
 		switch (g_Config.m_SvSqlitePerformance)
 		{
-		case 1: sqlite_exec(m_SqliteDB, "PRAGMA synchronous = NORMAL", &ErrMsg); break;
-		case 2: sqlite_exec(m_SqliteDB, "PRAGMA journal_mode = WAL", &ErrMsg); break;
-		case 3: sqlite_exec(m_SqliteDB, "PRAGMA synchronous = NORMAL", &ErrMsg);
-			sqlite_exec(m_SqliteDB, "PRAGMA journal_mode = WAL", &ErrMsg);
+		case 1: sqlite_exec(m_SqliteDB, "PRAGMA synchronous = OFF", &ErrMsg); break;
+		case 2: sqlite_exec(m_SqliteDB, "PRAGMA journal_mode = MEMORY", &ErrMsg); break;
+		case 3: sqlite_exec(m_SqliteDB, "PRAGMA synchronous = OFF", &ErrMsg);
+			sqlite_exec(m_SqliteDB, "PRAGMA journal_mode = MEMORY", &ErrMsg);
+			sqlite_exec(m_SqliteDB, "PRAGMA LOCKING_MODE = EXCLUSIVE", &ErrMsg);
 			break;
 		default: break;
 			/* code */
