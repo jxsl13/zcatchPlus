@@ -20,6 +20,12 @@ static const char TEEHISTORIAN_VERSION[] = "2";
 #include <engine/shared/teehistorian_ex_chunks.h>
 #undef UUID
 
+#define SQLITE_THREADSAFE = 0
+#define SQLITE__DEFAULT_MEMSTATUS = 0
+#define SQLITE_DEFAULT_WAL_SYNCHRONOUS = 1
+#define SQLITE_MAX_EXPR_DEPTH = 50
+
+
 enum
 {
 	TEEHISTORIAN_NONE,
@@ -1576,10 +1582,10 @@ void CTeeHistorian::OptimizeDatabase() {
 		sqlite_busy_timeout(m_SqliteDB, 3000);
 		switch (g_Config.m_SvSqlitePerformance)
 		{
-		case 1: sqlite_exec(m_SqliteDB, "PRAGMA synchronous = OFF", &ErrMsg); break;
-		case 2: sqlite_exec(m_SqliteDB, "PRAGMA journal_mode = MEMORY", &ErrMsg); break;
-		case 3: sqlite_exec(m_SqliteDB, "PRAGMA synchronous = OFF", &ErrMsg);
-			sqlite_exec(m_SqliteDB, "PRAGMA journal_mode = MEMORY", &ErrMsg);
+		case 1: sqlite_exec(m_SqliteDB, "PRAGMA synchronous = NORMAL", &ErrMsg); break;
+		case 2: sqlite_exec(m_SqliteDB, "PRAGMA journal_mode = WAL", &ErrMsg); break;
+		case 3: sqlite_exec(m_SqliteDB, "PRAGMA synchronous = NORMAL", &ErrMsg);
+			sqlite_exec(m_SqliteDB, "PRAGMA journal_mode = WAL", &ErrMsg);
 			break;
 		default: break;
 			/* code */
