@@ -14,17 +14,10 @@ static const char TEEHISTORIAN_VERSION[] = "2";
 
 
 
-/**INFO: TODO: Gameserver-> is accessible from here */
 
 #define UUID(id, name) static const CUuid UUID_ ## id = CalculateUuid(name);
 #include <engine/shared/teehistorian_ex_chunks.h>
 #undef UUID
-
-#define SQLITE_THREADSAFE = 0
-#define SQLITE__DEFAULT_MEMSTATUS = 0
-#define SQLITE_DEFAULT_WAL_SYNCHRONOUS = 1
-#define SQLITE_MAX_EXPR_DEPTH = 50
-#define DSQLITE_DEFAULT_PAGE_SIZE = 16384
 
 
 enum
@@ -1521,6 +1514,7 @@ void CTeeHistorian::CloseDatabase() {
 	if (sqlite_lock(&m_SqliteMutex, 2000))
 	{
 		sqlite_exec(m_SqliteDB, "END TRANSACTION", &ErrMsg);
+		sqlite_exec(m_SqliteDB, "PRAGMA optimize", &ErrMsg);
 
 		sqlite_unlock(&m_SqliteMutex);
 		if (ErrMsg)
@@ -1564,8 +1558,8 @@ void CTeeHistorian::OptimizeDatabase() {
 		sqlite_exec(m_SqliteDB, "PRAGMA synchronous = off", &ErrMsg);
 		sqlite_exec(m_SqliteDB, "PRAGMA journal_mode = memory", &ErrMsg);
 		sqlite_exec(m_SqliteDB, "PRAGMA locking_mode = exclusive", &ErrMsg);
-		sqlite_exec(m_SqliteDB, "PRAGMA cache_size = 10000", &ErrMsg);
-		sqlite_exec(m_SqliteDB, "PRAGMA page_size = 8192", &ErrMsg);
+		sqlite_exec(m_SqliteDB, "PRAGMA cache_size = 32768", &ErrMsg);
+		sqlite_exec(m_SqliteDB, "PRAGMA page_size = 16384", &ErrMsg);
 
 		sqlite_free(ErrMsg);
 	}
