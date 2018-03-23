@@ -1242,7 +1242,6 @@ void CTeeHistorian::CreatePlayerMovementTable() {
 				OldY INT\
 			); \
 			COMMIT;", &ErrMsg);
-	f
 	/* check for error */
 	if (err != SQLITE_OK) {
 		dbg_msg("ERROR SQLITE", "CreatePlayerMovementTable:");
