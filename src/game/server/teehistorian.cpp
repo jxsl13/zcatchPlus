@@ -1242,15 +1242,7 @@ void CTeeHistorian::CreatePlayerMovementTable() {
 				OldY INT\
 			); \
 			COMMIT;", &ErrMsg);
-
-	// CREATE INDEX IF NOT EXISTS PlayerMovement_JoinHash_index ON PlayerMovement (JoinHash); \
-	// 		CREATE INDEX IF NOT EXISTS PlayerMovement_TimeStamp_index ON PlayerMovement (TimeStamp); \
-	// 		CREATE INDEX IF NOT EXISTS PlayerMovement_Tick_index ON PlayerMovement (Tick); \
-	// 		CREATE INDEX IF NOT EXISTS PlayerMovement_X_index ON PlayerMovement (X); \
-	// 		CREATE INDEX IF NOT EXISTS PlayerMovement_Y_index ON PlayerMovement (Y); \
-	// 		CREATE INDEX IF NOT EXISTS PlayerMovement_OldX_index ON PlayerMovement (OldX); \
-	// 		CREATE INDEX IF NOT EXISTS PlayerMovement_OldY_index ON PlayerMovement (OldY); \
-
+	f
 	/* check for error */
 	if (err != SQLITE_OK) {
 		dbg_msg("ERROR SQLITE", "CreatePlayerMovementTable:");
@@ -1285,21 +1277,6 @@ void CTeeHistorian::CreatePlayerInputTable() {
 				PrevWeapon TINYINT \
 			); \
 			COMMIT;" , &ErrMsg);
-
-	// CREATE INDEX IF NOT EXISTS PlayerInput_JoinHash_index ON PlayerInput (JoinHash); \
-	// 		CREATE INDEX IF NOT EXISTS PlayerInput_TimeStamp_index ON PlayerInput (TimeStamp); \
-	// 		CREATE INDEX IF NOT EXISTS PlayerInput_Tick_index ON PlayerInput (Tick); \
-	// 		CREATE INDEX IF NOT EXISTS PlayerInput_Direction_index ON PlayerInput (Direction); \
-	// 		CREATE INDEX IF NOT EXISTS PlayerInput_TargetX_index ON PlayerInput (TargetX); \
-	// 		CREATE INDEX IF NOT EXISTS PlayerInput_TargetY_index ON PlayerInput (TargetY); \
-	// 		CREATE INDEX IF NOT EXISTS PlayerInput_Jump_index ON PlayerInput (Jump); \
-	// 		CREATE INDEX IF NOT EXISTS PlayerInput_Fire_index ON PlayerInput (Fire); \
-	// 		CREATE INDEX IF NOT EXISTS PlayerInput_Hook_index ON PlayerInput (Hook); \
-	// 		CREATE INDEX IF NOT EXISTS PlayerInput_PlayerFlags_index ON PlayerInput (PlayerFlags); \
-	// 		CREATE INDEX IF NOT EXISTS PlayerInput_WantedWeapon_index ON PlayerInput (WantedWeapon); \
-	// 		CREATE INDEX IF NOT EXISTS PlayerInput_NextWeapon_index ON PlayerInput (NextWeapon); \
-	// 		CREATE INDEX IF NOT EXISTS PlayerInput_PrevWeapon_index ON PlayerInput (PrevWeapon); \
-
 	/* check for error */
 	if (err != SQLITE_OK) {
 		dbg_msg("ERROR SQLITE", "CreatePlayerInputTable:");
@@ -1583,17 +1560,13 @@ void CTeeHistorian::OptimizeDatabase() {
 		char* ErrMsg = 0;
 
 		sqlite_busy_timeout(m_SqliteDB, 3000);
-		switch (g_Config.m_SvSqlitePerformance)
-		{
-		case 1: sqlite_exec(m_SqliteDB, "PRAGMA synchronous = OFF", &ErrMsg); break;
-		case 2: sqlite_exec(m_SqliteDB, "PRAGMA journal_mode = MEMORY", &ErrMsg); break;
-		case 3: sqlite_exec(m_SqliteDB, "PRAGMA synchronous = OFF", &ErrMsg);
-			sqlite_exec(m_SqliteDB, "PRAGMA journal_mode = MEMORY", &ErrMsg);
-			sqlite_exec(m_SqliteDB, "PRAGMA LOCKING_MODE = EXCLUSIVE", &ErrMsg);
-			break;
-		default: break;
-			/* code */
-		}
+
+
+		sqlite_exec(m_SqliteDB, "PRAGMA synchronous = off", &ErrMsg);
+		sqlite_exec(m_SqliteDB, "PRAGMA journal_mode = memory", &ErrMsg);
+		sqlite_exec(m_SqliteDB, "PRAGMA locking_mode = exclusive", &ErrMsg);
+		sqlite_exec(m_SqliteDB, "PRAGMA cache_size = 10000", &ErrMsg);
+		sqlite_exec(m_SqliteDB, "PRAGMA page_size = 8192", &ErrMsg);
 
 		sqlite_free(ErrMsg);
 	}
