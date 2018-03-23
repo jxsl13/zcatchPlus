@@ -24,6 +24,7 @@ static const char TEEHISTORIAN_VERSION[] = "2";
 #define SQLITE__DEFAULT_MEMSTATUS = 0
 #define SQLITE_DEFAULT_WAL_SYNCHRONOUS = 1
 #define SQLITE_MAX_EXPR_DEPTH = 50
+#define DSQLITE_DEFAULT_PAGE_SIZE = 16384
 
 
 enum
@@ -1240,14 +1241,15 @@ void CTeeHistorian::CreatePlayerMovementTable() {
 				OldX INT, \
 				OldY INT\
 			); \
-			CREATE INDEX IF NOT EXISTS PlayerMovement_JoinHash_index ON PlayerMovement (JoinHash); \
-			CREATE INDEX IF NOT EXISTS PlayerMovement_TimeStamp_index ON PlayerMovement (TimeStamp); \
-			CREATE INDEX IF NOT EXISTS PlayerMovement_Tick_index ON PlayerMovement (Tick); \
-			CREATE INDEX IF NOT EXISTS PlayerMovement_X_index ON PlayerMovement (X); \
-			CREATE INDEX IF NOT EXISTS PlayerMovement_Y_index ON PlayerMovement (Y); \
-			CREATE INDEX IF NOT EXISTS PlayerMovement_OldX_index ON PlayerMovement (OldX); \
-			CREATE INDEX IF NOT EXISTS PlayerMovement_OldY_index ON PlayerMovement (OldY); \
 			COMMIT;", &ErrMsg);
+
+	// CREATE INDEX IF NOT EXISTS PlayerMovement_JoinHash_index ON PlayerMovement (JoinHash); \
+	// 		CREATE INDEX IF NOT EXISTS PlayerMovement_TimeStamp_index ON PlayerMovement (TimeStamp); \
+	// 		CREATE INDEX IF NOT EXISTS PlayerMovement_Tick_index ON PlayerMovement (Tick); \
+	// 		CREATE INDEX IF NOT EXISTS PlayerMovement_X_index ON PlayerMovement (X); \
+	// 		CREATE INDEX IF NOT EXISTS PlayerMovement_Y_index ON PlayerMovement (Y); \
+	// 		CREATE INDEX IF NOT EXISTS PlayerMovement_OldX_index ON PlayerMovement (OldX); \
+	// 		CREATE INDEX IF NOT EXISTS PlayerMovement_OldY_index ON PlayerMovement (OldY); \
 
 	/* check for error */
 	if (err != SQLITE_OK) {
@@ -1282,20 +1284,21 @@ void CTeeHistorian::CreatePlayerInputTable() {
 				NextWeapon TINYINT, \
 				PrevWeapon TINYINT \
 			); \
-			CREATE INDEX IF NOT EXISTS PlayerInput_JoinHash_index ON PlayerInput (JoinHash); \
-			CREATE INDEX IF NOT EXISTS PlayerInput_TimeStamp_index ON PlayerInput (TimeStamp); \
-			CREATE INDEX IF NOT EXISTS PlayerInput_Tick_index ON PlayerInput (Tick); \
-			CREATE INDEX IF NOT EXISTS PlayerInput_Direction_index ON PlayerInput (Direction); \
-			CREATE INDEX IF NOT EXISTS PlayerInput_TargetX_index ON PlayerInput (TargetX); \
-			CREATE INDEX IF NOT EXISTS PlayerInput_TargetY_index ON PlayerInput (TargetY); \
-			CREATE INDEX IF NOT EXISTS PlayerInput_Jump_index ON PlayerInput (Jump); \
-			CREATE INDEX IF NOT EXISTS PlayerInput_Fire_index ON PlayerInput (Fire); \
-			CREATE INDEX IF NOT EXISTS PlayerInput_Hook_index ON PlayerInput (Hook); \
-			CREATE INDEX IF NOT EXISTS PlayerInput_PlayerFlags_index ON PlayerInput (PlayerFlags); \
-			CREATE INDEX IF NOT EXISTS PlayerInput_WantedWeapon_index ON PlayerInput (WantedWeapon); \
-			CREATE INDEX IF NOT EXISTS PlayerInput_NextWeapon_index ON PlayerInput (NextWeapon); \
-			CREATE INDEX IF NOT EXISTS PlayerInput_PrevWeapon_index ON PlayerInput (PrevWeapon); \
 			COMMIT;" , &ErrMsg);
+
+	// CREATE INDEX IF NOT EXISTS PlayerInput_JoinHash_index ON PlayerInput (JoinHash); \
+	// 		CREATE INDEX IF NOT EXISTS PlayerInput_TimeStamp_index ON PlayerInput (TimeStamp); \
+	// 		CREATE INDEX IF NOT EXISTS PlayerInput_Tick_index ON PlayerInput (Tick); \
+	// 		CREATE INDEX IF NOT EXISTS PlayerInput_Direction_index ON PlayerInput (Direction); \
+	// 		CREATE INDEX IF NOT EXISTS PlayerInput_TargetX_index ON PlayerInput (TargetX); \
+	// 		CREATE INDEX IF NOT EXISTS PlayerInput_TargetY_index ON PlayerInput (TargetY); \
+	// 		CREATE INDEX IF NOT EXISTS PlayerInput_Jump_index ON PlayerInput (Jump); \
+	// 		CREATE INDEX IF NOT EXISTS PlayerInput_Fire_index ON PlayerInput (Fire); \
+	// 		CREATE INDEX IF NOT EXISTS PlayerInput_Hook_index ON PlayerInput (Hook); \
+	// 		CREATE INDEX IF NOT EXISTS PlayerInput_PlayerFlags_index ON PlayerInput (PlayerFlags); \
+	// 		CREATE INDEX IF NOT EXISTS PlayerInput_WantedWeapon_index ON PlayerInput (WantedWeapon); \
+	// 		CREATE INDEX IF NOT EXISTS PlayerInput_NextWeapon_index ON PlayerInput (NextWeapon); \
+	// 		CREATE INDEX IF NOT EXISTS PlayerInput_PrevWeapon_index ON PlayerInput (PrevWeapon); \
 
 	/* check for error */
 	if (err != SQLITE_OK) {

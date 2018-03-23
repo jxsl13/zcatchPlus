@@ -209,7 +209,6 @@ function build(settings)
 
 	-- build sqlite
 	sqlite = Compile(settings, Collect("src/engine/external/sqlite/sqlite3.c"))
-	
 
 	-- build md5 --
 	md5 = Compile(settings, Collect("src/engine/external/md5/md5.c"))
