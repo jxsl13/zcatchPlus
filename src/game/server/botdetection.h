@@ -52,8 +52,8 @@ private:
 	double m_ClosestIDToCursorDistanceCT[MAX_CLIENTS];
 
 
-	static void SetCore(TickPlayer Target, TickPlayer Source);
-	static void SetInput(TickPlayer Target, TickPlayer Source);
+	static void SetCore(TickPlayer *Target, TickPlayer *Source);
+	static void SetInput(TickPlayer *Target, TickPlayer *Source);
 
 };
 

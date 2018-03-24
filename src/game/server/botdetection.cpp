@@ -47,9 +47,8 @@ void CBotDetection::ManageLastInputQueue() {
 					// we have previous input in out input backlog
 					TickPlayer temp = m_aPlayerInputBacklog[i].front();
 					m_aPlayerInputBacklog[i].pop();
-
 					// no input, thus set previous input to current input
-					SetInput(m_aPlayersCurrentTick[i], temp);
+					SetInput(&m_aPlayersCurrentTick[i], &temp);
 
 					// push combined current tick into all three queues
 					m_aPlayerBacklog[i].push(m_aPlayersCurrentTick[i]);
@@ -69,7 +68,7 @@ void CBotDetection::ManageLastInputQueue() {
 					TickPlayer temp = m_aPlayerCoreBacklog[i].front();
 					m_aPlayerCoreBacklog[i].pop();
 
-					SetCore(m_aPlayersCurrentTick[i], temp);
+					SetCore(&m_aPlayersCurrentTick[i], &temp);
 
 					// push complete tick player into all queues
 					m_aPlayerBacklog[i].push(m_aPlayersCurrentTick[i]);
@@ -89,8 +88,8 @@ void CBotDetection::ManageLastInputQueue() {
 				} else if (m_aPlayerCoreBacklog[i].size() > 0 && m_aPlayerInputBacklog[i].size() > 0)
 				{
 					// we don't have both, but both as individuals
-					SetCore(m_aPlayersCurrentTick[i], m_aPlayerCoreBacklog[i].front());
-					SetInput(m_aPlayersCurrentTick[i], m_aPlayerInputBacklog[i].front());
+					SetCore(&m_aPlayersCurrentTick[i], &m_aPlayerCoreBacklog[i].front());
+					SetInput(&m_aPlayersCurrentTick[i], &m_aPlayerInputBacklog[i].front());
 					m_aPlayerCoreBacklog[i].pop();
 					m_aPlayerInputBacklog[i].pop();
 					// merge both into one and push it back to all three
@@ -100,7 +99,6 @@ void CBotDetection::ManageLastInputQueue() {
 				}
 
 			}
-
 
 			// Reduce queue to last input only
 			while (m_aPlayerBacklog[i].size() > 1) {
@@ -112,17 +110,6 @@ void CBotDetection::ManageLastInputQueue() {
 			while (m_aPlayerCoreBacklog[i].size() > 1) {
 				m_aPlayerCoreBacklog[i].pop();
 			}
-
-			//dbg_msg("TEST", "Input: %ld Movement: %ld Player: %ld", m_aPlayerInputBacklog[i].size(), m_aPlayerCoreBacklog[i].size(), m_aPlayerBacklog[i].size());
-			if (m_aPlayerBacklog[i].size() > 0)
-			{
-				dbg_msg("TEST", "m_Core_X: %d, m_Core_Y: %d. m_Input_TargetX: %d, m_Input_TargetY: %d",
-				        m_aPlayerBacklog[i].front().m_Core_X,
-				        m_aPlayerBacklog[i].front().m_Core_Y,
-				        m_aPlayerBacklog[i].front().m_Input_TargetX,
-				        m_aPlayerBacklog[i].front().m_Input_TargetY);
-			}
-			//dbg_msg("TEST", "Input: %d Movement: %d", m_aPlayersCurrentTick[i].m_InputAvailable, m_aPlayersCurrentTick[i].m_CoreAvailable);
 
 		}
 	}
@@ -176,39 +163,39 @@ void CBotDetection::AddPlayerInput(int ClientID, int JoinHash, CNetObj_PlayerInp
 	}
 }
 
-void CBotDetection::SetInput(TickPlayer Target, TickPlayer Source) {
-	Target.m_InputAvailable = Source.m_InputAvailable;
-	Target.m_Input_Direction = Source.m_Input_Direction;
-	Target.m_Input_TargetX = Source.m_Input_TargetX;
-	Target.m_Input_TargetY = Source.m_Input_TargetY;
-	Target.m_Input_Jump = Source.m_Input_Jump;
-	Target.m_Input_Fire = Source.m_Input_Fire;
-	Target.m_Input_Hook = Source.m_Input_Hook;
-	Target.m_Input_PlayerFlags = Source.m_Input_PlayerFlags;
-	Target.m_Input_WantedWeapon = Source.m_Input_WantedWeapon;
-	Target.m_Input_NextWeapon = Source.m_Input_NextWeapon;
-	Target.m_Input_PrevWeapon = Source.m_Input_PrevWeapon;
+void CBotDetection::SetInput(TickPlayer *Target, TickPlayer* Source) {
+	Target->m_InputAvailable = Source->m_InputAvailable;
+	Target->m_Input_Direction = Source->m_Input_Direction;
+	Target->m_Input_TargetX = Source->m_Input_TargetX;
+	Target->m_Input_TargetY = Source->m_Input_TargetY;
+	Target->m_Input_Jump = Source->m_Input_Jump;
+	Target->m_Input_Fire = Source->m_Input_Fire;
+	Target->m_Input_Hook = Source->m_Input_Hook;
+	Target->m_Input_PlayerFlags = Source->m_Input_PlayerFlags;
+	Target->m_Input_WantedWeapon = Source->m_Input_WantedWeapon;
+	Target->m_Input_NextWeapon = Source->m_Input_NextWeapon;
+	Target->m_Input_PrevWeapon = Source->m_Input_PrevWeapon;
 }
 
-void CBotDetection::SetCore(TickPlayer Target, TickPlayer Source) {
-	Target.m_CoreAvailable = Source.m_CoreAvailable;
-	Target.m_JoinHash = Source.m_JoinHash;
-	Target.m_ClientID = Source.m_ClientID;
-	Target.m_Core_Tick = Source.m_Core_Tick;
-	Target.m_Core_X = Source.m_Core_X;
-	Target.m_Core_Y = Source.m_Core_Y;
-	Target.m_Core_VelX = Source.m_Core_VelX;
-	Target.m_Core_VelY = Source.m_Core_VelY;
-	Target.m_Core_Angle = Source.m_Core_Angle;
-	Target.m_Core_Direction = Source.m_Core_Direction;
-	Target.m_Core_Jumped = Source.m_Core_Jumped;
-	Target.m_Core_HookedPlayer = Source.m_Core_HookedPlayer;
-	Target.m_Core_HookState = Source.m_Core_HookState;
-	Target.m_Core_HookTick = Source.m_Core_HookTick;
-	Target.m_Core_HookX = Source.m_Core_HookX;
-	Target.m_Core_HookY = Source.m_Core_HookY;
-	Target.m_Core_HookDx = Source.m_Core_HookDx;
-	Target.m_Core_HookDy = Source.m_Core_HookDy;
+void CBotDetection::SetCore(TickPlayer *Target, TickPlayer *Source) {
+	Target->m_CoreAvailable = Source->m_CoreAvailable;
+	Target->m_JoinHash = Source->m_JoinHash;
+	Target->m_ClientID = Source->m_ClientID;
+	Target->m_Core_Tick = Source->m_Core_Tick;
+	Target->m_Core_X = Source->m_Core_X;
+	Target->m_Core_Y = Source->m_Core_Y;
+	Target->m_Core_VelX = Source->m_Core_VelX;
+	Target->m_Core_VelY = Source->m_Core_VelY;
+	Target->m_Core_Angle = Source->m_Core_Angle;
+	Target->m_Core_Direction = Source->m_Core_Direction;
+	Target->m_Core_Jumped = Source->m_Core_Jumped;
+	Target->m_Core_HookedPlayer = Source->m_Core_HookedPlayer;
+	Target->m_Core_HookState = Source->m_Core_HookState;
+	Target->m_Core_HookTick = Source->m_Core_HookTick;
+	Target->m_Core_HookX = Source->m_Core_HookX;
+	Target->m_Core_HookY = Source->m_Core_HookY;
+	Target->m_Core_HookDx = Source->m_Core_HookDx;
+	Target->m_Core_HookDy = Source->m_Core_HookDy;
 
 }
 
