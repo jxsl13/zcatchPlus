@@ -26,6 +26,7 @@ public:
 
 
 private:
+	sqlite3_db* m_SqliteDB;
 	CGameContext *m_GameContext;
 	TickPlayer m_aPlayersCurrentTick[MAX_CLIENTS];
 
@@ -50,6 +51,20 @@ private:
 
 	// actual distance  of cursor to above defined id.
 	double m_ClosestIDToCursorDistanceCT[MAX_CLIENTS];
+
+
+	/**
+	 * Definition: Areas:
+	 *	Area 1:
+	 *	Area 2:
+	 *	Area 3:
+	 *	Area 4:
+	 *	Area 5:
+	 *	Area 6:
+	 */
+
+	// averages:
+	double m_AvgCursorToClosestPlayerIfInSight[MAX_CLIENTS];
 
 
 	static void SetCore(TickPlayer *Target, TickPlayer *Source);

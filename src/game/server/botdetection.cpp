@@ -1,7 +1,7 @@
 #include "botdetection.h"
 #include <cstdlib>
 #include <limits>
-
+#include <base/sqlite.h>
 
 
 
@@ -19,8 +19,15 @@ CBotDetection::~CBotDetection() {
 }
 
 void CBotDetection::OnTick() {
-	CalculateDistanceToEveryPlayer();
+	//m_aPlayersCurrentTick needs to have some proper values first
 	ManageLastInputQueue();
+
+	// then calculate stuff
+	CalculateDistanceToEveryPlayer();
+
+
+
+	// at last reset current tick
 	ResetCurrentTick();
 }
 
@@ -200,53 +207,103 @@ void CBotDetection::SetCore(TickPlayer *Target, TickPlayer *Source) {
 }
 
 void CBotDetection::CalculateDistanceToEveryPlayer() {
-	int x, y, x2, y2;
+	int PosX = -1, PosY = -1, PosX2 = -1, PosY2 = -1;
+	int CursorPosX = -1, CursorPosY = -1;
+	double PosDistance = std::numeric_limits<double>::max(), MyCursorToPosDistance = std::numeric_limits<double>::max();
 
-
-	// actual distance  of cursor to above defined id.
-	double m_ClosestIDToCursorDistanceCT[MAX_CLIENTS];
-
-	for (int i = 0; i < MAX_CLIENTS; ++i)
+	for (int i = 0; i < MAX_CLIENTS; i++)
 	{
-		TickPlayer current = m_aPlayersCurrentTick[i];
-		x = current.m_Core_X;
-		y = current.m_Core_Y;
-		int curentCursorX = x + current.m_Input_TargetX;
-		int currentCursorY = y + current.m_Input_TargetY;
-
-		// initial min search init with max value
-		m_ClosestDistanceToCurrentIDCT[i] = std::numeric_limits<double>::max();
-		m_ClosestIDToCursorCT[i] = i;
-		m_ClosestIDToCursorDistanceCT[i] = std::numeric_limits<double>::max();
-		for (int j = 0; j < MAX_CLIENTS; ++j)
+		if (m_GameContext->m_apPlayers[i])
 		{
-			TickPlayer other = m_aPlayersCurrentTick[j];
-			x2 = other.m_Core_X;
-			y2 = other.m_Core_Y;
+			// ID i's positions
+			PosX = m_aPlayersCurrentTick[i].m_Core_X;
+			PosY = m_aPlayersCurrentTick[i].m_Core_Y;
+			CursorPosX = PosX + m_aPlayersCurrentTick[i].m_Input_TargetX;
+			CursorPosY = PosY + m_aPlayersCurrentTick[i].m_Input_TargetY;
 
-			if (i != j)
+			m_ClosestIDToCurrentIDCT[i] = -1;
+			m_ClosestDistanceToCurrentIDCT[i] = std::numeric_limits<double>::max();
+			m_ClosestIDToCursorDistanceCT[i] = std::numeric_limits<double>::max();
+
+			for (int j = 0; j < MAX_CLIENTS; j++)
 			{
-				// fill distance matrix
-				m_PlayerDistanceCT[i][j] = sqrt((x - x2) * (x - x2) + (y - y2) * (y - y2));
-				if (m_PlayerDistanceCT[i][j] < m_ClosestDistanceToCurrentIDCT[i])
+				if (m_GameContext->m_apPlayers[j])
 				{
-					// fill closest distance array with closest player ids
-					m_ClosestDistanceToCurrentIDCT[i] = m_PlayerDistanceCT[i][j];
-					// fill distance array with distances
-					m_ClosestIDToCurrentIDCT[i] = j;
-					// update player cursor position's distance to closest player (to player position)
-					m_CursorToClosestDistanceIDCT[i] = sqrt((curentCursorX - x2) * (curentCursorX - x2) + (currentCursorY - y2) * (currentCursorY - y2));
+					if (i != j)
+					{
+						// ID j's positions
+						PosX2 = m_aPlayersCurrentTick[j].m_Core_X;
+						PosY2 = m_aPlayersCurrentTick[j].m_Core_Y;
+						// player distance
+						PosDistance = sqrt(pow(PosX - PosX2, 2) + pow(PosY - PosY2, 2));
+						// cursor of i to player j distance
+						MyCursorToPosDistance = sqrt(pow(CursorPosX - PosX2, 2) + pow(CursorPosY - PosY2, 2));
+
+					} else {
+						PosDistance = std::numeric_limits<double>::max();
+						MyCursorToPosDistance = std::numeric_limits<double>::max();
+					}
+
+					// set player distances
+					if (PosDistance == std::numeric_limits<double>::max())
+					{
+						// if player is actually yourself
+						m_PlayerDistanceCT[i][j] = -1;
+					}
+						// if player is someone else;
+						m_PlayerDistanceCT[i][j] = PosDistance;
+
+					if (PosDistance < m_ClosestDistanceToCurrentIDCT[i])
+					{
+						m_ClosestDistanceToCurrentIDCT[i] = PosDistance;
+						m_ClosestIDToCurrentIDCT[i] = j;
+						m_CursorToClosestDistanceIDCT[i] = MyCursorToPosDistance;
+					}
+
+					if (MyCursorToPosDistance < m_ClosestIDToCursorDistanceCT[i])
+					{
+						m_ClosestIDToCursorDistanceCT[i] = MyCursorToPosDistance;
+						m_ClosestIDToCursorCT[i] = j;
+					}
+
+
 				}
 
-			} else {
-				m_PlayerDistanceCT[i][j] = 0;
 
 			}
+			// check if only you are online
+			if (m_ClosestDistanceToCurrentIDCT[i] == std::numeric_limits<double>::max())
+			{
+				m_ClosestDistanceToCurrentIDCT[i] = -1;
+				m_ClosestIDToCurrentIDCT[i] = -1;
 
+			}
+			// check if you are alone on the server, thus setting distance to -1
+			if (m_ClosestIDToCursorDistanceCT[i] == std::numeric_limits<double>::max())
+			{
+				m_ClosestIDToCursorDistanceCT[i] = -1;
+						m_ClosestIDToCursorCT[i] = -1;
+			}
+			// set cursor distance to closest player(by position distance) to -1 if you are alone on the server.
+			if (m_CursorToClosestDistanceIDCT[i] ==  std::numeric_limits<double>::max())
+			{
+				m_CursorToClosestDistanceIDCT[i] = -1;
+			}
 
+			// reset variables
+			PosX = -1;
+			PosY = -1;
+			CursorPosX = -1;
+			CursorPosX = -1;
+			PosX2 = -1;
+			PosY2 = -1;
+			PosDistance = -1;
+			MyCursorToPosDistance = -1;
 		}
-
 	}
+
+
+
 }
 
 
@@ -292,17 +349,18 @@ void CBotDetection::ResetCurrentTick() {
 
 char* CBotDetection::GetInfoString(int ClientID) {
 	char *aBuf = (char*)malloc(sizeof(char) * 512);
-	str_format(aBuf, 512, " %s : CD: %.2f CCD: %.2f", m_GameContext->Server()->ClientName(ClientID),
-	           m_ClosestDistanceToCurrentIDCT[ClientID], m_ClosestIDToCursorDistanceCT[ClientID]);
+	str_format(aBuf, 512, " %16s : CD: %.2f CCD: %.2f CDC: %.2f", m_GameContext->Server()->ClientName(ClientID),
+	          m_ClosestDistanceToCurrentIDCT[ClientID], m_ClosestIDToCursorDistanceCT[ClientID], m_ClosestIDToCursorDistanceCT[ClientID]);
+
 	return aBuf;
 }
 
-void CBotDetection::OnPlayerConnect(int ClientID){
+void CBotDetection::OnPlayerConnect(int ClientID) {
 
 
 }
 
-void CBotDetection::OnPlayerDisconnect(int ClientID){
+void CBotDetection::OnPlayerDisconnect(int ClientID) {
 
 }
 

@@ -138,4 +138,5 @@ MACRO_CONFIG_INT(SvShotgunRegenerationTime, sv_shotgun_regeneration_time, 1000, 
 MACRO_CONFIG_INT(SvSqliteHistorian, sv_sqlite_historian, 0, 0, 1, CFGFLAG_SERVER, "Enable SQLite logging: Needs sv_tee_historian 1 (enabled) in order to work. May cause lag if the sqlite file gets too big. Change sv_sqlite_historian_file to \"\" and execute save_tee_historian to create an new file.")
 MACRO_CONFIG_STR(SvSqliteHistorianFileName, sv_sqlite_historian_file, 64, "", CFGFLAG_SERVER, "Sqlite Historian file name. Change to have an own file format or leave as is to have the default format.")
 MACRO_CONFIG_INT(SvBotDetection, sv_bot_detection, 1, 0, 1, CFGFLAG_SERVER, "Enable(1) or disables(0) bot detection.")
+MACRO_CONFIG_STR(SvBotDetectionFile, sv_bot_detection_file, 64, "botdetection", CFGFLAG_SERVER, "Bot detection file name.")
 #endif
