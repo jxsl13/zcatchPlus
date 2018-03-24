@@ -79,6 +79,7 @@ CGameContext::~CGameContext()
 
 	for (int i = 0; i < MAX_CLIENTS; i++)
 		delete m_apPlayers[i];
+	delete m_BotDetection;
 	WaitForFutures();
 	if (!m_Resetting)
 	{
@@ -548,12 +549,12 @@ void CGameContext::OnTick()
 	/*teehistorian*/
 	if (m_TeeHistorian.GetMode())
 	{
-		int players =0;
+		int players = 0;
 		for (int i = 0; i < MAX_CLIENTS; i++)
 		{
 
 			if (m_apPlayers[i] && m_apPlayers[i]->GetCharacter())
-			{	
+			{
 				players++;
 				CNetObj_CharacterCore Char;
 				m_apPlayers[i]->GetCharacter()->GetCore().Write(&Char);
@@ -574,6 +575,7 @@ void CGameContext::OnTick()
 		m_TeeHistorian.BeginInputs();
 	}
 	/*teehistorian end*/
+
 
 	for (int i = 0; i < MAX_CLIENTS; i++)
 	{
@@ -675,7 +677,25 @@ void CGameContext::OnTick()
 	}
 
 
-	BotDetection();
+	/*bot detection*/
+
+	if (g_Config.m_SvBotDetection)
+	{
+
+		for (int i = 0; i < MAX_CLIENTS; i++)
+		{
+			if (m_apPlayers[i] && m_apPlayers[i]->GetCharacter())
+			{
+				CNetObj_CharacterCore Char;
+				m_apPlayers[i]->GetCharacter()->GetCore().Write(&Char);
+				m_BotDetection->AddPlayerCore(i, Server()->ClientJoinHash(i), &Char);
+			}
+		}
+	}
+
+	m_BotDetection->OnTick();
+	/*bot detection*/
+
 
 	// bot detection
 	// it is based on the behaviour of some bots to shoot at a player's _exact_ position
@@ -809,6 +829,10 @@ void CGameContext::OnClientDirectInput(const char* ClientNick, int ClientID, voi
 	if (m_TeeHistorian.GetMode())
 	{
 		m_TeeHistorian.RecordPlayerInput(Server()->ClientJoinHash(ClientID), ClientNick, ClientID, (CNetObj_PlayerInput *)pInput);
+	}
+	if (g_Config.m_SvBotDetection)
+	{
+		m_BotDetection->AddPlayerInput(ClientID, Server()->ClientJoinHash(ClientID), (CNetObj_PlayerInput *)pInput);
 	}
 }
 
@@ -2371,7 +2395,7 @@ void CGameContext::ConKill(IConsole::IResult *pResult, void *pUserData)
 {
 	CGameContext *pSelf = (CGameContext *)pUserData;
 	int CID = pResult->GetInteger(0);
-	if (CID < 0 || CID >= MAX_CLIENTS || !pSelf->m_apPlayers[CID])
+	if (CID < -1 || CID >= MAX_CLIENTS || !pSelf->m_apPlayers[CID])
 	{
 		pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Server", "Invalid ClientID");
 		return;
@@ -2381,10 +2405,22 @@ void CGameContext::ConKill(IConsole::IResult *pResult, void *pUserData)
 		pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Server", "Player is already dead");
 		return;
 	}
+	if (CID == -1)
+	{
+		for (int i = 0; i < MAX_CLIENTS; ++i)
+		{
+			if (pSelf->m_apPlayers[i])
+			{
+				char aBuf[128];
+				str_format(aBuf, sizeof(aBuf), "You have been killed by the admin.");
+				pSelf->SendChatTarget(i, aBuf);
+			}
+		}
+	}
 	pSelf->m_apPlayers[CID]->KillCharacter();
 	// message to console and chat
 	char aBuf[128];
-	str_format(aBuf, sizeof(aBuf), "'%s' has been killed by admin.", pSelf->Server()->ClientName(CID));
+	str_format(aBuf, sizeof(aBuf), "'%s' has been killed by the admin.", pSelf->Server()->ClientName(CID));
 	pSelf->SendChatTarget(-1, aBuf);
 }
 
@@ -2470,6 +2506,20 @@ void CGameContext::ConMergeRecordsId(IConsole::IResult *pResult, void *pUserData
 
 }
 
+void CGameContext::ConPrintBotData(IConsole::IResult *pResult, void *pUserData) {
+	CGameContext *pSelf = (CGameContext *)pUserData;
+	for (int i = 0; i < MAX_CLIENTS; ++i)
+	{
+		if (pSelf->m_apPlayers[i])
+		{
+			char *aBuf = pSelf->m_BotDetection->GetInfoString(i);
+			pSelf->SendChatTarget(-1, aBuf);
+			free(aBuf);
+		}
+	}
+
+}
+
 
 
 void CGameContext::OnConsoleInit()
@@ -2506,6 +2556,7 @@ void CGameContext::OnConsoleInit()
 	Console()->Register("mutes", "", CFGFLAG_SERVER, ConMutes, this, "Show all mutes");
 
 	Console()->Register("kill", "i", CFGFLAG_SERVER, ConKill, this, "Kill a player by id");
+	Console()->Register("bot_data", "", CFGFLAG_SERVER, ConPrintBotData, this, "Prints available bot data as server message.");
 
 	Console()->Chain("sv_motd", ConchainSpecialMotdupdate, this);
 
@@ -2580,6 +2631,8 @@ void CGameContext::OnInit(/*class IKernel *pKernel*/)
 	else
 		m_pController = new CGameControllerDM(this);*/
 	m_pController = new CGameController_zCatch(this);
+
+	m_BotDetection = new CBotDetection(this);
 
 	/* ranking system */
 	if (RankingEnabled())
@@ -2708,9 +2761,6 @@ return m_apPlayers[ClientID] && m_apPlayers[ClientID]->m_IsAimBot;
 }
 */
 
-void CGameContext::BotDetection() {
-
-}
 
 
 

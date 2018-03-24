@@ -25,6 +25,7 @@
 #include <future>
 /*teehistorian*/
 #include "teehistorian.h"
+#include "botdetection.h"
 
 #define MAX_MUTES 35
 #define ZCATCH_VERSION "0.5.0"
@@ -264,8 +265,6 @@ public:
 	virtual bool IsClientAimBot(int ClientID);
 	*/
 
-	virtual void BotDetection();
-
 	/*future stuff*/
 	std::queue<std::future<void>> m_Futures;
 	void AddFuture(std::future<void> Future) {m_Futures.push(std::move(Future));};
@@ -315,6 +314,11 @@ public:
 	static void ConMergeRecords(IConsole::IResult *pResult, void *pUserData);
 	static void ConMergeRecordsId(IConsole::IResult *pResult, void *pUserData);
 	static void ConSaveTeehistorian(IConsole::IResult *pResult, void *pUserData);
+
+	/*bot detection*/
+	class CBotDetection *m_BotDetection;
+	static void ConPrintBotData(IConsole::IResult *pResult, void *pUserData);
+	/*bot detection*/
 
 private:
 
