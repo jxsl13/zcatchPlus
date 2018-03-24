@@ -1,3 +1,5 @@
+#ifndef BASE_SQLITE_H
+#define BASE_SQLITE_H
 #include <mutex>
 #include <chrono>
 #include <engine/external/sqlite/sqlite3.h>
@@ -191,3 +193,4 @@ char *sqlite_expand(sqlite3_stmt *pStmt);
  */
 void sqlite_free(void *ErrMsg);
 
+#endif
