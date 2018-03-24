@@ -5,6 +5,7 @@
 #include <game/server/gamecontext.h>
 #include "botdetectionstructs.h"
 #include <queue>
+#include <base/sqlite.h>
 
 class CBotDetection
 {
@@ -26,7 +27,7 @@ public:
 
 
 private:
-	sqlite3_db* m_SqliteDB;
+	sqlite3 *m_SqliteDB;
 	CGameContext *m_GameContext;
 	TickPlayer m_aPlayersCurrentTick[MAX_CLIENTS];
 
