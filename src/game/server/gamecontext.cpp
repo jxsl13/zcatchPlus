@@ -926,7 +926,7 @@ void CGameContext::OnClientConnected(int ClientID)
 			return;
 	}
 #endif
-
+	m_BotDetection->OnPlayerConnect(ClientID);
 	// send active vote
 	if (m_VoteCloseTime)
 		SendVoteSet(ClientID);
@@ -943,6 +943,8 @@ void CGameContext::OnClientDrop(int ClientID, const char *pReason)
 	if (m_apPlayers[ClientID]->m_CaughtBy > CPlayer::ZCATCH_NOT_CAUGHT)
 		m_apPlayers[m_apPlayers[ClientID]->m_CaughtBy]->ReleaseZCatchVictim(ClientID);
 
+	m_BotDetection->OnPlayerDisconnect(ClientID);
+
 	AbortVoteKickOnDisconnect(ClientID);
 	m_apPlayers[ClientID]->OnDisconnect(pReason);
 	delete m_apPlayers[ClientID];
@@ -957,6 +959,7 @@ void CGameContext::OnClientDrop(int ClientID, const char *pReason)
 		if (m_apPlayers[i] && m_apPlayers[i]->m_SpectatorID == ClientID)
 			m_apPlayers[i]->m_SpectatorID = SPEC_FREEVIEW;
 	}
+
 }
 
 /**

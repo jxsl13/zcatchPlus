@@ -15,6 +15,8 @@ public:
 	void AddPlayerCore(int ClientID, int JoinHash, CNetObj_CharacterCore *PlayerCore);
 	void AddPlayerInput(int ClientID, int JoinHash, CNetObj_PlayerInput *PlayerInput);
 	void OnTick();
+	void OnPlayerConnect(int ClientID);
+	void OnPlayerDisconnect(int ClientID);
 
 	void ManageLastInputQueue();
 	void CalculateDistanceToEveryPlayer();
@@ -28,7 +30,9 @@ private:
 	TickPlayer m_aPlayersCurrentTick[MAX_CLIENTS];
 
 
+	std::queue<TickPlayer> m_aPlayerBacklog[MAX_CLIENTS];
 	std::queue<TickPlayer> m_aPlayerInputBacklog[MAX_CLIENTS];
+	std::queue<TickPlayer> m_aPlayerCoreBacklog[MAX_CLIENTS];
 	// CT = current tick
 	double m_PlayerDistanceCT[MAX_CLIENTS][MAX_CLIENTS];
 
@@ -48,7 +52,8 @@ private:
 	double m_ClosestIDToCursorDistanceCT[MAX_CLIENTS];
 
 
-
+	static void SetCore(TickPlayer Target, TickPlayer Source);
+	static void SetInput(TickPlayer Target, TickPlayer Source);
 
 };
 
