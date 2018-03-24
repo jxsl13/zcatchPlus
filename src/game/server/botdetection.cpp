@@ -1,7 +1,6 @@
 #include "botdetection.h"
 #include <cstdlib>
 #include <limits>
-#include <base/sqlite.h>
 
 
 
