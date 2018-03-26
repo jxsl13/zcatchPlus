@@ -105,6 +105,14 @@ private:
 
 	int m_CountPlayerInSightInArea[10][MAX_CLIENTS];
 
+	// angles on shot and on hook
+	double m_AvgAngleDifferenceOnShot[10][MAX_CLIENTS];
+	double m_SumAngleDifferenceOnShot[10][MAX_CLIENTS];
+	int m_NumShotsInArea[10][MAX_CLIENTS];
+
+	double m_AvgAngleDifferenceOnHook[10][MAX_CLIENTS];
+	double m_SumAngleDifferenceOnHook[10][MAX_CLIENTS];
+	int m_NumHooksInArea[10][MAX_CLIENTS];
 
 	int EnemyInSight(int ClientID, int EnemyID);
 
@@ -127,7 +135,7 @@ private:
 	void CreateDatabase(const char* filename);
 	void CloseDatabase();
 	void CreatePlayerAvgTable();
-	void InsertIntoPlayerAvgTable(int ClientID, int JoinHash, const char* NickName, char *TimeStampJoined, char *TimeStampLeft, double AngleAreas[10][MAX_CLIENTS], double CursorAreas[10][MAX_CLIENTS], double MinDistanceFromBody, double MaxDistanceFromBody, double AvgDistanceFromBody);
+	void InsertIntoPlayerAvgTable(int ClientID, int JoinHash, const char* NickName, char *TimeStampJoined, char *TimeStampLeft, double AngleAreas[10][MAX_CLIENTS], double AngleAreasOnShot[10][MAX_CLIENTS], double AngleAreasOnHook[10][MAX_CLIENTS], double MinAngleAreas[10][MAX_CLIENTS], double CursorAreas[10][MAX_CLIENTS], double MinDistanceFromBody, double MaxDistanceFromBody, double AvgDistanceFromBody);
 	char* GetTimeStamp();
 
 };

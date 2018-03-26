@@ -7,6 +7,7 @@ struct TickPlayer
 {
 	int m_JoinHash;
 	int m_ClientID;
+	int m_JoinTick;
 
 	bool m_CoreAvailable;
 	int m_Core_Tick;

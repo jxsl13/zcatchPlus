@@ -238,7 +238,7 @@ void CBotDetection::CalculatePlayerRelations() {
 
 	for (int i = 0; i < MAX_CLIENTS; i++)
 	{
-		if (m_GameContext->m_apPlayers[i])
+		if (m_GameContext->m_apPlayers[i] && m_aPlayersCurrentTick[i].m_Core_Tick - m_aPlayersCurrentTick[i].m_JoinTick > 250)
 		{
 			// ID i's positions
 			PosX = m_aPlayersCurrentTick[i].m_Core_X;
@@ -290,14 +290,19 @@ void CBotDetection::CalculatePlayerRelations() {
 
 					if (PosDistance < m_ClosestDistanceToCurrentIDCT[i])
 					{
+						// closest player distance
 						m_ClosestDistanceToCurrentIDCT[i] = PosDistance;
+						// closest player id
 						m_ClosestIDToCurrentIDCT[i] = j;
+						// cursor distance to this player
 						m_CursorToClosestDistanceIDCT[i] = MyCursorToPosDistance;
+						// angle to nearest player from player positions, not cursor.
 						m_AngleToNearestPlayer[i] = Angle(PosX, PosY, PosX2, PosY2);
 					}
 
 					if (MyCursorToPosDistance < m_ClosestIDToCursorDistanceCT[i])
 					{
+						// closest distance from cursor position to any enemy player
 						m_ClosestIDToCursorDistanceCT[i] = MyCursorToPosDistance;
 						m_ClosestIDToCursorCT[i] = j;
 					}
@@ -325,6 +330,22 @@ void CBotDetection::CalculatePlayerRelations() {
 							{
 								m_MinCursorAngleToPlayerAngleDifferenceInArea[1][i] = diff;
 							}
+
+							if (m_aPlayersCurrentTick[i].m_Input_Fire)
+							{
+								m_NumShotsInArea[1][i]++;
+								m_SumAngleDifferenceOnShot[1][i] += diff;
+								m_AvgAngleDifferenceOnShot[1][i] = m_SumAngleDifferenceOnShot[1][i] / m_NumShotsInArea[1][i];
+
+							}
+							if (m_aPlayersCurrentTick[i].m_Input_Hook)
+							{
+								m_NumHooksInArea[1][i]++;
+								m_SumAngleDifferenceOnHook[1][i] += diff;
+								m_AvgAngleDifferenceOnHook[1][i] = m_SumAngleDifferenceOnHook[1][i] / m_NumHooksInArea[1][i];
+
+							}
+
 							break;
 						case 2:
 							m_SumAngleToPlayerDifferenceInArea[2][i] += diff;;
@@ -336,6 +357,22 @@ void CBotDetection::CalculatePlayerRelations() {
 							{
 								m_MinCursorAngleToPlayerAngleDifferenceInArea[2][i] = diff;
 							}
+
+							if (m_aPlayersCurrentTick[i].m_Input_Fire)
+							{
+								m_NumShotsInArea[2][i]++;
+								m_SumAngleDifferenceOnShot[2][i] += diff;
+								m_AvgAngleDifferenceOnShot[2][i] = m_SumAngleDifferenceOnShot[2][i] / m_NumShotsInArea[2][i];
+
+							}
+							if (m_aPlayersCurrentTick[i].m_Input_Hook)
+							{
+								m_NumHooksInArea[2][i]++;
+								m_SumAngleDifferenceOnHook[2][i] += diff;
+								m_AvgAngleDifferenceOnHook[2][i] = m_SumAngleDifferenceOnHook[2][i] / m_NumHooksInArea[2][i];
+
+							}
+
 							break;
 						case 3:
 							m_SumAngleToPlayerDifferenceInArea[3][i] += diff;;
@@ -347,6 +384,22 @@ void CBotDetection::CalculatePlayerRelations() {
 							{
 								m_MinCursorAngleToPlayerAngleDifferenceInArea[3][i] = diff;
 							}
+
+							if (m_aPlayersCurrentTick[i].m_Input_Fire)
+							{
+								m_NumShotsInArea[3][i]++;
+								m_SumAngleDifferenceOnShot[3][i] += diff;
+								m_AvgAngleDifferenceOnShot[3][i] = m_SumAngleDifferenceOnShot[3][i] / m_NumShotsInArea[3][i];
+
+							}
+							if (m_aPlayersCurrentTick[i].m_Input_Hook)
+							{
+								m_NumHooksInArea[3][i]++;
+								m_SumAngleDifferenceOnHook[3][i] += diff;
+								m_AvgAngleDifferenceOnHook[3][i] = m_SumAngleDifferenceOnHook[3][i] / m_NumHooksInArea[3][i];
+
+							}
+
 							break;
 						case 4:
 							m_SumAngleToPlayerDifferenceInArea[4][i] += diff;;
@@ -358,6 +411,22 @@ void CBotDetection::CalculatePlayerRelations() {
 							{
 								m_MinCursorAngleToPlayerAngleDifferenceInArea[4][i] = diff;
 							}
+
+							if (m_aPlayersCurrentTick[i].m_Input_Fire)
+							{
+								m_NumShotsInArea[4][i]++;
+								m_SumAngleDifferenceOnShot[4][i] += diff;
+								m_AvgAngleDifferenceOnShot[4][i] = m_SumAngleDifferenceOnShot[4][i] / m_NumShotsInArea[4][i];
+
+							}
+							if (m_aPlayersCurrentTick[i].m_Input_Hook)
+							{
+								m_NumHooksInArea[4][i]++;
+								m_SumAngleDifferenceOnHook[4][i] += diff;
+								m_AvgAngleDifferenceOnHook[4][i] = m_SumAngleDifferenceOnHook[4][i] / m_NumHooksInArea[4][i];
+
+							}
+
 							break;
 						case 5:
 							m_SumAngleToPlayerDifferenceInArea[5][i] += diff;;
@@ -369,6 +438,22 @@ void CBotDetection::CalculatePlayerRelations() {
 							{
 								m_MinCursorAngleToPlayerAngleDifferenceInArea[5][i] = diff;
 							}
+
+							if (m_aPlayersCurrentTick[i].m_Input_Fire)
+							{
+								m_NumShotsInArea[5][i]++;
+								m_SumAngleDifferenceOnShot[5][i] += diff;
+								m_AvgAngleDifferenceOnShot[5][i] = m_SumAngleDifferenceOnShot[5][i] / m_NumShotsInArea[5][i];
+
+							}
+							if (m_aPlayersCurrentTick[i].m_Input_Hook)
+							{
+								m_NumHooksInArea[5][i]++;
+								m_SumAngleDifferenceOnHook[5][i] += diff;
+								m_AvgAngleDifferenceOnHook[5][i] = m_SumAngleDifferenceOnHook[5][i] / m_NumHooksInArea[5][i];
+
+							}
+
 							break;
 						case 6:
 							m_SumAngleToPlayerDifferenceInArea[6][i] += diff;;
@@ -380,6 +465,22 @@ void CBotDetection::CalculatePlayerRelations() {
 							{
 								m_MinCursorAngleToPlayerAngleDifferenceInArea[6][i] = diff;
 							}
+
+							if (m_aPlayersCurrentTick[i].m_Input_Fire)
+							{
+								m_NumShotsInArea[6][i]++;
+								m_SumAngleDifferenceOnShot[6][i] += diff;
+								m_AvgAngleDifferenceOnShot[6][i] = m_SumAngleDifferenceOnShot[6][i] / m_NumShotsInArea[6][i];
+
+							}
+							if (m_aPlayersCurrentTick[i].m_Input_Hook)
+							{
+								m_NumHooksInArea[6][i]++;
+								m_SumAngleDifferenceOnHook[6][i] += diff;
+								m_AvgAngleDifferenceOnHook[6][i] = m_SumAngleDifferenceOnHook[6][i] / m_NumHooksInArea[6][i];
+
+							}
+
 							break;
 						case 7:
 							m_SumAngleToPlayerDifferenceInArea[7][i] += diff;;
@@ -391,6 +492,22 @@ void CBotDetection::CalculatePlayerRelations() {
 							{
 								m_MinCursorAngleToPlayerAngleDifferenceInArea[7][i] = diff;
 							}
+
+							if (m_aPlayersCurrentTick[i].m_Input_Fire)
+							{
+								m_NumShotsInArea[7][i]++;
+								m_SumAngleDifferenceOnShot[7][i] += diff;
+								m_AvgAngleDifferenceOnShot[7][i] = m_SumAngleDifferenceOnShot[7][i] / m_NumShotsInArea[7][i];
+
+							}
+							if (m_aPlayersCurrentTick[i].m_Input_Hook)
+							{
+								m_NumHooksInArea[7][i]++;
+								m_SumAngleDifferenceOnHook[7][i] += diff;
+								m_AvgAngleDifferenceOnHook[7][i] = m_SumAngleDifferenceOnHook[7][i] / m_NumHooksInArea[7][i];
+
+							}
+
 							break;
 						case 8:
 							m_SumAngleToPlayerDifferenceInArea[8][i] += diff;;
@@ -402,6 +519,22 @@ void CBotDetection::CalculatePlayerRelations() {
 							{
 								m_MinCursorAngleToPlayerAngleDifferenceInArea[8][i] = diff;
 							}
+
+							if (m_aPlayersCurrentTick[i].m_Input_Fire)
+							{
+								m_NumShotsInArea[8][i]++;
+								m_SumAngleDifferenceOnShot[8][i] += diff;
+								m_AvgAngleDifferenceOnShot[8][i] = m_SumAngleDifferenceOnShot[8][i] / m_NumShotsInArea[8][i];
+
+							}
+							if (m_aPlayersCurrentTick[i].m_Input_Hook)
+							{
+								m_NumHooksInArea[8][i]++;
+								m_SumAngleDifferenceOnHook[8][i] += diff;
+								m_AvgAngleDifferenceOnHook[8][i] = m_SumAngleDifferenceOnHook[8][i] / m_NumHooksInArea[8][i];
+
+							}
+
 							break;
 						case 9:
 							m_SumAngleToPlayerDifferenceInArea[9][i] += diff;;
@@ -413,6 +546,22 @@ void CBotDetection::CalculatePlayerRelations() {
 							{
 								m_MinCursorAngleToPlayerAngleDifferenceInArea[9][i] = diff;
 							}
+
+							if (m_aPlayersCurrentTick[i].m_Input_Fire)
+							{
+								m_NumShotsInArea[9][i]++;
+								m_SumAngleDifferenceOnShot[9][i] += diff;
+								m_AvgAngleDifferenceOnShot[9][i] = m_SumAngleDifferenceOnShot[9][i] / m_NumShotsInArea[9][i];
+
+							}
+							if (m_aPlayersCurrentTick[i].m_Input_Hook)
+							{
+								m_NumHooksInArea[9][i]++;
+								m_SumAngleDifferenceOnHook[9][i] += diff;
+								m_AvgAngleDifferenceOnHook[9][i] = m_SumAngleDifferenceOnHook[9][i] / m_NumHooksInArea[9][i];
+
+							}
+
 							break;
 						case 10:
 							m_SumAngleToPlayerDifferenceInArea[0][i] += diff;;
@@ -424,6 +573,22 @@ void CBotDetection::CalculatePlayerRelations() {
 							{
 								m_MinCursorAngleToPlayerAngleDifferenceInArea[0][i] = diff;
 							}
+
+							if (m_aPlayersCurrentTick[i].m_Input_Fire)
+							{
+								m_NumShotsInArea[0][i]++;
+								m_SumAngleDifferenceOnShot[0][i] += diff;
+								m_AvgAngleDifferenceOnShot[0][i] = m_SumAngleDifferenceOnShot[0][i] / m_NumShotsInArea[0][i];
+
+							}
+							if (m_aPlayersCurrentTick[i].m_Input_Hook)
+							{
+								m_NumHooksInArea[0][i]++;
+								m_SumAngleDifferenceOnHook[0][i] += diff;
+								m_AvgAngleDifferenceOnHook[0][i] = m_SumAngleDifferenceOnHook[0][i] / m_NumHooksInArea[0][i];
+
+							}
+
 							break;
 						default: break;
 						}
@@ -440,8 +605,6 @@ void CBotDetection::CalculatePlayerRelations() {
 
 		}
 	}
-
-
 
 }
 
@@ -611,6 +774,9 @@ void CBotDetection::OnPlayerDisconnect(int ClientID) {
 	                         m_TimeStampJoined[ClientID],
 	                         GetTimeStamp(),
 	                         m_AvgCursorAngleToPlayerAngleDifferenceInArea,
+	                         m_AvgAngleDifferenceOnShot,
+	                         m_AvgAngleDifferenceOnHook,
+	                         m_MinCursorAngleToPlayerAngleDifferenceInArea,
 	                         m_AvgCursorToPlayerIfInSightInAreaDistance,
 	                         m_MinDistanceFromBody[ClientID],
 	                         m_MaxDistanceFromBody[ClientID],
@@ -668,6 +834,7 @@ void CBotDetection::ResetLongTimeData(int ClientID) {
 	m_AvgDistanceSum[ClientID] = 0;
 	m_AvgDistanceFromBody[ClientID] = 0;
 	m_InputCount[ClientID] = 0;
+	m_aPlayersCurrentTick[ClientID].m_JoinTick = m_aPlayersCurrentTick[ClientID].m_Core_Tick;
 
 	for (int i = 0; i < 10; ++i)
 	{
@@ -681,6 +848,15 @@ void CBotDetection::ResetLongTimeData(int ClientID) {
 		m_CountPlayerInSightInArea[i][ClientID] = 0;
 
 		m_MinCursorAngleToPlayerAngleDifferenceInArea[i][ClientID] = std::numeric_limits<double>::max();
+
+		// angles on shots
+		m_AvgAngleDifferenceOnShot[i][ClientID] = 0;
+		m_SumAngleDifferenceOnShot[i][ClientID] = 0;
+		m_NumShotsInArea[i][ClientID] = 0;
+
+		m_AvgAngleDifferenceOnHook[i][ClientID] = 0;
+		m_SumAngleDifferenceOnHook[i][ClientID] = 0;
+		m_NumHooksInArea[i][ClientID] = 0;
 
 	}
 
@@ -725,6 +901,36 @@ void CBotDetection::CreatePlayerAvgTable() {
 				AngleDiffArea8 DOUBLE, \
 				AngleDiffArea9 DOUBLE, \
 				AngleDiffArea10 DOUBLE, \
+				AngleDiffOnShotArea1 DOUBLE, \
+				AngleDiffOnShotArea2 DOUBLE, \
+				AngleDiffOnShotArea3 DOUBLE, \
+				AngleDiffOnShotArea4 DOUBLE, \
+				AngleDiffOnShotArea5 DOUBLE, \
+				AngleDiffOnShotArea6 DOUBLE, \
+				AngleDiffOnShotArea7 DOUBLE, \
+				AngleDiffOnShotArea8 DOUBLE, \
+				AngleDiffOnShotArea9 DOUBLE,	\
+				AngleDiffOnShotArea10 DOUBLE, \
+				AngleDiffOnHookArea1 DOUBLE, \
+				AngleDiffOnHookArea2 DOUBLE, \
+				AngleDiffOnHookArea3 DOUBLE, \
+				AngleDiffOnHookArea4 DOUBLE, \
+				AngleDiffOnHookArea5 DOUBLE, \
+				AngleDiffOnHookArea6 DOUBLE, \
+				AngleDiffOnHookArea7 DOUBLE, \
+				AngleDiffOnHookArea8 DOUBLE, \
+				AngleDiffOnHookArea9 DOUBLE,	\
+				AngleDiffOnHookArea10 DOUBLE, \
+				MinAngleDiffArea1 DOUBLE, \
+				MinAngleDiffArea2 DOUBLE, \
+				MinAngleDiffArea3 DOUBLE, \
+				MinAngleDiffArea4 DOUBLE, \
+				MinAngleDiffArea5 DOUBLE, \
+				MinAngleDiffArea6 DOUBLE, \
+				MinAngleDiffArea7 DOUBLE, \
+				MinAngleDiffArea8 DOUBLE, \
+				MinAngleDiffArea9 DOUBLE, \
+				MinAngleDiffArea10 DOUBLE, \
 				CursorDistArea1 DOUBLE, \
 				CursorDistArea2 DOUBLE, \
 				CursorDistArea3 DOUBLE, \
@@ -753,7 +959,7 @@ void CBotDetection::CreatePlayerAvgTable() {
 
 }
 
-void CBotDetection::InsertIntoPlayerAvgTable(int ClientID, int JoinHash, const char* NickName, char *TimeStampJoined, char *TimeStampLeft, double AngleAreas[10][MAX_CLIENTS], double CursorAreas[10][MAX_CLIENTS], double MinDistanceFromBody, double MaxDistanceFromBody, double AvgDistanceFromBody) {
+void CBotDetection::InsertIntoPlayerAvgTable(int ClientID, int JoinHash, const char* NickName, char *TimeStampJoined, char *TimeStampLeft, double AngleAreas[10][MAX_CLIENTS], double AngleAreasOnShot[10][MAX_CLIENTS], double AngleAreasOnHook[10][MAX_CLIENTS], double MinAngleAreas[10][MAX_CLIENTS], double CursorAreas[10][MAX_CLIENTS], double MinDistanceFromBody, double MaxDistanceFromBody, double AvgDistanceFromBody) {
 	/* prepare */
 	const char *zTail;
 	const char *zSql = "\
@@ -771,7 +977,37 @@ void CBotDetection::InsertIntoPlayerAvgTable(int ClientID, int JoinHash, const c
 				AngleDiffArea7, \
 				AngleDiffArea8, \
 				AngleDiffArea9,	\
-				AngleDiffArea10,	\
+				AngleDiffArea10, \
+				AngleDiffOnShotArea1, \
+				AngleDiffOnShotArea2, \
+				AngleDiffOnShotArea3, \
+				AngleDiffOnShotArea4, \
+				AngleDiffOnShotArea5, \
+				AngleDiffOnShotArea6, \
+				AngleDiffOnShotArea7, \
+				AngleDiffOnShotArea8, \
+				AngleDiffOnShotArea9,	\
+				AngleDiffOnShotArea10, \
+				AngleDiffOnHookArea1, \
+				AngleDiffOnHookArea2, \
+				AngleDiffOnHookArea3, \
+				AngleDiffOnHookArea4, \
+				AngleDiffOnHookArea5, \
+				AngleDiffOnHookArea6, \
+				AngleDiffOnHookArea7, \
+				AngleDiffOnHookArea8, \
+				AngleDiffOnHookArea9,	\
+				AngleDiffOnHookArea10, \
+				MinAngleDiffArea1, \
+				MinAngleDiffArea2, \
+				MinAngleDiffArea3, \
+				MinAngleDiffArea4, \
+				MinAngleDiffArea5, \
+				MinAngleDiffArea6, \
+				MinAngleDiffArea7, \
+				MinAngleDiffArea8, \
+				MinAngleDiffArea9, \
+				MinAngleDiffArea10, \
 				CursorDistArea1, \
 				CursorDistArea2, \
 				CursorDistArea3, \
@@ -786,7 +1022,65 @@ void CBotDetection::InsertIntoPlayerAvgTable(int ClientID, int JoinHash, const c
 				MaxDistanceFromBody, \
 				AvgDistanceFromBody \
 				) \
-		VALUES ( ?1, trim(?2), ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19, ?20, ?21, ?22, ?23, ?24, ?25, ?26, ?27) \
+		VALUES  \
+		(?1, \
+		trim(?2), \
+		?3, \
+		?4, \
+		?5, \
+		?6, \
+		?7, \
+		?8, \
+		?9, \
+		?10, \
+		?11, \
+		?12, \
+		?13, \
+		?14, \
+		?15, \
+		?16, \
+		?17, \
+		?18, \
+		?19, \
+		?20, \
+		?21, \
+		?22, \
+		?23, \
+		?24, \
+		?25, \
+		?26, \
+		?27, \
+		?28, \
+		?29, \
+		?30, \
+		?31, \
+		?32, \
+		?33, \
+		?34, \
+		?35, \
+		?36, \
+		?37, \
+		?38, \
+		?39, \
+		?40, \
+		?41, \
+		?42, \
+		?43, \
+		?44, \
+		?45, \
+		?46, \
+		?47, \
+		?48, \
+		?49, \
+		?50, \
+		?51, \
+		?52, \
+		?53, \
+		?54, \
+		?55, \
+		?56, \
+		?57 \
+		) \
 		;";
 	sqlite3_stmt *pStmt;
 	int rc = sqlite_prepare_statement(m_SqliteDB, zSql, &pStmt, &zTail);
@@ -810,20 +1104,53 @@ void CBotDetection::InsertIntoPlayerAvgTable(int ClientID, int JoinHash, const c
 		sqlite_bind_double(pStmt, 13, AngleAreas[9][ClientID]);
 		sqlite_bind_double(pStmt, 14, AngleAreas[0][ClientID]);
 
-		sqlite_bind_double(pStmt, 15, CursorAreas[1][ClientID]);
-		sqlite_bind_double(pStmt, 16, CursorAreas[2][ClientID]);
-		sqlite_bind_double(pStmt, 17, CursorAreas[3][ClientID]);
-		sqlite_bind_double(pStmt, 18, CursorAreas[4][ClientID]);
-		sqlite_bind_double(pStmt, 19, CursorAreas[5][ClientID]);
-		sqlite_bind_double(pStmt, 20, CursorAreas[6][ClientID]);
-		sqlite_bind_double(pStmt, 21, CursorAreas[7][ClientID]);
-		sqlite_bind_double(pStmt, 22, CursorAreas[8][ClientID]);
-		sqlite_bind_double(pStmt, 23, CursorAreas[9][ClientID]);
-		sqlite_bind_double(pStmt, 24, CursorAreas[0][ClientID]);
+		sqlite_bind_double(pStmt, 15, AngleAreasOnShot[1][ClientID]);
+		sqlite_bind_double(pStmt, 16, AngleAreasOnShot[2][ClientID]);
+		sqlite_bind_double(pStmt, 17, AngleAreasOnShot[3][ClientID]);
+		sqlite_bind_double(pStmt, 18, AngleAreasOnShot[4][ClientID]);
+		sqlite_bind_double(pStmt, 19, AngleAreasOnShot[5][ClientID]);
+		sqlite_bind_double(pStmt, 20, AngleAreasOnShot[6][ClientID]);
+		sqlite_bind_double(pStmt, 21, AngleAreasOnShot[7][ClientID]);
+		sqlite_bind_double(pStmt, 22, AngleAreasOnShot[8][ClientID]);
+		sqlite_bind_double(pStmt, 23, AngleAreasOnShot[9][ClientID]);
+		sqlite_bind_double(pStmt, 24, AngleAreasOnShot[0][ClientID]);
 
-		sqlite_bind_double(pStmt, 25, MinDistanceFromBody);
-		sqlite_bind_double(pStmt, 26, MaxDistanceFromBody);
-		sqlite_bind_double(pStmt, 27, AvgDistanceFromBody);
+		sqlite_bind_double(pStmt, 25, AngleAreasOnHook[1][ClientID]);
+		sqlite_bind_double(pStmt, 26, AngleAreasOnHook[2][ClientID]);
+		sqlite_bind_double(pStmt, 27, AngleAreasOnHook[3][ClientID]);
+		sqlite_bind_double(pStmt, 28, AngleAreasOnHook[4][ClientID]);
+		sqlite_bind_double(pStmt, 29, AngleAreasOnHook[5][ClientID]);
+		sqlite_bind_double(pStmt, 30, AngleAreasOnHook[6][ClientID]);
+		sqlite_bind_double(pStmt, 31, AngleAreasOnHook[7][ClientID]);
+		sqlite_bind_double(pStmt, 32, AngleAreasOnHook[8][ClientID]);
+		sqlite_bind_double(pStmt, 33, AngleAreasOnHook[9][ClientID]);
+		sqlite_bind_double(pStmt, 34, AngleAreasOnHook[0][ClientID]);
+
+		sqlite_bind_double(pStmt, 35, MinAngleAreas[1][ClientID]);
+		sqlite_bind_double(pStmt, 36, MinAngleAreas[2][ClientID]);
+		sqlite_bind_double(pStmt, 37, MinAngleAreas[3][ClientID]);
+		sqlite_bind_double(pStmt, 38, MinAngleAreas[4][ClientID]);
+		sqlite_bind_double(pStmt, 39, MinAngleAreas[5][ClientID]);
+		sqlite_bind_double(pStmt, 40, MinAngleAreas[6][ClientID]);
+		sqlite_bind_double(pStmt, 41, MinAngleAreas[7][ClientID]);
+		sqlite_bind_double(pStmt, 42, MinAngleAreas[8][ClientID]);
+		sqlite_bind_double(pStmt, 43, MinAngleAreas[9][ClientID]);
+		sqlite_bind_double(pStmt, 44, MinAngleAreas[0][ClientID]);
+
+		sqlite_bind_double(pStmt, 45, CursorAreas[1][ClientID]);
+		sqlite_bind_double(pStmt, 46, CursorAreas[2][ClientID]);
+		sqlite_bind_double(pStmt, 47, CursorAreas[3][ClientID]);
+		sqlite_bind_double(pStmt, 48, CursorAreas[4][ClientID]);
+		sqlite_bind_double(pStmt, 49, CursorAreas[5][ClientID]);
+		sqlite_bind_double(pStmt, 50, CursorAreas[6][ClientID]);
+		sqlite_bind_double(pStmt, 51, CursorAreas[7][ClientID]);
+		sqlite_bind_double(pStmt, 52, CursorAreas[8][ClientID]);
+		sqlite_bind_double(pStmt, 53, CursorAreas[9][ClientID]);
+		sqlite_bind_double(pStmt, 54, CursorAreas[0][ClientID]);
+
+		sqlite_bind_double(pStmt, 55, MinDistanceFromBody);
+		sqlite_bind_double(pStmt, 56, MaxDistanceFromBody);
+		sqlite_bind_double(pStmt, 57, AvgDistanceFromBody);
 
 		/* save to database */
 		switch (sqlite3_step(pStmt))
