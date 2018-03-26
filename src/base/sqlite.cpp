@@ -168,6 +168,10 @@ int sqlite_bind_text(sqlite3_stmt *SqlStatement, int pos, const char *value)
 	return sqlite3_bind_text(SqlStatement, pos, value, str_length(value), 0);
 }
 
+int sqlite_bind_double(sqlite3_stmt *SqlStatement, int pos, double value){
+	return sqlite3_bind_double(SqlStatement, pos, value);
+}
+
 /**
  * @brief retrieve error message
  * @details [long description]

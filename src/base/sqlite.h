@@ -132,6 +132,8 @@ int sqlite_bind_int(sqlite3_stmt* SqlStatement, int pos, int value);
  */
 int sqlite_bind_text(sqlite3_stmt* SqlStatement, int pos, const char* value);
 
+int sqlite_bind_double(sqlite3_stmt *SqlStatement, int pos, double value);
+
 /**
  * @brief retrieve error message
  * @details [long description]

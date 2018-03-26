@@ -10,16 +10,19 @@
 
 CBotDetection::CBotDetection(CGameContext *GameServer)
 {
+	m_DbMode = MODE_SQLITE;
 	m_GameContext = GameServer;
 	for (int i = 0; i < MAX_CLIENTS; ++i)
 	{
 		ResetID(i);
 		ResetAverages(i);
+
 	}
+	CreateDatabase("botdetection.db");
 }
 
 CBotDetection::~CBotDetection() {
-
+	CloseDatabase();
 }
 
 void CBotDetection::OnTick() {
@@ -321,49 +324,67 @@ void CBotDetection::CalculatePlayerRelations() {
 
 						switch (inSight) {
 						case 1:
-							m_SumCursorToPlayerIfInSightInAreaDistance[1][i] += diff;;
+							m_SumAngleToPlayerDifferenceInArea[1][i] += diff;;
 							m_CountPlayerInSightInArea[1][i]++;
-							m_AvgCursorToPlayerIfInSightInAreaDistance[1][i] = m_SumCursorToPlayerIfInSightInAreaDistance[1][i] / m_CountPlayerInSightInArea[1][i]++;
+							m_AvgCursorAngleToPlayerAngleDifferenceInArea[1][i] = m_SumAngleToPlayerDifferenceInArea[1][i] / m_CountPlayerInSightInArea[1][i];
+							m_SumCursorToPlayerIfInSightInAreaDistance[1][i] += MyCursorToPosDistance;
+							m_AvgCursorToPlayerIfInSightInAreaDistance[1][i] = m_SumCursorToPlayerIfInSightInAreaDistance[1][i] / m_CountPlayerInSightInArea[1][i];
 							break;
 						case 2:
-							m_SumCursorToPlayerIfInSightInAreaDistance[2][i] += diff;;
+							m_SumAngleToPlayerDifferenceInArea[2][i] += diff;;
 							m_CountPlayerInSightInArea[2][i]++;
-							m_AvgCursorToPlayerIfInSightInAreaDistance[2][i] = m_SumCursorToPlayerIfInSightInAreaDistance[2][i] / m_CountPlayerInSightInArea[2][i]++;
+							m_AvgCursorAngleToPlayerAngleDifferenceInArea[2][i] = m_SumAngleToPlayerDifferenceInArea[2][i] / m_CountPlayerInSightInArea[2][i];
+							m_SumCursorToPlayerIfInSightInAreaDistance[2][i] += MyCursorToPosDistance;
+							m_AvgCursorToPlayerIfInSightInAreaDistance[2][i] = m_SumCursorToPlayerIfInSightInAreaDistance[2][i] / m_CountPlayerInSightInArea[2][i];
 							break;
 						case 3:
-							m_SumCursorToPlayerIfInSightInAreaDistance[3][i] += diff;;
+							m_SumAngleToPlayerDifferenceInArea[3][i] += diff;;
 							m_CountPlayerInSightInArea[3][i]++;
-							m_AvgCursorToPlayerIfInSightInAreaDistance[3][i] = m_SumCursorToPlayerIfInSightInAreaDistance[3][i] / m_CountPlayerInSightInArea[3][i]++;
+							m_AvgCursorAngleToPlayerAngleDifferenceInArea[3][i] = m_SumAngleToPlayerDifferenceInArea[3][i] / m_CountPlayerInSightInArea[3][i];
+							m_SumCursorToPlayerIfInSightInAreaDistance[3][i] += MyCursorToPosDistance;
+							m_AvgCursorToPlayerIfInSightInAreaDistance[3][i] = m_SumCursorToPlayerIfInSightInAreaDistance[3][i] / m_CountPlayerInSightInArea[3][i];
 							break;
 						case 4:
-							m_SumCursorToPlayerIfInSightInAreaDistance[4][i] += diff;;
+							m_SumAngleToPlayerDifferenceInArea[4][i] += diff;;
 							m_CountPlayerInSightInArea[4][i]++;
-							m_AvgCursorToPlayerIfInSightInAreaDistance[4][i] = m_SumCursorToPlayerIfInSightInAreaDistance[4][i] / m_CountPlayerInSightInArea[4][i]++;
+							m_AvgCursorAngleToPlayerAngleDifferenceInArea[4][i] = m_SumAngleToPlayerDifferenceInArea[4][i] / m_CountPlayerInSightInArea[4][i];
+							m_SumCursorToPlayerIfInSightInAreaDistance[4][i] += MyCursorToPosDistance;
+							m_AvgCursorToPlayerIfInSightInAreaDistance[4][i] = m_SumCursorToPlayerIfInSightInAreaDistance[4][i] / m_CountPlayerInSightInArea[4][i];
 							break;
 						case 5:
-							m_SumCursorToPlayerIfInSightInAreaDistance[5][i] += diff;;
+							m_SumAngleToPlayerDifferenceInArea[5][i] += diff;;
 							m_CountPlayerInSightInArea[5][i]++;
-							m_AvgCursorToPlayerIfInSightInAreaDistance[5][i] = m_SumCursorToPlayerIfInSightInAreaDistance[5][i] / m_CountPlayerInSightInArea[5][i]++;
+							m_AvgCursorAngleToPlayerAngleDifferenceInArea[5][i] = m_SumAngleToPlayerDifferenceInArea[5][i] / m_CountPlayerInSightInArea[5][i];
+							m_SumCursorToPlayerIfInSightInAreaDistance[5][i] += MyCursorToPosDistance;
+							m_AvgCursorToPlayerIfInSightInAreaDistance[5][i] = m_SumCursorToPlayerIfInSightInAreaDistance[5][i] / m_CountPlayerInSightInArea[5][i];
 							break;
 						case 6:
-							m_SumCursorToPlayerIfInSightInAreaDistance[6][i] += diff;;
+							m_SumAngleToPlayerDifferenceInArea[6][i] += diff;;
 							m_CountPlayerInSightInArea[6][i]++;
-							m_AvgCursorToPlayerIfInSightInAreaDistance[6][i] = m_SumCursorToPlayerIfInSightInAreaDistance[6][i] / m_CountPlayerInSightInArea[6][i]++;
+							m_AvgCursorAngleToPlayerAngleDifferenceInArea[6][i] = m_SumAngleToPlayerDifferenceInArea[6][i] / m_CountPlayerInSightInArea[6][i];
+							m_SumCursorToPlayerIfInSightInAreaDistance[6][i] += MyCursorToPosDistance;
+							m_AvgCursorToPlayerIfInSightInAreaDistance[6][i] = m_SumCursorToPlayerIfInSightInAreaDistance[6][i] / m_CountPlayerInSightInArea[6][i];
 							break;
 						case 7:
-							m_SumCursorToPlayerIfInSightInAreaDistance[7][i] += diff;;
+							m_SumAngleToPlayerDifferenceInArea[7][i] += diff;;
 							m_CountPlayerInSightInArea[7][i]++;
-							m_AvgCursorToPlayerIfInSightInAreaDistance[7][i] = m_SumCursorToPlayerIfInSightInAreaDistance[7][i] / m_CountPlayerInSightInArea[7][i]++;
+							m_AvgCursorAngleToPlayerAngleDifferenceInArea[7][i] = m_SumAngleToPlayerDifferenceInArea[7][i] / m_CountPlayerInSightInArea[7][i];
+							m_SumCursorToPlayerIfInSightInAreaDistance[7][i] += MyCursorToPosDistance;
+							m_AvgCursorToPlayerIfInSightInAreaDistance[7][i] = m_SumCursorToPlayerIfInSightInAreaDistance[7][i] / m_CountPlayerInSightInArea[7][i];
 							break;
 						case 8:
-							m_SumCursorToPlayerIfInSightInAreaDistance[8][i] += diff;;
+							m_SumAngleToPlayerDifferenceInArea[8][i] += diff;;
 							m_CountPlayerInSightInArea[8][i]++;
-							m_AvgCursorToPlayerIfInSightInAreaDistance[8][i] = m_SumCursorToPlayerIfInSightInAreaDistance[8][i] / m_CountPlayerInSightInArea[8][i]++;
+							m_AvgCursorAngleToPlayerAngleDifferenceInArea[8][i] = m_SumAngleToPlayerDifferenceInArea[8][i] / m_CountPlayerInSightInArea[8][i];
+							m_SumCursorToPlayerIfInSightInAreaDistance[8][i] += MyCursorToPosDistance;
+							m_AvgCursorToPlayerIfInSightInAreaDistance[8][i] = m_SumCursorToPlayerIfInSightInAreaDistance[8][i] / m_CountPlayerInSightInArea[8][i];
 							break;
 						case 9:
-							m_SumCursorToPlayerIfInSightInAreaDistance[9][i] += diff;;
+							m_SumAngleToPlayerDifferenceInArea[9][i] += diff;;
 							m_CountPlayerInSightInArea[9][i]++;
-							m_AvgCursorToPlayerIfInSightInAreaDistance[9][i] = m_SumCursorToPlayerIfInSightInAreaDistance[9][i] / m_CountPlayerInSightInArea[9][i]++;
+							m_AvgCursorAngleToPlayerAngleDifferenceInArea[9][i] = m_SumAngleToPlayerDifferenceInArea[9][i] / m_CountPlayerInSightInArea[9][i];
+							m_SumCursorToPlayerIfInSightInAreaDistance[9][i] += MyCursorToPosDistance;
+							m_AvgCursorToPlayerIfInSightInAreaDistance[9][i] = m_SumCursorToPlayerIfInSightInAreaDistance[9][i] / m_CountPlayerInSightInArea[9][i];
 							break;
 						default: break;
 						}
@@ -452,6 +473,15 @@ int CBotDetection::EnemyInSight(int ClientID, int EnemyID) {
 	                          m_aPlayersCurrentTick[EnemyID].m_Core_X,
 	                          m_aPlayersCurrentTick[EnemyID].m_Core_Y);
 
+	// Collision check, if players can actually shoot at each other
+	vec2 Pos0 = vec2(m_aPlayersCurrentTick[ClientID].m_Core_X, m_aPlayersCurrentTick[ClientID].m_Core_Y);
+	vec2 Pos1 = vec2(m_aPlayersCurrentTick[EnemyID].m_Core_X, m_aPlayersCurrentTick[EnemyID].m_Core_Y);
+
+	if(!m_GameContext->Collision()->IntersectLine(Pos0, Pos1, NULL, NULL)){
+		return 0;
+	}
+
+
 
 	if (distAbs < 50.0)
 	{
@@ -494,8 +524,7 @@ void CBotDetection::ResetCurrentTick() {
 	{
 
 		m_aPlayersCurrentTick[i].m_CoreAvailable = false;
-		m_aPlayersCurrentTick[i].m_JoinHash = 0;
-		m_aPlayersCurrentTick[i].m_ClientID = -1;
+		//joinhash and id do not belong in here
 		m_aPlayersCurrentTick[i].m_Core_Tick = -1;
 		m_aPlayersCurrentTick[i].m_Core_X = 0;
 		m_aPlayersCurrentTick[i].m_Core_Y = 0;
@@ -529,26 +558,34 @@ void CBotDetection::ResetCurrentTick() {
 
 char* CBotDetection::GetInfoString(int ClientID) {
 	char *aBuf = (char*)malloc(sizeof(char) * 512);
-	str_format(aBuf, 512, " %16s : CD: %.2f CCD: %.2f CDC: %.2f DMI: %.2f DMA: %.2f DA: %.2f DC: %.2f, ACD: %.2f 1: %.2f 2: %.2f 3: %.2f 4: %.2f 5: %.2f 6: %.2f 7: %.2f 8: %.2f 9: %.2f",
-	           m_GameContext->Server()->ClientName(ClientID),
-	           m_ClosestDistanceToCurrentIDCT[ClientID],
-	           m_ClosestIDToCursorDistanceCT[ClientID],
-	           m_ClosestIDToCursorDistanceCT[ClientID],
-	           m_MinDistanceFromBody[ClientID],
-	           m_MaxDistanceFromBody[ClientID],
-	           m_AvgDistanceFromBody[ClientID],
-	           m_CurrentDistanceFromBody[ClientID],
-	           m_AngleToNearestPlayer[ClientID],
-	           m_AvgCursorToPlayerIfInSightInAreaDistance[1][ClientID],
-	           m_AvgCursorToPlayerIfInSightInAreaDistance[2][ClientID],
-	           m_AvgCursorToPlayerIfInSightInAreaDistance[3][ClientID],
-	           m_AvgCursorToPlayerIfInSightInAreaDistance[4][ClientID],
-	           m_AvgCursorToPlayerIfInSightInAreaDistance[5][ClientID],
-	           m_AvgCursorToPlayerIfInSightInAreaDistance[6][ClientID],
-	           m_AvgCursorToPlayerIfInSightInAreaDistance[7][ClientID],
-	           m_AvgCursorToPlayerIfInSightInAreaDistance[8][ClientID],
-	           m_AvgCursorToPlayerIfInSightInAreaDistance[9][ClientID]
-	           );
+	// str_format(aBuf, 512, " %16s : CD: %.2f CCD: %.2f CDC: %.2f DMI: %.2f DMA: %.2f DA: %.2f DC: %.2f, ACD: %.2f 1: %.2f 2: %.2f 3: %.2f 4: %.2f 5: %.2f 6: %.2f 7: %.2f 8: %.2f 9: %.2f",
+	//            m_GameContext->Server()->ClientName(ClientID),
+	//            m_ClosestDistanceToCurrentIDCT[ClientID],
+	//            m_ClosestIDToCursorDistanceCT[ClientID],
+	//            m_ClosestIDToCursorDistanceCT[ClientID],
+	//            m_MinDistanceFromBody[ClientID],
+	//            m_MaxDistanceFromBody[ClientID],
+	//            m_AvgDistanceFromBody[ClientID],
+	//            m_CurrentDistanceFromBody[ClientID],
+	//            m_AngleToNearestPlayer[ClientID],
+	//            m_AvgCursorToPlayerIfInSightInAreaDistance[1][ClientID],
+	//            m_AvgCursorToPlayerIfInSightInAreaDistance[2][ClientID],
+	//            m_AvgCursorToPlayerIfInSightInAreaDistance[3][ClientID],
+	//            m_AvgCursorToPlayerIfInSightInAreaDistance[4][ClientID],
+	//            m_AvgCursorToPlayerIfInSightInAreaDistance[5][ClientID],
+	//            m_AvgCursorToPlayerIfInSightInAreaDistance[6][ClientID],
+	//            m_AvgCursorToPlayerIfInSightInAreaDistance[7][ClientID],
+	//            m_AvgCursorToPlayerIfInSightInAreaDistance[8][ClientID],
+	//            m_AvgCursorToPlayerIfInSightInAreaDistance[9][ClientID]
+	//           );
+	vec2 Pos0 = vec2(m_aPlayerBacklog[ClientID].front().m_Core_X, m_aPlayerBacklog[ClientID].front().m_Core_Y),
+	Pos1 = vec2(m_aPlayerBacklog[1].front().m_Core_X, m_aPlayerBacklog[1].front().m_Core_Y);
+	vec2 *Out0 = new vec2, *Out1 = new vec2;
+
+
+	str_format(aBuf, 512, " %16s : Collision: %d Pos0.x: %.2f Pos0.y: %.2f Pos1.x: %.2f Pos1.y: %.2f Out0.x: %.2f Out0.y: %.2f Out1.x: %.2f Out1.y: %.2f", m_GameContext->Server()->ClientName(ClientID), m_GameContext->Collision()->IntersectLine(Pos0, Pos1, Out0, Out1), Pos0.x, Pos0.y, Pos1.x, Pos1.y, Out0->x, Out0->y, Out1->x, Out1->y);
+	// delete Out0;
+	// delete Out1;
 
 	return aBuf;
 }
@@ -556,12 +593,19 @@ char* CBotDetection::GetInfoString(int ClientID) {
 void CBotDetection::OnPlayerConnect(int ClientID) {
 	ResetID(ClientID);
 	ResetAverages(ClientID);
-
+	m_TimeStampJoined[ClientID] = GetTimeStamp();
 }
 
 void CBotDetection::OnPlayerDisconnect(int ClientID) {
+	InsertIntoPlayerAvgTable(ClientID, m_aPlayersCurrentTick[ClientID].m_JoinHash,
+	                         m_GameContext->Server()->ClientName(ClientID),
+	                         m_TimeStampJoined[ClientID],
+	                         GetTimeStamp(),
+	                         m_AvgCursorAngleToPlayerAngleDifferenceInArea,
+	                         m_AvgCursorToPlayerIfInSightInAreaDistance);
 	ResetID(ClientID);
 	ResetAverages(ClientID);
+	free(m_TimeStampJoined[ClientID]);
 }
 
 void CBotDetection::ResetID(int ClientID) {
@@ -615,11 +659,186 @@ void CBotDetection::ResetAverages(int ClientID) {
 
 	for (int i = 0; i < 10; ++i)
 	{
+		m_AvgCursorAngleToPlayerAngleDifferenceInArea[i][ClientID] = 0;
+		m_SumAngleToPlayerDifferenceInArea[i][ClientID] = 0;
+
+		//distances
 		m_AvgCursorToPlayerIfInSightInAreaDistance[i][ClientID] = 0;
 		m_SumCursorToPlayerIfInSightInAreaDistance[i][ClientID] = 0;
+
 		m_CountPlayerInSightInArea[i][ClientID] = 0;
 	}
 
+}
+
+
+
+/// Database stuff ///
+
+void CBotDetection::CreateDatabase(const char* filename) {
+
+	int err = sqlite_open(filename, &m_SqliteDB);
+
+	if (err == SQLITE_OK) {
+
+		CreatePlayerAvgTable();
+
+	} else {
+		dbg_msg("SQLiteHistorian", "Error in CreateDatabase");
+		m_DbMode = MODE_NONE;
+	}
+}
+
+void CBotDetection::CreatePlayerAvgTable() {
+	if (m_DbMode)
+	{
+		char* ErrMsg;
+		int err = sqlite_exec(m_SqliteDB,
+		                      "BEGIN; \
+			CREATE TABLE IF NOT EXISTS PlayerAvg( \
+				JoinHash INT, \
+				NickName VARCHAR(20), \
+				TimeStampJoined VARCHAR(25), \
+				TimeStampLeft VARCHAR(25), \
+				AngleDiffArea1 DOUBLE, \
+				AngleDiffArea2 DOUBLE, \
+				AngleDiffArea3 DOUBLE, \
+				AngleDiffArea4 DOUBLE, \
+				AngleDiffArea5 DOUBLE, \
+				AngleDiffArea6 DOUBLE, \
+				AngleDiffArea7 DOUBLE, \
+				AngleDiffArea8 DOUBLE, \
+				AngleDiffArea9 DOUBLE, \
+				CursorDistArea1 DOUBLE, \
+				CursorDistArea2 DOUBLE, \
+				CursorDistArea3 DOUBLE, \
+				CursorDistArea4 DOUBLE, \
+				CursorDistArea5 DOUBLE, \
+				CursorDistArea6 DOUBLE, \
+				CursorDistArea7 DOUBLE, \
+				CursorDistArea8 DOUBLE, \
+				CursorDistArea9 DOUBLE	\
+			); \
+			COMMIT;", &ErrMsg);
+
+		/* check for error */
+		if (err != SQLITE_OK) {
+			dbg_msg("ERROR SQLITE", "CreatePlayerAvgTable:");
+			dbg_msg("BotDetection", "SQL error (#%d): %s\n", err, ErrMsg);
+			sqlite_free(ErrMsg);
+			m_DbMode = MODE_NONE;
+		}
+
+	}
+
+}
+
+void CBotDetection::InsertIntoPlayerAvgTable(int ClientID, int JoinHash, const char* NickName, char *TimeStampJoined, char *TimeStampLeft, double AngleAreas[10][MAX_CLIENTS], double CursorAreas[10][MAX_CLIENTS]) {
+	/* prepare */
+	const char *zTail;
+	const char *zSql = "\
+		INSERT OR REPLACE INTO PlayerAvg ( \
+	            JoinHash,  \
+				NickName,  \
+				TimeStampJoined,  \
+				TimeStampLeft, \
+				AngleDiffArea1, \
+				AngleDiffArea2, \
+				AngleDiffArea3, \
+				AngleDiffArea4, \
+				AngleDiffArea5, \
+				AngleDiffArea6, \
+				AngleDiffArea7, \
+				AngleDiffArea8, \
+				AngleDiffArea9,	\
+				CursorDistArea1, \
+				CursorDistArea2, \
+				CursorDistArea3, \
+				CursorDistArea4, \
+				CursorDistArea5, \
+				CursorDistArea6, \
+				CursorDistArea7, \
+				CursorDistArea8, \
+				CursorDistArea9	\
+				) \
+		VALUES ( ?1, trim(?2), ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19, ?20, ?21, ?22) \
+		;";
+	sqlite3_stmt *pStmt;
+	int rc = sqlite_prepare_statement(m_SqliteDB, zSql, &pStmt, &zTail);
+
+	if (rc == SQLITE_OK)
+	{
+		/* bind parameters in query */
+		sqlite_bind_int(pStmt, 1, JoinHash);
+		sqlite_bind_text(pStmt, 2, NickName);
+		sqlite_bind_text(pStmt, 3, TimeStampJoined);
+		sqlite_bind_text(pStmt, 4, TimeStampLeft);
+
+		sqlite_bind_double(pStmt, 5, AngleAreas[1][ClientID]);
+		sqlite_bind_double(pStmt, 6, AngleAreas[2][ClientID]);
+		sqlite_bind_double(pStmt, 7, AngleAreas[3][ClientID]);
+		sqlite_bind_double(pStmt, 8, AngleAreas[4][ClientID]);
+		sqlite_bind_double(pStmt, 9, AngleAreas[5][ClientID]);
+		sqlite_bind_double(pStmt, 10, AngleAreas[6][ClientID]);
+		sqlite_bind_double(pStmt, 11, AngleAreas[7][ClientID]);
+		sqlite_bind_double(pStmt, 12, AngleAreas[8][ClientID]);
+		sqlite_bind_double(pStmt, 13, AngleAreas[9][ClientID]);
+
+		sqlite_bind_double(pStmt, 14, CursorAreas[1][ClientID]);
+		sqlite_bind_double(pStmt, 15, CursorAreas[2][ClientID]);
+		sqlite_bind_double(pStmt, 16, CursorAreas[3][ClientID]);
+		sqlite_bind_double(pStmt, 17, CursorAreas[4][ClientID]);
+		sqlite_bind_double(pStmt, 18, CursorAreas[5][ClientID]);
+		sqlite_bind_double(pStmt, 19, CursorAreas[6][ClientID]);
+		sqlite_bind_double(pStmt, 20, CursorAreas[7][ClientID]);
+		sqlite_bind_double(pStmt, 21, CursorAreas[8][ClientID]);
+		sqlite_bind_double(pStmt, 22, CursorAreas[9][ClientID]);
+
+
+		/* save to database */
+		switch (sqlite3_step(pStmt))
+		{
+		case SQLITE_DONE:
+			/* nothing */
+			break;
+		case SQLITE_BUSY:
+			dbg_msg("BotDetection", "Could not save data, database is busy.");
+			break;
+		default:
+			dbg_msg("BotDetection", "Could not save data: SQL error (#%d): %s", rc, sqlite3_errmsg(m_SqliteDB));
+
+		}
+
+	}
+	else
+	{
+		dbg_msg("BotDetection", "SQL error (#%d): %s", rc, sqlite_errmsg(m_SqliteDB));
+	}
+
+	free(TimeStampLeft);
+	sqlite_finalize(pStmt);
+}
+
+void CBotDetection::CloseDatabase() {
+	int err = sqlite_close(m_SqliteDB);
+	if (err != SQLITE_OK) {
+		dbg_msg("SQLiteHistorian", "Error on closing sqlite database(%li).(%d)", (long)m_SqliteDB , err);
+	}
+	m_DbMode = MODE_NONE;
+
+}
+
+
+char* CBotDetection::GetTimeStamp() {
+	char aDate[20];
+
+	timeval curTime;
+	gettimeofday(&curTime, NULL);
+	long milli = curTime.tv_usec / 1000;
+	strftime(aDate, 20, "%Y-%m-%d %H:%M:%S", localtime(&curTime.tv_sec));
+	char *aBuf = (char*)malloc(25 * sizeof(char));
+	str_format(aBuf, 25 * sizeof(char), "%s.%ld", aDate, milli);
+	return aBuf;
 }
 
 

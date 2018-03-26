@@ -6,6 +6,7 @@
 #include "botdetectionstructs.h"
 #include <queue>
 #include <base/sqlite.h>
+#include <sys/time.h>
 
 class CBotDetection
 {
@@ -31,7 +32,7 @@ private:
 
 	CGameContext *m_GameContext;
 	TickPlayer m_aPlayersCurrentTick[MAX_CLIENTS];
-
+	char *m_TimeStampJoined[MAX_CLIENTS];
 
 	std::queue<TickPlayer> m_aPlayerBacklog[MAX_CLIENTS];
 	std::queue<TickPlayer> m_aPlayerInputBacklog[MAX_CLIENTS];
@@ -92,9 +93,17 @@ private:
 	double m_CursorAngleDifferenceToPlayerInSight[MAX_CLIENTS];
 
 	// averages:
+	// angles
+	double m_AvgCursorAngleToPlayerAngleDifferenceInArea[10][MAX_CLIENTS];
+	double m_SumAngleToPlayerDifferenceInArea[10][MAX_CLIENTS];
+
+	//distances
 	double m_AvgCursorToPlayerIfInSightInAreaDistance[10][MAX_CLIENTS];
 	double m_SumCursorToPlayerIfInSightInAreaDistance[10][MAX_CLIENTS];
+
 	int m_CountPlayerInSightInArea[10][MAX_CLIENTS];
+
+
 
 	int EnemyInSight(int ClientID, int EnemyID);
 
@@ -104,6 +113,21 @@ private:
 	static void SetInput(TickPlayer *Target, TickPlayer *Source);
 	static double Distance(int x, int y, int x2, int y2);
 	void ResetID(int ClientID);
+
+
+	//Database stuff
+	int m_DbMode;
+	enum
+	{
+		MODE_NONE = 0,
+		MODE_SQLITE,
+	};
+
+	void CreateDatabase(const char* filename);
+	void CloseDatabase();
+	void CreatePlayerAvgTable();
+	void InsertIntoPlayerAvgTable(int ClientID, int JoinHash, const char* NickName,char *TimeStampJoined, char *TimeStampLeft, double AngleAreas[10][MAX_CLIENTS], double CursorAreas[10][MAX_CLIENTS]);
+	char* GetTimeStamp();
 
 };
 
