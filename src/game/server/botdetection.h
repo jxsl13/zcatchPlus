@@ -28,6 +28,7 @@ public:
 
 private:
 	sqlite3 *m_SqliteDB;
+
 	CGameContext *m_GameContext;
 	TickPlayer m_aPlayersCurrentTick[MAX_CLIENTS];
 
@@ -53,6 +54,14 @@ private:
 	// actual distance  of cursor to above defined id.
 	double m_ClosestIDToCursorDistanceCT[MAX_CLIENTS];
 
+	// more or less mouse distances
+	double m_CurrentDistanceFromBody[MAX_CLIENTS];
+	double m_MinDistanceFromBody[MAX_CLIENTS];
+	double m_MaxDistanceFromBody[MAX_CLIENTS];
+
+	double m_AvgDistanceSum[MAX_CLIENTS];
+	double m_AvgDistanceFromBody[MAX_CLIENTS];
+	int m_InputCount[MAX_CLIENTS];
 
 	/**
 	 * Definition: Areas:
@@ -70,6 +79,8 @@ private:
 
 	static void SetCore(TickPlayer *Target, TickPlayer *Source);
 	static void SetInput(TickPlayer *Target, TickPlayer *Source);
+
+	ResetID(int ClientID);
 
 };
 
