@@ -216,7 +216,7 @@ double CBotDetection::Angle(int x, int y, int x2, int y2) {
 	double a = sqrt(x * x + y * y);
 	double b = sqrt(x2 * x2 + y2 * y2);
 	double c = x * x2 + y * y2;
-	return ((int)(1000 * (180.0 / acos(c / (a * b))))) / 1000.0;
+	return  acos(c / (a * b));
 }
 
 
