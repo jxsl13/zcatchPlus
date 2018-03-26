@@ -769,7 +769,7 @@ void CBotDetection::OnPlayerConnect(int ClientID) {
 }
 
 void CBotDetection::OnPlayerDisconnect(int ClientID) {
-	InsertIntoPlayerAvgTable(ClientID, m_GameContext->Server()->ClientJoinHash(ClientID),
+	InsertIntoPlayerAvgTable(ClientID, m_aPlayerBacklog[ClientID].front().m_JoinHash,
 	                         m_GameContext->Server()->ClientName(ClientID),
 	                         m_TimeStampJoined[ClientID],
 	                         GetTimeStamp(),
