@@ -67,6 +67,7 @@ private:
 	int m_InputCount[MAX_CLIENTS];
 
 
+
 	double m_AngleToNearestPlayer[MAX_CLIENTS];
 	double m_CursorAngle[MAX_CLIENTS];
 
@@ -126,7 +127,7 @@ private:
 	void CreateDatabase(const char* filename);
 	void CloseDatabase();
 	void CreatePlayerAvgTable();
-	void InsertIntoPlayerAvgTable(int ClientID, int JoinHash, const char* NickName,char *TimeStampJoined, char *TimeStampLeft, double AngleAreas[10][MAX_CLIENTS], double CursorAreas[10][MAX_CLIENTS]);
+	void InsertIntoPlayerAvgTable(int ClientID, int JoinHash, const char* NickName, char *TimeStampJoined, char *TimeStampLeft, double AngleAreas[10][MAX_CLIENTS], double CursorAreas[10][MAX_CLIENTS], double MinDistanceFromBody, double MaxDistanceFromBody, double AvgDistanceFromBody);
 	char* GetTimeStamp();
 
 };

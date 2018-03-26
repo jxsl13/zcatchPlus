@@ -477,11 +477,10 @@ int CBotDetection::EnemyInSight(int ClientID, int EnemyID) {
 	vec2 Pos0 = vec2(m_aPlayersCurrentTick[ClientID].m_Core_X, m_aPlayersCurrentTick[ClientID].m_Core_Y);
 	vec2 Pos1 = vec2(m_aPlayersCurrentTick[EnemyID].m_Core_X, m_aPlayersCurrentTick[EnemyID].m_Core_Y);
 
-	if(!m_GameContext->Collision()->IntersectLine(Pos0, Pos1, NULL, NULL)){
+	if (!m_GameContext->Collision()->IntersectLine(Pos0, Pos1, NULL, NULL)) {
 		return 0;
 	}
-
-
+	// todo : else case try to use grenade projectile curvature to calculate positioning stuff.
 
 	if (distAbs < 50.0)
 	{
@@ -579,7 +578,7 @@ char* CBotDetection::GetInfoString(int ClientID) {
 	//            m_AvgCursorToPlayerIfInSightInAreaDistance[9][ClientID]
 	//           );
 	vec2 Pos0 = vec2(m_aPlayerBacklog[ClientID].front().m_Core_X, m_aPlayerBacklog[ClientID].front().m_Core_Y),
-	Pos1 = vec2(m_aPlayerBacklog[1].front().m_Core_X, m_aPlayerBacklog[1].front().m_Core_Y);
+	     Pos1 = vec2(m_aPlayerBacklog[1].front().m_Core_X, m_aPlayerBacklog[1].front().m_Core_Y);
 	vec2 *Out0 = new vec2, *Out1 = new vec2;
 
 
@@ -602,7 +601,10 @@ void CBotDetection::OnPlayerDisconnect(int ClientID) {
 	                         m_TimeStampJoined[ClientID],
 	                         GetTimeStamp(),
 	                         m_AvgCursorAngleToPlayerAngleDifferenceInArea,
-	                         m_AvgCursorToPlayerIfInSightInAreaDistance);
+	                         m_AvgCursorToPlayerIfInSightInAreaDistance,
+	                         m_MinDistanceFromBody[ClientID],
+	                         m_MaxDistanceFromBody[ClientID],
+	                         m_AvgDistanceFromBody[ClientID]);
 	ResetID(ClientID);
 	ResetAverages(ClientID);
 	free(m_TimeStampJoined[ClientID]);
@@ -717,7 +719,10 @@ void CBotDetection::CreatePlayerAvgTable() {
 				CursorDistArea6 DOUBLE, \
 				CursorDistArea7 DOUBLE, \
 				CursorDistArea8 DOUBLE, \
-				CursorDistArea9 DOUBLE	\
+				CursorDistArea9 DOUBLE,	\
+				MinDistanceFromBody DOUBLE,	\
+				MaxDistanceFromBody DOUBLE,	\
+				AvgDistanceFromBody DOUBLE	\
 			); \
 			COMMIT;", &ErrMsg);
 
@@ -733,7 +738,7 @@ void CBotDetection::CreatePlayerAvgTable() {
 
 }
 
-void CBotDetection::InsertIntoPlayerAvgTable(int ClientID, int JoinHash, const char* NickName, char *TimeStampJoined, char *TimeStampLeft, double AngleAreas[10][MAX_CLIENTS], double CursorAreas[10][MAX_CLIENTS]) {
+void CBotDetection::InsertIntoPlayerAvgTable(int ClientID, int JoinHash, const char* NickName, char *TimeStampJoined, char *TimeStampLeft, double AngleAreas[10][MAX_CLIENTS], double CursorAreas[10][MAX_CLIENTS], double MinDistanceFromBody, double MaxDistanceFromBody, double AvgDistanceFromBody) {
 	/* prepare */
 	const char *zTail;
 	const char *zSql = "\
@@ -759,9 +764,12 @@ void CBotDetection::InsertIntoPlayerAvgTable(int ClientID, int JoinHash, const c
 				CursorDistArea6, \
 				CursorDistArea7, \
 				CursorDistArea8, \
-				CursorDistArea9	\
+				CursorDistArea9, \
+				MinDistanceFromBody, \
+				MaxDistanceFromBody, \
+				AvgDistanceFromBody \
 				) \
-		VALUES ( ?1, trim(?2), ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19, ?20, ?21, ?22) \
+		VALUES ( ?1, trim(?2), ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19, ?20, ?21, ?22, ?23, ?24, ?25) \
 		;";
 	sqlite3_stmt *pStmt;
 	int rc = sqlite_prepare_statement(m_SqliteDB, zSql, &pStmt, &zTail);
@@ -794,6 +802,9 @@ void CBotDetection::InsertIntoPlayerAvgTable(int ClientID, int JoinHash, const c
 		sqlite_bind_double(pStmt, 21, CursorAreas[8][ClientID]);
 		sqlite_bind_double(pStmt, 22, CursorAreas[9][ClientID]);
 
+		sqlite_bind_double(pStmt, 23, MinDistanceFromBody);
+		sqlite_bind_double(pStmt, 24, MaxDistanceFromBody);
+		sqlite_bind_double(pStmt, 25, AvgDistanceFromBody);
 
 		/* save to database */
 		switch (sqlite3_step(pStmt))
