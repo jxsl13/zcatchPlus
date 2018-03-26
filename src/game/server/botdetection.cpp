@@ -529,7 +529,7 @@ void CBotDetection::ResetCurrentTick() {
 
 char* CBotDetection::GetInfoString(int ClientID) {
 	char *aBuf = (char*)malloc(sizeof(char) * 512);
-	str_format(aBuf, 512, " %16s : CD: %.2f CCD: %.2f CDC: %.2f DMI: %.2f DMA: %.2f DA: %.2f DC: %.2f, ACD: %.2f",
+	str_format(aBuf, 512, " %16s : CD: %.2f CCD: %.2f CDC: %.2f DMI: %.2f DMA: %.2f DA: %.2f DC: %.2f, ACD: %.2f 1: %.2f 2: %.2f 3: %.2f 4: %.2f 5: %.2f 6: %.2f 7: %.2f 8: %.2f 9: %.2f",
 	           m_GameContext->Server()->ClientName(ClientID),
 	           m_ClosestDistanceToCurrentIDCT[ClientID],
 	           m_ClosestIDToCursorDistanceCT[ClientID],
@@ -538,7 +538,17 @@ char* CBotDetection::GetInfoString(int ClientID) {
 	           m_MaxDistanceFromBody[ClientID],
 	           m_AvgDistanceFromBody[ClientID],
 	           m_CurrentDistanceFromBody[ClientID],
-	           m_AngleToNearestPlayer[ClientID]);
+	           m_AngleToNearestPlayer[ClientID],
+	           m_AvgCursorToPlayerIfInSightInAreaDistance[1][ClientID],
+	           m_AvgCursorToPlayerIfInSightInAreaDistance[2][ClientID],
+	           m_AvgCursorToPlayerIfInSightInAreaDistance[3][ClientID],
+	           m_AvgCursorToPlayerIfInSightInAreaDistance[4][ClientID],
+	           m_AvgCursorToPlayerIfInSightInAreaDistance[5][ClientID],
+	           m_AvgCursorToPlayerIfInSightInAreaDistance[6][ClientID],
+	           m_AvgCursorToPlayerIfInSightInAreaDistance[7][ClientID],
+	           m_AvgCursorToPlayerIfInSightInAreaDistance[8][ClientID],
+	           m_AvgCursorToPlayerIfInSightInAreaDistance[9][ClientID]
+	           );
 
 	return aBuf;
 }
