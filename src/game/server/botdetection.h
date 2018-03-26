@@ -67,7 +67,7 @@ private:
 	double m_AngleBetweenPlayers[MAX_CLIENTS][MAX_CLIENTS];
 	double m_AngleToNearestPlayer[MAX_CLIENTS];
 
-	double CBotDetection::Angle(int x, int y, int x2, int y2);
+	double Angle(int x, int y, int x2, int y2);
 	/**
 	 * Definition: Sight Areas:
 	 * __________ Max logical mouse distance is 405 with static cam __________
@@ -88,9 +88,9 @@ private:
 	// averages:
 	double m_AvgCursorToPlayerIfInSightInAreaDistance[10][MAX_CLIENTS];
 	double m_SumCursorToPlayerIfInSightInAreaDistance[10][MAX_CLIENTS];
-	int double m_CountPlayerInSightInArea[10][MAX_CLIENTS];
+	int m_CountPlayerInSightInArea[10][MAX_CLIENTS];
 
-	EnemyInArea(int ClientID, int EnemyID);
+	int EnemyInArea(int ClientID, int EnemyID);
 
 	// TODO: Cursor traveled distance after player is in sight
 
