@@ -254,7 +254,8 @@ void CBotDetection::CalculatePlayerRelations() {
 			m_InputCount[i]++;
 			m_CurrentDistanceFromBody[i] = Distance(0, 0, m_aPlayersCurrentTick[i].m_Input_TargetX, m_aPlayersCurrentTick[i].m_Input_TargetY);
 			m_AvgDistanceSum[i] += m_CurrentDistanceFromBody[i];
-			m_AvgDistanceFromBody[i] = m_InputCount[i] / m_AvgDistanceSum[i];
+			m_AvgDistanceFromBody[i] = m_AvgDistanceSum[i] / m_InputCount[i];
+
 			if (m_CurrentDistanceFromBody[i] < m_MinDistanceFromBody[i])
 			{
 				m_MinDistanceFromBody[i] = m_CurrentDistanceFromBody[i];
@@ -269,32 +270,23 @@ void CBotDetection::CalculatePlayerRelations() {
 
 			for (int j = 0; j < MAX_CLIENTS; j++)
 			{
-				if (m_GameContext->m_apPlayers[j])
+				if (m_GameContext->m_apPlayers[j] && i != j)
 				{
-					if (i != j)
-					{
-						// ID j's positions
-						PosX2 = m_aPlayersCurrentTick[j].m_Core_X;
-						PosY2 = m_aPlayersCurrentTick[j].m_Core_Y;
-						// player distance
-						PosDistance = Distance(PosX, PosY, PosX2, PosY2);
-						// cursor of i to player j distance
-						MyCursorToPosDistance = Distance(CursorPosX, CursorPosY, PosX2, PosY2);
 
+					// ID j's positions
+					PosX2 = m_aPlayersCurrentTick[j].m_Core_X;
+					PosY2 = m_aPlayersCurrentTick[j].m_Core_Y;
+					// player distance
+					PosDistance = Distance(PosX, PosY, PosX2, PosY2);
+					// cursor of i to player j distance
+					MyCursorToPosDistance = Distance(CursorPosX, CursorPosY, PosX2, PosY2);
 
-					} else {
-						PosDistance = std::numeric_limits<double>::max();
-						MyCursorToPosDistance = std::numeric_limits<double>::max();
-					}
-
-					// set player distances
-					if (PosDistance == std::numeric_limits<double>::max())
-					{
-						// if player is actually yourself
-						m_PlayerDistanceCT[i][j] = -1;
-					}
 					// if player is someone else;
 					m_PlayerDistanceCT[i][j] = PosDistance;
+
+
+
+					// set player distances
 
 					if (PosDistance < m_ClosestDistanceToCurrentIDCT[i])
 					{
@@ -422,7 +414,7 @@ void CBotDetection::CalculatePlayerRelations() {
 								m_MinCursorAngleToPlayerAngleDifferenceInArea[9][i] = diff;
 							}
 							break;
-							case 10:
+						case 10:
 							m_SumAngleToPlayerDifferenceInArea[0][i] += diff;;
 							m_CountPlayerInSightInArea[0][i]++;
 							m_AvgCursorAngleToPlayerAngleDifferenceInArea[0][i] = m_SumAngleToPlayerDifferenceInArea[0][i] / m_CountPlayerInSightInArea[0][i];
@@ -436,45 +428,16 @@ void CBotDetection::CalculatePlayerRelations() {
 						default: break;
 						}
 
-					} else {
-						m_CursorAngleToClosestAngleDiffPlayerInSight[i] = -1;
-						m_CursorAngleDifferenceToPlayerInSight[i] = 361;
 					}
 
-
+				} else if (m_GameContext->m_apPlayers[j] && i == j)
+				{
+					/* code */
 				}
 
 
 			}
-			// check if only you are online
-			if (m_ClosestDistanceToCurrentIDCT[i] == std::numeric_limits<double>::max())
-			{
-				m_ClosestDistanceToCurrentIDCT[i] = -1;
-				m_ClosestIDToCurrentIDCT[i] = -1;
-				m_AngleToNearestPlayer[i] = -1;
 
-			}
-			// check if you are alone on the server, thus setting distance to -1
-			if (m_ClosestIDToCursorDistanceCT[i] == std::numeric_limits<double>::max())
-			{
-				m_ClosestIDToCursorDistanceCT[i] = -1;
-				m_ClosestIDToCursorCT[i] = -1;
-			}
-			// set cursor distance to closest player(by position distance) to -1 if you are alone on the server.
-			if (m_CursorToClosestDistanceIDCT[i] ==  std::numeric_limits<double>::max())
-			{
-				m_CursorToClosestDistanceIDCT[i] = -1;
-			}
-
-			// reset variables
-			PosX = -1;
-			PosY = -1;
-			CursorPosX = -1;
-			CursorPosX = -1;
-			PosX2 = -1;
-			PosY2 = -1;
-			PosDistance = -1;
-			MyCursorToPosDistance = -1;
 		}
 	}
 
@@ -643,7 +606,7 @@ void CBotDetection::OnPlayerConnect(int ClientID) {
 }
 
 void CBotDetection::OnPlayerDisconnect(int ClientID) {
-	InsertIntoPlayerAvgTable(ClientID, m_aPlayersCurrentTick[ClientID].m_JoinHash,
+	InsertIntoPlayerAvgTable(ClientID, m_GameContext->Server()->ClientJoinHash(ClientID),
 	                         m_GameContext->Server()->ClientName(ClientID),
 	                         m_TimeStampJoined[ClientID],
 	                         GetTimeStamp(),
