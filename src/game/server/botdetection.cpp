@@ -367,14 +367,15 @@ void CBotDetection::ResetCurrentTick() {
 
 char* CBotDetection::GetInfoString(int ClientID) {
 	char *aBuf = (char*)malloc(sizeof(char) * 512);
-	str_format(aBuf, 512, " %16s : CD: %.2f CCD: %.2f CDC: %.2f DMI: %.2f DMA: %.2f DA: %.2f ",
+	str_format(aBuf, 512, " %16s : CD: %.2f CCD: %.2f CDC: %.2f DMI: %.2f DMA: %.2f DA: %.2f DC: %.2f",
 	           m_GameContext->Server()->ClientName(ClientID),
 	           m_ClosestDistanceToCurrentIDCT[ClientID],
 	           m_ClosestIDToCursorDistanceCT[ClientID],
 	           m_ClosestIDToCursorDistanceCT[ClientID],
 	           m_MinDistanceFromBody[ClientID],
 	           m_MaxDistanceFromBody[ClientID],
-	           m_AvgDistanceFromBody[ClientID]);
+	           m_AvgDistanceFromBody[ClientID],
+	           m_CurrentDistanceFromBody[ClientID]);
 
 	return aBuf;
 }
