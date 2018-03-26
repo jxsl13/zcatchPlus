@@ -214,7 +214,7 @@ double CBotDetection::Distance(int x, int y, int x2, int y2) {
 
 double CBotDetection::Angle(int x, int y, int x2, int y2) {
 	double a = sqrt(x * x + y * y);
-	double b = sqrt(x2 * x2 + y2 * y2);
+	double b = x2 * x2 + y2 * y2;
 	double c = x * x2 + y * y2;
 	return  acos(c / (a * b));
 }
