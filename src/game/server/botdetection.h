@@ -23,7 +23,7 @@ public:
 	void ManageLastInputQueue();
 	void CalculatePlayerRelations();
 	void ResetCurrentTick();
-	void ResetAverages(int ClientID);
+	void ResetLongTimeData(int ClientID);
 	char* GetInfoString(int ClientID);
 
 
@@ -97,13 +97,13 @@ private:
 	// angles
 	double m_AvgCursorAngleToPlayerAngleDifferenceInArea[10][MAX_CLIENTS];
 	double m_SumAngleToPlayerDifferenceInArea[10][MAX_CLIENTS];
+	double m_MinCursorAngleToPlayerAngleDifferenceInArea[10][MAX_CLIENTS];
 
 	//distances
 	double m_AvgCursorToPlayerIfInSightInAreaDistance[10][MAX_CLIENTS];
 	double m_SumCursorToPlayerIfInSightInAreaDistance[10][MAX_CLIENTS];
 
 	int m_CountPlayerInSightInArea[10][MAX_CLIENTS];
-
 
 
 	int EnemyInSight(int ClientID, int EnemyID);

@@ -15,7 +15,7 @@ CBotDetection::CBotDetection(CGameContext *GameServer)
 	for (int i = 0; i < MAX_CLIENTS; ++i)
 	{
 		ResetID(i);
-		ResetAverages(i);
+		ResetLongTimeData(i);
 
 	}
 	CreateDatabase("botdetection.db");
@@ -329,6 +329,10 @@ void CBotDetection::CalculatePlayerRelations() {
 							m_AvgCursorAngleToPlayerAngleDifferenceInArea[1][i] = m_SumAngleToPlayerDifferenceInArea[1][i] / m_CountPlayerInSightInArea[1][i];
 							m_SumCursorToPlayerIfInSightInAreaDistance[1][i] += MyCursorToPosDistance;
 							m_AvgCursorToPlayerIfInSightInAreaDistance[1][i] = m_SumCursorToPlayerIfInSightInAreaDistance[1][i] / m_CountPlayerInSightInArea[1][i];
+							if (diff < m_MinCursorAngleToPlayerAngleDifferenceInArea[1][i] )
+							{
+								m_MinCursorAngleToPlayerAngleDifferenceInArea[1][i] = diff;
+							}
 							break;
 						case 2:
 							m_SumAngleToPlayerDifferenceInArea[2][i] += diff;;
@@ -336,6 +340,10 @@ void CBotDetection::CalculatePlayerRelations() {
 							m_AvgCursorAngleToPlayerAngleDifferenceInArea[2][i] = m_SumAngleToPlayerDifferenceInArea[2][i] / m_CountPlayerInSightInArea[2][i];
 							m_SumCursorToPlayerIfInSightInAreaDistance[2][i] += MyCursorToPosDistance;
 							m_AvgCursorToPlayerIfInSightInAreaDistance[2][i] = m_SumCursorToPlayerIfInSightInAreaDistance[2][i] / m_CountPlayerInSightInArea[2][i];
+							if (diff < m_MinCursorAngleToPlayerAngleDifferenceInArea[2][i] )
+							{
+								m_MinCursorAngleToPlayerAngleDifferenceInArea[2][i] = diff;
+							}
 							break;
 						case 3:
 							m_SumAngleToPlayerDifferenceInArea[3][i] += diff;;
@@ -343,6 +351,10 @@ void CBotDetection::CalculatePlayerRelations() {
 							m_AvgCursorAngleToPlayerAngleDifferenceInArea[3][i] = m_SumAngleToPlayerDifferenceInArea[3][i] / m_CountPlayerInSightInArea[3][i];
 							m_SumCursorToPlayerIfInSightInAreaDistance[3][i] += MyCursorToPosDistance;
 							m_AvgCursorToPlayerIfInSightInAreaDistance[3][i] = m_SumCursorToPlayerIfInSightInAreaDistance[3][i] / m_CountPlayerInSightInArea[3][i];
+							if (diff < m_MinCursorAngleToPlayerAngleDifferenceInArea[3][i] )
+							{
+								m_MinCursorAngleToPlayerAngleDifferenceInArea[3][i] = diff;
+							}
 							break;
 						case 4:
 							m_SumAngleToPlayerDifferenceInArea[4][i] += diff;;
@@ -350,6 +362,10 @@ void CBotDetection::CalculatePlayerRelations() {
 							m_AvgCursorAngleToPlayerAngleDifferenceInArea[4][i] = m_SumAngleToPlayerDifferenceInArea[4][i] / m_CountPlayerInSightInArea[4][i];
 							m_SumCursorToPlayerIfInSightInAreaDistance[4][i] += MyCursorToPosDistance;
 							m_AvgCursorToPlayerIfInSightInAreaDistance[4][i] = m_SumCursorToPlayerIfInSightInAreaDistance[4][i] / m_CountPlayerInSightInArea[4][i];
+							if (diff < m_MinCursorAngleToPlayerAngleDifferenceInArea[4][i] )
+							{
+								m_MinCursorAngleToPlayerAngleDifferenceInArea[4][i] = diff;
+							}
 							break;
 						case 5:
 							m_SumAngleToPlayerDifferenceInArea[5][i] += diff;;
@@ -357,6 +373,10 @@ void CBotDetection::CalculatePlayerRelations() {
 							m_AvgCursorAngleToPlayerAngleDifferenceInArea[5][i] = m_SumAngleToPlayerDifferenceInArea[5][i] / m_CountPlayerInSightInArea[5][i];
 							m_SumCursorToPlayerIfInSightInAreaDistance[5][i] += MyCursorToPosDistance;
 							m_AvgCursorToPlayerIfInSightInAreaDistance[5][i] = m_SumCursorToPlayerIfInSightInAreaDistance[5][i] / m_CountPlayerInSightInArea[5][i];
+							if (diff < m_MinCursorAngleToPlayerAngleDifferenceInArea[5][i] )
+							{
+								m_MinCursorAngleToPlayerAngleDifferenceInArea[5][i] = diff;
+							}
 							break;
 						case 6:
 							m_SumAngleToPlayerDifferenceInArea[6][i] += diff;;
@@ -364,6 +384,10 @@ void CBotDetection::CalculatePlayerRelations() {
 							m_AvgCursorAngleToPlayerAngleDifferenceInArea[6][i] = m_SumAngleToPlayerDifferenceInArea[6][i] / m_CountPlayerInSightInArea[6][i];
 							m_SumCursorToPlayerIfInSightInAreaDistance[6][i] += MyCursorToPosDistance;
 							m_AvgCursorToPlayerIfInSightInAreaDistance[6][i] = m_SumCursorToPlayerIfInSightInAreaDistance[6][i] / m_CountPlayerInSightInArea[6][i];
+							if (diff < m_MinCursorAngleToPlayerAngleDifferenceInArea[6][i] )
+							{
+								m_MinCursorAngleToPlayerAngleDifferenceInArea[6][i] = diff;
+							}
 							break;
 						case 7:
 							m_SumAngleToPlayerDifferenceInArea[7][i] += diff;;
@@ -371,6 +395,10 @@ void CBotDetection::CalculatePlayerRelations() {
 							m_AvgCursorAngleToPlayerAngleDifferenceInArea[7][i] = m_SumAngleToPlayerDifferenceInArea[7][i] / m_CountPlayerInSightInArea[7][i];
 							m_SumCursorToPlayerIfInSightInAreaDistance[7][i] += MyCursorToPosDistance;
 							m_AvgCursorToPlayerIfInSightInAreaDistance[7][i] = m_SumCursorToPlayerIfInSightInAreaDistance[7][i] / m_CountPlayerInSightInArea[7][i];
+							if (diff < m_MinCursorAngleToPlayerAngleDifferenceInArea[7][i] )
+							{
+								m_MinCursorAngleToPlayerAngleDifferenceInArea[7][i] = diff;
+							}
 							break;
 						case 8:
 							m_SumAngleToPlayerDifferenceInArea[8][i] += diff;;
@@ -378,6 +406,10 @@ void CBotDetection::CalculatePlayerRelations() {
 							m_AvgCursorAngleToPlayerAngleDifferenceInArea[8][i] = m_SumAngleToPlayerDifferenceInArea[8][i] / m_CountPlayerInSightInArea[8][i];
 							m_SumCursorToPlayerIfInSightInAreaDistance[8][i] += MyCursorToPosDistance;
 							m_AvgCursorToPlayerIfInSightInAreaDistance[8][i] = m_SumCursorToPlayerIfInSightInAreaDistance[8][i] / m_CountPlayerInSightInArea[8][i];
+							if (diff < m_MinCursorAngleToPlayerAngleDifferenceInArea[8][i] )
+							{
+								m_MinCursorAngleToPlayerAngleDifferenceInArea[8][i] = diff;
+							}
 							break;
 						case 9:
 							m_SumAngleToPlayerDifferenceInArea[9][i] += diff;;
@@ -385,6 +417,21 @@ void CBotDetection::CalculatePlayerRelations() {
 							m_AvgCursorAngleToPlayerAngleDifferenceInArea[9][i] = m_SumAngleToPlayerDifferenceInArea[9][i] / m_CountPlayerInSightInArea[9][i];
 							m_SumCursorToPlayerIfInSightInAreaDistance[9][i] += MyCursorToPosDistance;
 							m_AvgCursorToPlayerIfInSightInAreaDistance[9][i] = m_SumCursorToPlayerIfInSightInAreaDistance[9][i] / m_CountPlayerInSightInArea[9][i];
+							if (diff < m_MinCursorAngleToPlayerAngleDifferenceInArea[9][i] )
+							{
+								m_MinCursorAngleToPlayerAngleDifferenceInArea[9][i] = diff;
+							}
+							break;
+							case 10:
+							m_SumAngleToPlayerDifferenceInArea[0][i] += diff;;
+							m_CountPlayerInSightInArea[0][i]++;
+							m_AvgCursorAngleToPlayerAngleDifferenceInArea[0][i] = m_SumAngleToPlayerDifferenceInArea[0][i] / m_CountPlayerInSightInArea[0][i];
+							m_SumCursorToPlayerIfInSightInAreaDistance[0][i] += MyCursorToPosDistance;
+							m_AvgCursorToPlayerIfInSightInAreaDistance[0][i] = m_SumCursorToPlayerIfInSightInAreaDistance[0][i] / m_CountPlayerInSightInArea[0][i];
+							if (diff < m_MinCursorAngleToPlayerAngleDifferenceInArea[0][i] )
+							{
+								m_MinCursorAngleToPlayerAngleDifferenceInArea[0][i] = diff;
+							}
 							break;
 						default: break;
 						}
@@ -591,7 +638,7 @@ char* CBotDetection::GetInfoString(int ClientID) {
 
 void CBotDetection::OnPlayerConnect(int ClientID) {
 	ResetID(ClientID);
-	ResetAverages(ClientID);
+	ResetLongTimeData(ClientID);
 	m_TimeStampJoined[ClientID] = GetTimeStamp();
 }
 
@@ -606,7 +653,7 @@ void CBotDetection::OnPlayerDisconnect(int ClientID) {
 	                         m_MaxDistanceFromBody[ClientID],
 	                         m_AvgDistanceFromBody[ClientID]);
 	ResetID(ClientID);
-	ResetAverages(ClientID);
+	ResetLongTimeData(ClientID);
 	free(m_TimeStampJoined[ClientID]);
 }
 
@@ -654,7 +701,7 @@ void CBotDetection::ResetID(int ClientID) {
 
 }
 
-void CBotDetection::ResetAverages(int ClientID) {
+void CBotDetection::ResetLongTimeData(int ClientID) {
 	m_AvgDistanceSum[ClientID] = 0;
 	m_AvgDistanceFromBody[ClientID] = 0;
 	m_InputCount[ClientID] = 0;
@@ -669,6 +716,9 @@ void CBotDetection::ResetAverages(int ClientID) {
 		m_SumCursorToPlayerIfInSightInAreaDistance[i][ClientID] = 0;
 
 		m_CountPlayerInSightInArea[i][ClientID] = 0;
+
+		m_MinCursorAngleToPlayerAngleDifferenceInArea[i][ClientID] = std::numeric_limits<double>::max();
+
 	}
 
 }
@@ -711,6 +761,7 @@ void CBotDetection::CreatePlayerAvgTable() {
 				AngleDiffArea7 DOUBLE, \
 				AngleDiffArea8 DOUBLE, \
 				AngleDiffArea9 DOUBLE, \
+				AngleDiffArea10 DOUBLE, \
 				CursorDistArea1 DOUBLE, \
 				CursorDistArea2 DOUBLE, \
 				CursorDistArea3 DOUBLE, \
@@ -720,6 +771,7 @@ void CBotDetection::CreatePlayerAvgTable() {
 				CursorDistArea7 DOUBLE, \
 				CursorDistArea8 DOUBLE, \
 				CursorDistArea9 DOUBLE,	\
+				CursorDistArea10 DOUBLE,	\
 				MinDistanceFromBody DOUBLE,	\
 				MaxDistanceFromBody DOUBLE,	\
 				AvgDistanceFromBody DOUBLE	\
@@ -756,6 +808,7 @@ void CBotDetection::InsertIntoPlayerAvgTable(int ClientID, int JoinHash, const c
 				AngleDiffArea7, \
 				AngleDiffArea8, \
 				AngleDiffArea9,	\
+				AngleDiffArea10,	\
 				CursorDistArea1, \
 				CursorDistArea2, \
 				CursorDistArea3, \
@@ -765,11 +818,12 @@ void CBotDetection::InsertIntoPlayerAvgTable(int ClientID, int JoinHash, const c
 				CursorDistArea7, \
 				CursorDistArea8, \
 				CursorDistArea9, \
+				CursorDistArea10, \
 				MinDistanceFromBody, \
 				MaxDistanceFromBody, \
 				AvgDistanceFromBody \
 				) \
-		VALUES ( ?1, trim(?2), ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19, ?20, ?21, ?22, ?23, ?24, ?25) \
+		VALUES ( ?1, trim(?2), ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, ?17, ?18, ?19, ?20, ?21, ?22, ?23, ?24, ?25, ?26, ?27) \
 		;";
 	sqlite3_stmt *pStmt;
 	int rc = sqlite_prepare_statement(m_SqliteDB, zSql, &pStmt, &zTail);
@@ -791,20 +845,22 @@ void CBotDetection::InsertIntoPlayerAvgTable(int ClientID, int JoinHash, const c
 		sqlite_bind_double(pStmt, 11, AngleAreas[7][ClientID]);
 		sqlite_bind_double(pStmt, 12, AngleAreas[8][ClientID]);
 		sqlite_bind_double(pStmt, 13, AngleAreas[9][ClientID]);
+		sqlite_bind_double(pStmt, 14, AngleAreas[0][ClientID]);
 
-		sqlite_bind_double(pStmt, 14, CursorAreas[1][ClientID]);
-		sqlite_bind_double(pStmt, 15, CursorAreas[2][ClientID]);
-		sqlite_bind_double(pStmt, 16, CursorAreas[3][ClientID]);
-		sqlite_bind_double(pStmt, 17, CursorAreas[4][ClientID]);
-		sqlite_bind_double(pStmt, 18, CursorAreas[5][ClientID]);
-		sqlite_bind_double(pStmt, 19, CursorAreas[6][ClientID]);
-		sqlite_bind_double(pStmt, 20, CursorAreas[7][ClientID]);
-		sqlite_bind_double(pStmt, 21, CursorAreas[8][ClientID]);
-		sqlite_bind_double(pStmt, 22, CursorAreas[9][ClientID]);
+		sqlite_bind_double(pStmt, 15, CursorAreas[1][ClientID]);
+		sqlite_bind_double(pStmt, 16, CursorAreas[2][ClientID]);
+		sqlite_bind_double(pStmt, 17, CursorAreas[3][ClientID]);
+		sqlite_bind_double(pStmt, 18, CursorAreas[4][ClientID]);
+		sqlite_bind_double(pStmt, 19, CursorAreas[5][ClientID]);
+		sqlite_bind_double(pStmt, 20, CursorAreas[6][ClientID]);
+		sqlite_bind_double(pStmt, 21, CursorAreas[7][ClientID]);
+		sqlite_bind_double(pStmt, 22, CursorAreas[8][ClientID]);
+		sqlite_bind_double(pStmt, 23, CursorAreas[9][ClientID]);
+		sqlite_bind_double(pStmt, 24, CursorAreas[0][ClientID]);
 
-		sqlite_bind_double(pStmt, 23, MinDistanceFromBody);
-		sqlite_bind_double(pStmt, 24, MaxDistanceFromBody);
-		sqlite_bind_double(pStmt, 25, AvgDistanceFromBody);
+		sqlite_bind_double(pStmt, 25, MinDistanceFromBody);
+		sqlite_bind_double(pStmt, 26, MaxDistanceFromBody);
+		sqlite_bind_double(pStmt, 27, AvgDistanceFromBody);
 
 		/* save to database */
 		switch (sqlite3_step(pStmt))
