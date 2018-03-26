@@ -96,7 +96,7 @@ private:
 
 	static void SetCore(TickPlayer *Target, TickPlayer *Source);
 	static void SetInput(TickPlayer *Target, TickPlayer *Source);
-	static double Distance(int x, int y, int x2, inty 2);
+	static double Distance(int x, int y, int x2, int y2);
 	void ResetID(int ClientID);
 
 };
