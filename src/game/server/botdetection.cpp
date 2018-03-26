@@ -213,7 +213,7 @@ double CBotDetection::Distance(int x, int y, int x2, int y2) {
 }
 
 double CBotDetection::Angle(int x, int y, int x2, int y2) {
-	return  acos((x * x2 + y * y2) / (sqrt(x * x + y * y) * sqrt(x2 * x2 + y2 * y2)));
+	return (x * x2 + y * y2) / (sqrt(x * x + y * y) * sqrt(x2 * x2 + y2 * y2));
 }
 
 
@@ -336,7 +336,7 @@ void CBotDetection::CalculateDistanceToEveryPlayer() {
 }
 
 /**
- * @brief Returns, in which sight area an enemy is, -1 if not in sight.
+ * @brief Returns, in which sight area an enemy is, 0 if not in sight.
  * @details [long description]
  *
  * @param ClientID [description]
