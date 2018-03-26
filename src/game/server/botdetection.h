@@ -20,9 +20,9 @@ public:
 	void OnPlayerDisconnect(int ClientID);
 
 	void ManageLastInputQueue();
-	void CalculateDistanceToEveryPlayer();
+	void CalculatePlayerRelations();
 	void ResetCurrentTick();
-
+	void ResetAverages(int ClientID);
 	char* GetInfoString(int ClientID);
 
 
@@ -60,12 +60,15 @@ private:
 	double m_MaxDistanceFromBody[MAX_CLIENTS];
 
 
+	// averages
 	double m_AvgDistanceSum[MAX_CLIENTS];
 	double m_AvgDistanceFromBody[MAX_CLIENTS];
 	int m_InputCount[MAX_CLIENTS];
 
-	double m_AngleBetweenPlayers[MAX_CLIENTS][MAX_CLIENTS];
+
 	double m_AngleToNearestPlayer[MAX_CLIENTS];
+	double m_CursorAngle[MAX_CLIENTS];
+
 
 	double Angle(int x, int y, int x2, int y2);
 	/**
@@ -85,12 +88,15 @@ private:
 	 *	Not in Sight: 0
 	 */
 
+	int m_CursorAngleToClosestAngleDiffPlayerInSight[MAX_CLIENTS];
+	double m_CursorAngleDifferenceToPlayerInSight[MAX_CLIENTS];
+
 	// averages:
 	double m_AvgCursorToPlayerIfInSightInAreaDistance[10][MAX_CLIENTS];
 	double m_SumCursorToPlayerIfInSightInAreaDistance[10][MAX_CLIENTS];
 	int m_CountPlayerInSightInArea[10][MAX_CLIENTS];
 
-	int EnemyInArea(int ClientID, int EnemyID);
+	int EnemyInSight(int ClientID, int EnemyID);
 
 	// TODO: Cursor traveled distance after player is in sight
 

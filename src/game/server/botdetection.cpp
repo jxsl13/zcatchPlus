@@ -14,6 +14,7 @@ CBotDetection::CBotDetection(CGameContext *GameServer)
 	for (int i = 0; i < MAX_CLIENTS; ++i)
 	{
 		ResetID(i);
+		ResetAverages(i);
 	}
 }
 
@@ -26,7 +27,7 @@ void CBotDetection::OnTick() {
 	ManageLastInputQueue();
 
 	// then calculate stuff
-	CalculateDistanceToEveryPlayer();
+	CalculatePlayerRelations();
 
 
 
@@ -215,19 +216,19 @@ double CBotDetection::Distance(int x, int y, int x2, int y2) {
 double CBotDetection::Angle(int x, int y, int x2, int y2) {
 
 	static const double TWOPI = 6.2831853071795865;
-    static const double RAD2DEG = 57.2957795130823209;
-    if (x == x2 && y == y2) 
-    	return -1;
+	static const double RAD2DEG = 57.2957795130823209;
+	if (x == x2 && y == y2)
+		return -1;
 
-    double theta = atan2(x2 - x, y2 - y);
-    if (theta < 0.0)
-        theta += TWOPI;
-    return RAD2DEG * theta;
+	double theta = atan2(x2 - x, y2 - y);
+	if (theta < 0.0)
+		theta += TWOPI;
+	return RAD2DEG * theta;
 }
 
 
 
-void CBotDetection::CalculateDistanceToEveryPlayer() {
+void CBotDetection::CalculatePlayerRelations() {
 	int PosX = -1, PosY = -1, PosX2 = -1, PosY2 = -1;
 	int CursorPosX = -1, CursorPosY = -1;
 	double PosDistance = std::numeric_limits<double>::max(), MyCursorToPosDistance = std::numeric_limits<double>::max();
@@ -260,6 +261,8 @@ void CBotDetection::CalculateDistanceToEveryPlayer() {
 				m_MaxDistanceFromBody[i] = m_CurrentDistanceFromBody[i];
 			}
 
+			m_CursorAngle[i] = Angle(PosX, PosY, CursorPosX, CursorPosY);
+
 
 			for (int j = 0; j < MAX_CLIENTS; j++)
 			{
@@ -274,6 +277,7 @@ void CBotDetection::CalculateDistanceToEveryPlayer() {
 						PosDistance = Distance(PosX, PosY, PosX2, PosY2);
 						// cursor of i to player j distance
 						MyCursorToPosDistance = Distance(CursorPosX, CursorPosY, PosX2, PosY2);
+
 
 					} else {
 						PosDistance = std::numeric_limits<double>::max();
@@ -301,6 +305,72 @@ void CBotDetection::CalculateDistanceToEveryPlayer() {
 					{
 						m_ClosestIDToCursorDistanceCT[i] = MyCursorToPosDistance;
 						m_ClosestIDToCursorCT[i] = j;
+					}
+
+
+					int inSight = EnemyInSight(i, j);
+
+					if (inSight)
+					{
+						int diff = abs(m_CursorAngle[i] - Angle(PosX, PosY, PosX2, PosY2));
+						if (diff < m_CursorAngleDifferenceToPlayerInSight[i])
+						{
+							m_CursorAngleDifferenceToPlayerInSight[i] = diff;
+							m_CursorAngleToClosestAngleDiffPlayerInSight[i] = j;
+						}
+
+						switch (inSight) {
+						case 1:
+							m_SumCursorToPlayerIfInSightInAreaDistance[1][i] += diff;;
+							m_CountPlayerInSightInArea[1][i]++;
+							m_AvgCursorToPlayerIfInSightInAreaDistance[1][i] = m_SumCursorToPlayerIfInSightInAreaDistance[1][i] / m_CountPlayerInSightInArea[1][i]++;
+							break;
+						case 2:
+							m_SumCursorToPlayerIfInSightInAreaDistance[2][i] += diff;;
+							m_CountPlayerInSightInArea[2][i]++;
+							m_AvgCursorToPlayerIfInSightInAreaDistance[2][i] = m_SumCursorToPlayerIfInSightInAreaDistance[2][i] / m_CountPlayerInSightInArea[2][i]++;
+							break;
+						case 3:
+							m_SumCursorToPlayerIfInSightInAreaDistance[3][i] += diff;;
+							m_CountPlayerInSightInArea[3][i]++;
+							m_AvgCursorToPlayerIfInSightInAreaDistance[3][i] = m_SumCursorToPlayerIfInSightInAreaDistance[3][i] / m_CountPlayerInSightInArea[3][i]++;
+							break;
+						case 4:
+							m_SumCursorToPlayerIfInSightInAreaDistance[4][i] += diff;;
+							m_CountPlayerInSightInArea[4][i]++;
+							m_AvgCursorToPlayerIfInSightInAreaDistance[4][i] = m_SumCursorToPlayerIfInSightInAreaDistance[4][i] / m_CountPlayerInSightInArea[4][i]++;
+							break;
+						case 5:
+							m_SumCursorToPlayerIfInSightInAreaDistance[5][i] += diff;;
+							m_CountPlayerInSightInArea[5][i]++;
+							m_AvgCursorToPlayerIfInSightInAreaDistance[5][i] = m_SumCursorToPlayerIfInSightInAreaDistance[5][i] / m_CountPlayerInSightInArea[5][i]++;
+							break;
+						case 6:
+							m_SumCursorToPlayerIfInSightInAreaDistance[6][i] += diff;;
+							m_CountPlayerInSightInArea[6][i]++;
+							m_AvgCursorToPlayerIfInSightInAreaDistance[6][i] = m_SumCursorToPlayerIfInSightInAreaDistance[6][i] / m_CountPlayerInSightInArea[6][i]++;
+							break;
+						case 7:
+							m_SumCursorToPlayerIfInSightInAreaDistance[7][i] += diff;;
+							m_CountPlayerInSightInArea[7][i]++;
+							m_AvgCursorToPlayerIfInSightInAreaDistance[7][i] = m_SumCursorToPlayerIfInSightInAreaDistance[7][i] / m_CountPlayerInSightInArea[7][i]++;
+							break;
+						case 8:
+							m_SumCursorToPlayerIfInSightInAreaDistance[8][i] += diff;;
+							m_CountPlayerInSightInArea[8][i]++;
+							m_AvgCursorToPlayerIfInSightInAreaDistance[8][i] = m_SumCursorToPlayerIfInSightInAreaDistance[8][i] / m_CountPlayerInSightInArea[8][i]++;
+							break;
+						case 9:
+							m_SumCursorToPlayerIfInSightInAreaDistance[9][i] += diff;;
+							m_CountPlayerInSightInArea[9][i]++;
+							m_AvgCursorToPlayerIfInSightInAreaDistance[9][i] = m_SumCursorToPlayerIfInSightInAreaDistance[9][i] / m_CountPlayerInSightInArea[9][i]++;
+							break;
+						default: break;
+						}
+
+					} else {
+						m_CursorAngleToClosestAngleDiffPlayerInSight[i] = -1;
+						m_CursorAngleDifferenceToPlayerInSight[i] = 361;
 					}
 
 
@@ -353,7 +423,7 @@ void CBotDetection::CalculateDistanceToEveryPlayer() {
  *
  * @return [description]
  */
-int CBotDetection::EnemyInArea(int ClientID, int EnemyID) {
+int CBotDetection::EnemyInSight(int ClientID, int EnemyID) {
 	if (ClientID == EnemyID)
 	{
 		return 0;
@@ -459,7 +529,7 @@ void CBotDetection::ResetCurrentTick() {
 
 char* CBotDetection::GetInfoString(int ClientID) {
 	char *aBuf = (char*)malloc(sizeof(char) * 512);
-	str_format(aBuf, 512, " %16s : CD: %.2f CCD: %.2f CDC: %.2f DMI: %.2f DMA: %.2f DA: %.2f DC: %.2f, ACD: %.8f",
+	str_format(aBuf, 512, " %16s : CD: %.2f CCD: %.2f CDC: %.2f DMI: %.2f DMA: %.2f DA: %.2f DC: %.2f, ACD: %.2f",
 	           m_GameContext->Server()->ClientName(ClientID),
 	           m_ClosestDistanceToCurrentIDCT[ClientID],
 	           m_ClosestIDToCursorDistanceCT[ClientID],
@@ -475,21 +545,26 @@ char* CBotDetection::GetInfoString(int ClientID) {
 
 void CBotDetection::OnPlayerConnect(int ClientID) {
 	ResetID(ClientID);
+	ResetAverages(ClientID);
 
 }
 
 void CBotDetection::OnPlayerDisconnect(int ClientID) {
 	ResetID(ClientID);
+	ResetAverages(ClientID);
 }
 
 void CBotDetection::ResetID(int ClientID) {
+
+	m_CursorAngleToClosestAngleDiffPlayerInSight[ClientID] = 361;
+	m_CursorAngleDifferenceToPlayerInSight[ClientID] = -1;
+
+	m_AngleToNearestPlayer[ClientID] = -1;
+	m_CursorAngle[ClientID] = -1;
+
 	m_CurrentDistanceFromBody[ClientID] = 0;
 	m_MinDistanceFromBody[ClientID] = std::numeric_limits<double>::max();
 	m_MaxDistanceFromBody[ClientID] = 0;
-
-	m_AvgDistanceSum[ClientID] = 0;
-	m_AvgDistanceFromBody[ClientID] = 0;
-	m_InputCount[ClientID] = 0;
 
 	m_aPlayersCurrentTick[ClientID].m_CoreAvailable = false;
 	m_aPlayersCurrentTick[ClientID].m_JoinHash = 0;
@@ -520,6 +595,20 @@ void CBotDetection::ResetID(int ClientID) {
 	m_aPlayersCurrentTick[ClientID].m_Input_WantedWeapon = 0;
 	m_aPlayersCurrentTick[ClientID].m_Input_NextWeapon = 0;
 	m_aPlayersCurrentTick[ClientID].m_Input_PrevWeapon = 0;
+
+}
+
+void CBotDetection::ResetAverages(int ClientID) {
+	m_AvgDistanceSum[ClientID] = 0;
+	m_AvgDistanceFromBody[ClientID] = 0;
+	m_InputCount[ClientID] = 0;
+
+	for (int i = 0; i < 10; ++i)
+	{
+		m_AvgCursorToPlayerIfInSightInAreaDistance[i][ClientID] = 0;
+		m_SumCursorToPlayerIfInSightInAreaDistance[i][ClientID] = 0;
+		m_CountPlayerInSightInArea[i][ClientID] = 0;
+	}
 
 }
 
