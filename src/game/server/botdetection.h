@@ -80,7 +80,7 @@ private:
 	static void SetCore(TickPlayer *Target, TickPlayer *Source);
 	static void SetInput(TickPlayer *Target, TickPlayer *Source);
 
-	ResetID(int ClientID);
+	void ResetID(int ClientID);
 
 };
 
