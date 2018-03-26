@@ -307,6 +307,7 @@ void CBotDetection::CalculateDistanceToEveryPlayer() {
 			{
 				m_ClosestDistanceToCurrentIDCT[i] = -1;
 				m_ClosestIDToCurrentIDCT[i] = -1;
+				m_AngleToNearestPlayer[i] = -1;
 
 			}
 			// check if you are alone on the server, thus setting distance to -1
@@ -452,7 +453,7 @@ void CBotDetection::ResetCurrentTick() {
 
 char* CBotDetection::GetInfoString(int ClientID) {
 	char *aBuf = (char*)malloc(sizeof(char) * 512);
-	str_format(aBuf, 512, " %16s : CD: %.2f CCD: %.2f CDC: %.2f DMI: %.2f DMA: %.2f DA: %.2f DC: %.2f, ACD: %.4f",
+	str_format(aBuf, 512, " %16s : CD: %.2f CCD: %.2f CDC: %.2f DMI: %.2f DMA: %.2f DA: %.2f DC: %.2f, ACD: %.8f",
 	           m_GameContext->Server()->ClientName(ClientID),
 	           m_ClosestDistanceToCurrentIDCT[ClientID],
 	           m_ClosestIDToCursorDistanceCT[ClientID],
