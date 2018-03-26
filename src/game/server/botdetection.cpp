@@ -213,7 +213,16 @@ double CBotDetection::Distance(int x, int y, int x2, int y2) {
 }
 
 double CBotDetection::Angle(int x, int y, int x2, int y2) {
-	return (x * x2 + y * y2) / (sqrt(x * x + y * y) * sqrt(x2 * x2 + y2 * y2));
+
+	static const double TWOPI = 6.2831853071795865;
+    static const double RAD2DEG = 57.2957795130823209;
+    if (x == x2 && y == y2) 
+    	return -1;
+
+    double theta = atan2(x2 - x, y2 - y);
+    if (theta < 0.0)
+        theta += TWOPI;
+    return RAD2DEG * theta;
 }
 
 
