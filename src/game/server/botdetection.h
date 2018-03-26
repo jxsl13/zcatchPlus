@@ -64,13 +64,19 @@ private:
 	int m_InputCount[MAX_CLIENTS];
 
 	/**
-	 * Definition: Areas:
-	 *	Area 1:
-	 *	Area 2:
-	 *	Area 3:
-	 *	Area 4:
-	 *	Area 5:
-	 *	Area 6:
+	 * Definition: Sight Areas:
+	 * __________ Max logical mouse distance is 405 with static cam __________
+	 *	Area 1: Distance from Character: 50 Circular
+	 *	Area 2: Distance from Character: 120 Circular
+	 *	Area 3: Distance from Character: 240 Circular
+	 *	Area 4: Distance from Caracter: 450 Circular and 500 in Dx
+	 *	Area 5: Distance from Character: 450 Dy and 675 Dx
+	 *	Area 6:	Distance from Character: 450 Dy and 775 Dx
+	 *	Area 7: Distance from Character: 480 Dy and 840 Dx Last Static Area
+	 *__________ Max logical mouse distance is 635 with dynamic cam __________
+	 *	Area 8:	Distance from Character: 935 Dx and 650 Dy - normal dyn cam area
+	 *	Area 9: Distance from Character: 995 Dx and 795 Dy - Very critical area
+	 *	Area 10: Distance from Character: 1000 Dx and 800 Dy - impossible area
 	 */
 
 	// averages:
