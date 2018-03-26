@@ -1,7 +1,7 @@
 #include "botdetection.h"
 #include <cstdlib>
 #include <limits>
-
+#include <cmath>
 
 
 
@@ -208,6 +208,18 @@ void CBotDetection::SetCore(TickPlayer *Target, TickPlayer *Source) {
 	Target->m_Core_HookDy = Source->m_Core_HookDy;
 
 }
+double CBotDetection::Distance(int x, int y, int x2, int y2) {
+	return sqrt(pow(x - x2 , 2) + pow(y - y2, 2));
+}
+
+double CBotDetection::Angle(int x, int y, int x2, int y2) {
+	double a = sqrt(x * x + y * y);
+	double b = sqrt(x2 * x2 + y2 * y2);
+	double c = x * x2 + y * y2;
+	return ((int)(1000 * (180.0 / acos(c / (a * b))))) / 1000.0;
+}
+
+
 
 void CBotDetection::CalculateDistanceToEveryPlayer() {
 	int PosX = -1, PosY = -1, PosX2 = -1, PosY2 = -1;
@@ -230,7 +242,7 @@ void CBotDetection::CalculateDistanceToEveryPlayer() {
 
 			// cursor distances from body
 			m_InputCount[i]++;
-			m_CurrentDistanceFromBody[i] = sqrt(pow(0 - m_aPlayersCurrentTick[i].m_Input_TargetX, 2) + pow(0 - m_aPlayersCurrentTick[i].m_Input_TargetY, 2));;
+			m_CurrentDistanceFromBody[i] = Distance(0, 0, m_aPlayersCurrentTick[i].m_Input_TargetX, m_aPlayersCurrentTick[i].m_Input_TargetY);
 			m_AvgDistanceSum[i] += m_CurrentDistanceFromBody[i];
 			m_AvgDistanceFromBody[i] = m_InputCount[i] / m_AvgDistanceSum[i];
 			if (m_CurrentDistanceFromBody[i] < m_MinDistanceFromBody[i])
@@ -253,9 +265,9 @@ void CBotDetection::CalculateDistanceToEveryPlayer() {
 						PosX2 = m_aPlayersCurrentTick[j].m_Core_X;
 						PosY2 = m_aPlayersCurrentTick[j].m_Core_Y;
 						// player distance
-						PosDistance = sqrt(pow(PosX - PosX2, 2) + pow(PosY - PosY2, 2));
+						PosDistance = Distance(PosX, PosY, PosX2, PosY2);
 						// cursor of i to player j distance
-						MyCursorToPosDistance = sqrt(pow(CursorPosX - PosX2, 2) + pow(CursorPosY - PosY2, 2));
+						MyCursorToPosDistance = Distance(CursorPosX, CursorPosY, PosX2, PosY2);
 
 					} else {
 						PosDistance = std::numeric_limits<double>::max();
@@ -276,6 +288,7 @@ void CBotDetection::CalculateDistanceToEveryPlayer() {
 						m_ClosestDistanceToCurrentIDCT[i] = PosDistance;
 						m_ClosestIDToCurrentIDCT[i] = j;
 						m_CursorToClosestDistanceIDCT[i] = MyCursorToPosDistance;
+						m_AngleToNearestPlayer[i] = Angle(PosX, PosY, PosX2, PosY2);
 					}
 
 					if (MyCursorToPosDistance < m_ClosestIDToCursorDistanceCT[i])
@@ -324,7 +337,79 @@ void CBotDetection::CalculateDistanceToEveryPlayer() {
 
 }
 
+/**
+ * @brief Returns, in which sight area an enemy is, -1 if not in sight.
+ * @details [long description]
+ *
+ * @param ClientID [description]
+ * @param EnemyID [description]
+ *
+ * @return [description]
+ */
+int CBotDetection::EnemyInArea(int ClientID, int EnemyID) {
+	if (ClientID == EnemyID)
+	{
+		return 0;
+	}
 
+	/**
+		 * Definition: Sight Areas:
+		 * __________ Max logical mouse distance is 405 with static cam __________
+		 *	Area 1: Distance from Character: 50 Circular
+		 *	Area 2: Distance from Character: 120 Circular
+		 *	Area 3: Distance from Character: 240 Circular
+		 *	Area 4: Distance from Caracter: 450 Circular and 500 in Dx
+		 *	Area 5: Distance from Character: 450 Dy and 675 Dx
+		 *	Area 6:	Distance from Character: 450 Dy and 775 Dx
+		 *	Area 7: Distance from Character: 480 Dy and 840 Dx Last Static Area
+		 *__________ Max logical mouse distance is 635 with dynamic cam __________
+		 *	Area 8:	Distance from Character: 935 Dx and 650 Dy - normal dyn cam area
+		 *	Area 9: Distance from Character: 995 Dx and 795 Dy - Very critical area
+		 *	Area 10: Distance from Character: 1000 Dx and 800 Dy - impossible area
+		 */
+
+	double distX = abs(m_aPlayersCurrentTick[ClientID].m_Core_X - m_aPlayersCurrentTick[EnemyID].m_Core_X);
+	double distY = abs(m_aPlayersCurrentTick[ClientID].m_Core_Y - m_aPlayersCurrentTick[EnemyID].m_Core_Y);
+	double distAbs = Distance(m_aPlayersCurrentTick[ClientID].m_Core_X,
+	                          m_aPlayersCurrentTick[ClientID].m_Core_Y,
+	                          m_aPlayersCurrentTick[EnemyID].m_Core_X,
+	                          m_aPlayersCurrentTick[EnemyID].m_Core_Y);
+
+
+	if (distAbs < 50.0)
+	{
+		return 1;
+	} else if (distAbs < 120.0)
+	{
+		return 2;
+	} else if (distAbs < 240.0)
+	{
+		return 3;
+	} else if (distAbs < 450.0 && distX < 500.0)
+	{
+		return 4;
+	} else if (distY < 450.0 && distX < 675.0)
+	{
+		return 5;
+	} else if (distY < 450.0 && distX < 775.0)
+	{
+		return 6;
+	} else if (distY < 480.0 && distX < 840.0)
+	{
+		return 7;
+	} else if (distX < 935.0 && distY < 650.0)
+	{
+		return 8;
+	} else if (distX < 995.0 && distY < 795.0)
+	{
+		return 9;
+	} else if (distX <= 1000.0 && distY <= 800.0)
+	{
+		return 10;
+	} else {
+		return 0;
+	}
+}
 
 
 void CBotDetection::ResetCurrentTick() {
@@ -367,7 +452,7 @@ void CBotDetection::ResetCurrentTick() {
 
 char* CBotDetection::GetInfoString(int ClientID) {
 	char *aBuf = (char*)malloc(sizeof(char) * 512);
-	str_format(aBuf, 512, " %16s : CD: %.2f CCD: %.2f CDC: %.2f DMI: %.2f DMA: %.2f DA: %.2f DC: %.2f",
+	str_format(aBuf, 512, " %16s : CD: %.2f CCD: %.2f CDC: %.2f DMI: %.2f DMA: %.2f DA: %.2f DC: %.2f, ACD: %.4f",
 	           m_GameContext->Server()->ClientName(ClientID),
 	           m_ClosestDistanceToCurrentIDCT[ClientID],
 	           m_ClosestIDToCursorDistanceCT[ClientID],
@@ -375,7 +460,8 @@ char* CBotDetection::GetInfoString(int ClientID) {
 	           m_MinDistanceFromBody[ClientID],
 	           m_MaxDistanceFromBody[ClientID],
 	           m_AvgDistanceFromBody[ClientID],
-	           m_CurrentDistanceFromBody[ClientID]);
+	           m_CurrentDistanceFromBody[ClientID],
+	           m_AngleToNearestPlayer[ClientID]);
 
 	return aBuf;
 }

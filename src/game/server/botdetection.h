@@ -59,10 +59,15 @@ private:
 	double m_MinDistanceFromBody[MAX_CLIENTS];
 	double m_MaxDistanceFromBody[MAX_CLIENTS];
 
+
 	double m_AvgDistanceSum[MAX_CLIENTS];
 	double m_AvgDistanceFromBody[MAX_CLIENTS];
 	int m_InputCount[MAX_CLIENTS];
 
+	double m_AngleBetweenPlayers[MAX_CLIENTS][MAX_CLIENTS];
+	double m_AngleToNearestPlayer[MAX_CLIENTS];
+
+	double CBotDetection::Angle(int x, int y, int x2, int y2);
 	/**
 	 * Definition: Sight Areas:
 	 * __________ Max logical mouse distance is 405 with static cam __________
@@ -77,15 +82,21 @@ private:
 	 *	Area 8:	Distance from Character: 935 Dx and 650 Dy - normal dyn cam area
 	 *	Area 9: Distance from Character: 995 Dx and 795 Dy - Very critical area
 	 *	Area 10: Distance from Character: 1000 Dx and 800 Dy - impossible area
+	 *	Not in Sight: 0
 	 */
 
 	// averages:
-	double m_AvgCursorToClosestPlayerIfInSight[MAX_CLIENTS];
+	double m_AvgCursorToPlayerIfInSightInAreaDistance[10][MAX_CLIENTS];
+	double m_SumCursorToPlayerIfInSightInAreaDistance[10][MAX_CLIENTS];
+	int double m_CountPlayerInSightInArea[10][MAX_CLIENTS];
 
+	EnemyInArea(int ClientID, int EnemyID);
+
+	// TODO: Cursor traveled distance after player is in sight
 
 	static void SetCore(TickPlayer *Target, TickPlayer *Source);
 	static void SetInput(TickPlayer *Target, TickPlayer *Source);
-
+	static double Distance(int x, int y, int x2, inty2);
 	void ResetID(int ClientID);
 
 };
