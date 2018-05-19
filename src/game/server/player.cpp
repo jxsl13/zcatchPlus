@@ -26,7 +26,7 @@ CPlayer::CPlayer(CGameContext *pGameServer, int ClientID, int Team)
 	
 	//zCatch
 	m_CaughtBy = ZCATCH_NOT_CAUGHT;
-	m_SpecExplicit = false;
+	m_SpecExplicit = true;
 	m_Kills = 0;
 	m_Deaths = 0;
 	m_LastKillTry = Server()->Tick();
