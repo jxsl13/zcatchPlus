@@ -216,7 +216,7 @@ private:
 	void AddFuture(std::future<void> Future) {m_Futures.push(std::move(Future));};
 	void CleanFutures() {
 		unsigned long size = m_Futures.size();
-		dbg_msg("TEST", "TEEHISTORIAN Size before: %lu", size);
+		//dbg_msg("TEST", "TEEHISTORIAN Size before: %lu", size);
 		for (unsigned long i = 0; i < size; ++i)
 		{
 			std::future<void> f = std::move(m_Futures.front());
@@ -230,13 +230,13 @@ private:
 			}
 		}
 
-		dbg_msg("TEST", "TEEHISTORIAN Size after: %lu", m_Futures.size());
+		//dbg_msg("TEST", "TEEHISTORIAN Size after: %lu", m_Futures.size());
 
 	};
 
 	void WaitForFutures() {
 		unsigned long size = m_Futures.size();
-		dbg_msg("TEST", "TEEHISTORIAN WaitForFutures before: %lu", m_Futures.size());
+		//dbg_msg("TEST", "TEEHISTORIAN WaitForFutures before: %lu", m_Futures.size());
 		for (unsigned long i = 0; i < size; ++i)
 		{
 			std::future<void> f = std::move(m_Futures.front());
@@ -244,7 +244,7 @@ private:
 			f.wait();
 		}
 
-		dbg_msg("TEST", "TEEHISTORIAN WaitForFutures after: %lu", m_Futures.size());
+		//dbg_msg("TEST", "TEEHISTORIAN WaitForFutures after: %lu", m_Futures.size());
 	};
 
 

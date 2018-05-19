@@ -158,7 +158,7 @@ void CTeeHistorian::OnShutDown(bool FinalShutdown) {
 		if (FinalShutdown)
 		{
 			WaitForFutures();
-			dbg_msg("TeeHistorian", "Joining Threads.");
+			dbg_msg("TeeHistorian", "Joining Threads on Shutdown.");
 		} else {
 			CleanFutures();
 		}
@@ -201,7 +201,7 @@ void CTeeHistorian::DatabaseWriter() {
 			//dbg_msg("TEST", "Writing Primary Cache(%d) ", m_PrimaryCacheSize);
 			sqlite_lock(&m_SqliteMutex);
 
-			char *ErrMsg;
+			char *ErrMsg = 0;
 
 			sqlite_exec(m_SqliteDB, m_QueryCachePrimary, &ErrMsg);
 			sqlite_exec(m_SqliteDB, "END TRANSACTION", &ErrMsg);
@@ -1330,7 +1330,7 @@ void CTeeHistorian::InsertIntoRconActivityTable(char* NickName, char *TimeStamp,
 		INSERT OR REPLACE INTO RconActivity (NickName, TimeStamp, Command, Arguments) \
 		VALUES ( trim(?1), ?2, ?3, ?4) \
 		;";
-	sqlite3_stmt *pStmt;
+	sqlite3_stmt *pStmt = 0;
 	int rc = sqlite_prepare_statement(m_SqliteDB, zSql, &pStmt, &zTail);
 
 	if (rc == SQLITE_OK)
@@ -1375,7 +1375,7 @@ void CTeeHistorian::InsertIntoPlayerMovementTable(int ClientJoinHash, char *Time
 		INSERT OR REPLACE INTO PlayerMovement (JoinHash, TimeStamp, Tick, X, Y, OldX, OldY) \
 		VALUES ( ?1, trim(?2), ?3, ?4, ?5, ?6, ?7 ) \
 		;";
-	sqlite3_stmt *pStmt;
+	sqlite3_stmt *pStmt = 0;
 	int rc = sqlite_prepare_statement(m_SqliteDB, zSql, &pStmt, &zTail);
 
 	if (rc == SQLITE_OK)
@@ -1425,7 +1425,7 @@ void CTeeHistorian::InsertIntoPlayerInputTable(int ClientJoinHash, char *TimeSta
 		INSERT OR REPLACE INTO PlayerInput (JoinHash, TimeStamp, Tick, Direction, TargetX, TargetY, Jump, Fire, Hook, PlayerFlags, WantedWeapon, NextWeapon, PrevWeapon) \
 		VALUES ( ?1, trim(?2), ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13 ) \
 		;";
-	sqlite3_stmt *pStmt;
+	sqlite3_stmt *pStmt = 0;
 	int rc = sqlite_prepare_statement(m_SqliteDB, zSql, &pStmt, &zTail);
 
 	if (rc == SQLITE_OK)
@@ -1477,7 +1477,7 @@ void CTeeHistorian::InsertIntoPlayerConnectedStateTable(int ClientJoinHash, char
 		INSERT OR REPLACE INTO PlayerConnectedState (JoinHash, NickName, ClientID, TimeStamp, Tick, ConnectedState, Reason) \
 		VALUES ( ?1, trim(?2), ?3, ?4, ?5, ?6, ?7) \
 		;";
-	sqlite3_stmt *pStmt;
+	sqlite3_stmt *pStmt = 0;
 	int rc = sqlite_prepare_statement(m_SqliteDB, zSql, &pStmt, &zTail);
 
 	if (rc == SQLITE_OK)

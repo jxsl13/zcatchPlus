@@ -584,7 +584,7 @@ void CGameController_zCatch::SaveScore(CGameContext* GameServer, char *name, int
 			FROM zCatch \
 		) old ON old.username = new.username; \
 		";
-	sqlite3_stmt *pStmt;
+	sqlite3_stmt *pStmt = 0;
 	int rc = sqlite3_prepare_v2(GameServer->GetRankingDb(), zSql, strlen(zSql), &pStmt, &zTail);
 
 	if (rc == SQLITE_OK)
@@ -693,7 +693,7 @@ void CGameController_zCatch::ChatCommandTopFetchDataAndPrint(CGameContext* GameS
 	char sqlBuf[128];
 	str_format(sqlBuf, sizeof(sqlBuf), "SELECT username, %s FROM zCatch ORDER BY %s DESC LIMIT 5;", column, column);
 	const char *zSql = sqlBuf;
-	sqlite3_stmt *pStmt;
+	sqlite3_stmt *pStmt = 0;
 	int rc = sqlite3_prepare_v2(GameServer->GetRankingDb(), zSql, strlen(zSql), &pStmt, &zTail);
 
 	if (rc == SQLITE_OK)
@@ -797,7 +797,7 @@ void CGameController_zCatch::ChatCommandRankFetchDataAndPrint(CGameContext* Game
 		FROM zCatch a \
 		WHERE username = ?1\
 		;";
-	sqlite3_stmt *pStmt;
+	sqlite3_stmt *pStmt = 0;
 	int rc = sqlite3_prepare_v2(GameServer->GetRankingDb(), zSql, strlen(zSql), &pStmt, &zTail);
 
 	if (rc == SQLITE_OK)
@@ -966,7 +966,7 @@ void CGameController_zCatch::MergeRankingIntoTarget(CGameContext* GameServer, ch
 
 	/*Sqlite stuff*/
 	/*sqlite statement object*/
-	sqlite3_stmt *pStmt;
+	sqlite3_stmt *pStmt = 0;
 	int source_rc;
 	int source_row;
 
