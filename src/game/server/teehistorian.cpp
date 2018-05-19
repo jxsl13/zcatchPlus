@@ -874,7 +874,7 @@ void CTeeHistorian::RecordPlayerJoin(int ClientJoinHash , const char* ClientNick
 
 			char* TimeStamp = GetTimeStamp();
 
-			char *Reason = (char*)malloc(sizeof(char));
+			char *Reason = (char*)malloc(512 * sizeof(char));
 			str_copy(Reason, "", sizeof(Reason));
 
 
