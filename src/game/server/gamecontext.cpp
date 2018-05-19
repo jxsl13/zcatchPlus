@@ -1373,8 +1373,11 @@ void CGameContext::OnMessage(int MsgID, CUnpacker *pUnpacker, int ClientID)
 				}
 				if (mode->m_ModeDoubleKill.m_Active)
 					SendChatTarget(ClientID, "Hard mode: hit everyone two times in a row");
+			} 
+			else if (g_Config.m_SvAllowHardMode == 0 && (!str_comp_nocase_num("hard", pMsg->m_pMessage + 1, 4) || !str_comp_nocase_num("hard ", pMsg->m_pMessage + 1, 5)))
+			{
+				SendChatTarget(ClientID, "Hard Mode is disabled on this server.");
 			}
-
 			else
 			{
 				SendChatTarget(ClientID, "Unknown command, try /info");
