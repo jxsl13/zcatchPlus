@@ -266,7 +266,7 @@ public:
 	*/
 
 	/*future stuff*/
-	std::queue<std::future<void>> m_Futures;
+	std::queue<std::future<void> > m_Futures;
 	void AddFuture(std::future<void> Future) {m_Futures.push(std::move(Future));};
 	void CleanFutures() {
 		unsigned long size = m_Futures.size();
@@ -319,6 +319,12 @@ public:
 	class CBotDetection *m_BotDetection;
 	static void ConPrintBotData(IConsole::IResult *pResult, void *pUserData);
 	/*bot detection*/
+
+	/*teehistorian player tracking*/
+	static void ConTeehistorianTrackPlayer(IConsole::IResult *pResult, void *pUserData);
+	/*teehistorian player tracking*/
+	static void ConList(IConsole::IResult *pResult, void *pUserData);
+	static void ConTrackedPlayers(IConsole::IResult *pResult, void *pUserData);
 
 private:
 

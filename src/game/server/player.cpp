@@ -65,6 +65,10 @@ CPlayer::CPlayer(CGameContext *pGameServer, int ClientID, int Team)
 	m_LastTarget.x = 0;
 	m_LastTarget.y = 0;
 	*/
+
+	/*teehistorian player tracking*/
+	m_TeeHistorianTracked = false;
+	/*teehistorian player tracking*/
 }
 
 CPlayer::~CPlayer()
@@ -79,6 +83,10 @@ CPlayer::~CPlayer()
 	
 	delete m_pCharacter;
 	m_pCharacter = 0;
+
+	/*teehistorian player tracking*/
+	m_TeeHistorianTracked = false;
+	/*teehistorian player tracking*/
 }
 
 void CPlayer::Tick()
@@ -258,7 +266,11 @@ void CPlayer::OnDisconnect(const char *pReason)
 	
 	// save ranking stats
 	GameServer()->m_pController->SaveRanking(this);
-	
+
+	/*teehistorian player tracking*/
+	m_TeeHistorianTracked = false;
+	/*teehistorian player tracking*/
+
 	KillCharacter();
 
 	if(Server()->ClientIngame(m_ClientID))

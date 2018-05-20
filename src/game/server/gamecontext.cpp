@@ -17,6 +17,21 @@
 #include "gamemodes/mod.h"*/
 #include "gamemodes/zcatch.h"
 #include "gamecontext.h"
+
+
+// needed for server.h include to access
+// server stuff like admin status etc..
+#include <engine/masterserver.h>
+#include <engine/shared/demo.h>
+#include <engine/shared/econ.h>
+#include <engine/shared/mapchecker.h>
+#include <engine/shared/netban.h>
+#include <engine/shared/network.h>
+#include <engine/shared/snapshot.h>
+#include <engine/server/register.h>
+#include <engine/server/server.h>
+
+
 enum
 {
 	RESET,
@@ -511,7 +526,6 @@ void CGameContext::OnTick()
 
 
 	/*teehistorian*/
-
 	if (m_TeeHistorian.GetMode())
 	{
 
@@ -574,6 +588,7 @@ void CGameContext::OnTick()
 		m_TeeHistorian.EndPlayers();
 		m_TeeHistorian.BeginInputs();
 	}
+	m_TeeHistorian.CheckHistorianModeToggled();
 	/*teehistorian end*/
 
 
@@ -596,7 +611,7 @@ void CGameContext::OnTick()
 	}
 
 	/*bot detection*/
-	if(g_Config.m_SvBotDetection)
+	if (g_Config.m_SvBotDetection)
 	{
 		m_BotDetection->OnTick();
 	}
@@ -1371,7 +1386,7 @@ void CGameContext::OnMessage(int MsgID, CUnpacker *pUnpacker, int ClientID)
 				}
 				if (mode->m_ModeDoubleKill.m_Active)
 					SendChatTarget(ClientID, "Hard mode: hit everyone two times in a row");
-			} 
+			}
 			else if (g_Config.m_SvAllowHardMode == 0 && (!str_comp_nocase_num("hard", pMsg->m_pMessage + 1, 4) || !str_comp_nocase_num("hard ", pMsg->m_pMessage + 1, 5)))
 			{
 				SendChatTarget(ClientID, "Hard Mode is disabled on this server.");
@@ -2570,8 +2585,44 @@ void CGameContext::OnConsoleInit()
 	Console()->Register("merge_records", "ss", CFGFLAG_SERVER, ConMergeRecords, this, "Merge two records into the target username and delete source records: merge_records <source nickname> <target nickname>", IConsole::ACCESS_LEVEL_ADMIN);
 	Console()->Register("merge_records_id", "ii", CFGFLAG_SERVER, ConMergeRecordsId, this, "Merge two records into the target ID and delete source ID's records: merge_records <source ID> <target ID>", IConsole::ACCESS_LEVEL_ADMIN);
 	Console()->Register("save_tee_historian", "", CFGFLAG_SERVER, ConSaveTeehistorian, this, "Writes latest records to either the Sqlite Database or creates a new Teehistorian File.", IConsole::ACCESS_LEVEL_ADMIN);
+	Console()->Register("track", "i", CFGFLAG_SERVER, ConTeehistorianTrackPlayer, this, "Tracks game using TeeHistorian as long as there are tracked players online.");
+
+	Console()->Register("list", "", CFGFLAG_SERVER, ConList, this, "Lists player information like status, but is less a pain in the ass to handle.");
+	Console()->Register("ls", "", CFGFLAG_SERVER, ConList, this, "Lists player information like status, but is less a pain in the ass to handle.");
+
+	Console()->Register("tracked", "", CFGFLAG_SERVER, ConTrackedPlayers, this, "Shows tracked player count");
+
 }
 
+void CGameContext::ConTrackedPlayers(IConsole::IResult *pResult, void *pUserData){
+	CGameContext *pSelf = (CGameContext *)pUserData;
+	char aBuf[128];
+			str_format(aBuf, sizeof(aBuf), "Tracked player count: %d", pSelf->m_TeeHistorian.GetTrackedPlayersCount());
+			pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "TeeHistorian", aBuf);
+}
+
+void CGameContext::ConList(IConsole::IResult *pResult, void *pUserData){
+
+	CGameContext *pSelf = (CGameContext *)pUserData;
+	if(pSelf == 0){
+		return;
+	}
+
+	for (int i = 0; i < MAX_CLIENTS; ++i)
+	{
+		if(pSelf->m_apPlayers[i]){
+
+			const char *pAuthStr = pSelf->Server()->GetAuthLevel(i) == CServer::AUTHED_ADMIN ? "(Admin)" :
+				                       pSelf->Server()->GetAuthLevel(i) == CServer::AUTHED_SUBADMIN ? "(Subadmin)" :
+				                       pSelf->Server()->GetAuthLevel(i) == CServer::AUTHED_MOD ? "(Mod)" : "";
+
+			char aBuf[128];
+			str_format(aBuf, sizeof(aBuf), "%-3d %-16s %-16s %-9s %-10s", i, pSelf->Server()->ClientName(i), pSelf->Server()->ClientClan(i), pSelf->m_apPlayers[i]->GetTeeHistorianTracked() ? "(tracked)" : "", pAuthStr);
+			pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Server", aBuf);
+
+		}
+	}
+}
 
 
 void CGameContext::ConSaveTeehistorian(IConsole::IResult *pResult, void *pUserData) {
@@ -2579,6 +2630,41 @@ void CGameContext::ConSaveTeehistorian(IConsole::IResult *pResult, void *pUserDa
 
 	pSelf->m_TeeHistorian.Stop();
 	pSelf->AddFuture(std::async(std::launch::async, &CTeeHistorian::OnSave, &(pSelf->m_TeeHistorian)));
+}
+
+void CGameContext::ConTeehistorianTrackPlayer(IConsole::IResult *pResult, void *pUserData) {
+	CGameContext *pSelf = (CGameContext *)pUserData;
+	int trackedId(pResult->GetInteger(0));
+
+	// illegal id: out of player id range
+	if (trackedId < 0 || trackedId > MAX_CLIENTS) {
+		char aBuf[128];
+		str_format(aBuf, sizeof(aBuf), "Given ID \'%d\' is not valid.", trackedId);
+		pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "TeeHistorian", aBuf);
+
+	} else if (pSelf->m_apPlayers[trackedId]) // player exists
+	{
+		// player is already being tracked
+		if (pSelf->m_apPlayers[trackedId]->GetTeeHistorianTracked())
+		{
+			char aBuf[48];
+			str_format(aBuf, sizeof(aBuf), "Player is already being tracked!");
+			pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "TeeHistorian", aBuf);
+		} else { // player is not yet being tracked
+			if(pSelf->m_TeeHistorian.GetTrackedPlayersCount() == 0){
+				ConSaveTeehistorian(pResult,pUserData);
+			}
+			pSelf->m_apPlayers[trackedId]->SetTeeHistorianTracked(true);
+			char aBuf[128];
+			str_format(aBuf, sizeof(aBuf), "\'%s\' is now being tracked!", pSelf->Server()->ClientName(trackedId));
+			pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "TeeHistorian", aBuf);
+		}
+	} else	// id is valid, but there is no such player on the server.
+	{
+		char aBuf[128];
+		str_format(aBuf, sizeof(aBuf), "There is no player with the id \'%d\' online", trackedId);
+		pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "TeeHistorian", aBuf);
+	}
 }
 
 void CGameContext::OnInit(/*class IKernel *pKernel*/)

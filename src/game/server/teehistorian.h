@@ -52,6 +52,7 @@ public:
 	CTeeHistorian();
 	~CTeeHistorian();
 	void RetrieveMode(bool OnInit);
+	void ForceGlobalMode(int Mode);
 	void Stop();
 	void CheckHistorianModeToggled();
 	void OnInit(IStorage *pStorage, IServer *pServer, IGameController *pController, CTuningParams *pTuning, CGameContext *pGameContext);
@@ -97,6 +98,16 @@ public:
 		MODE_TEE_HISTORIAN = 1,
 		MODE_SQLITE = 2,
 	};
+
+	int GetTrackedPlayersCount(){return m_TrackedPlayers;}
+	void SetTrackedPlayersCount(int count){m_TrackedPlayers = count;}
+	void IncTrackedPlayersCount(){m_TrackedPlayers++;}
+	void DecTrackedPlayersCount(){m_TrackedPlayers--;}
+
+	void UpdateTrackedPlayersCountPreviousTick(){m_TrackedPlayersPreviousTick = m_TrackedPlayers;}
+	int GetTrackedPlayersCountPrevousTick(){return m_TrackedPlayersPreviousTick;}
+
+
 
 private:
 
@@ -212,7 +223,7 @@ private:
 	// 	} ;
 	// };
 
-	std::queue<std::future<void>> m_Futures;
+	std::queue<std::future<void> > m_Futures;
 	void AddFuture(std::future<void> Future) {m_Futures.push(std::move(Future));};
 	void CleanFutures() {
 		unsigned long size = m_Futures.size();
@@ -265,6 +276,12 @@ private:
 	bool m_TickTresholdReached;
 	CPlayer m_aPrevPlayers[MAX_CLIENTS];
 	CUuid m_GameUuid;
+
+
+	/*teehistorian player tracking*/
+	int m_TrackedPlayers;
+	int m_TrackedPlayersPreviousTick;
+	/*teehistorian player tracking*/
 };
 
 #endif

@@ -203,6 +203,12 @@ public:
 	vec2 m_AimBotLastDetectionPos;
 	vec2 m_AimBotLastDetectionPosVictim;
 	*/
+	/*teehistorian player tracking*/
+	bool m_TeeHistorianTracked;
+
+	void SetTeeHistorianTracked(bool tracked){m_TeeHistorianTracked = tracked;}
+	bool GetTeeHistorianTracked(){return m_TeeHistorianTracked;}
+	/*teehistorian player tracking*/
 
 private:
 	CCharacter *m_pCharacter;

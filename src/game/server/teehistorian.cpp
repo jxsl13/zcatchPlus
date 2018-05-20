@@ -53,13 +53,6 @@ static char EscapeJsonChar(char c)
 
 void CTeeHistorian::CheckHistorianModeToggled() {
 
-	RetrieveMode(false);
-
-	if (GetMode() != GetOldMode())
-	{
-		OnSave();
-		//m_OldHistorianMode = m_HistorianMode;
-	}
 }
 
 void CTeeHistorian::OnInit(IStorage *pStorage, IServer *pServer, IGameController *pController, CTuningParams *pTuning, CGameContext *pGameContext) {
@@ -699,29 +692,22 @@ void CTeeHistorian::EnsureTickWritten()
 
 void CTeeHistorian::WriteTick()
 {
-	if (GetMode()) {
 
-		if (GetMode() == MODE_SQLITE)
-		{
-			/* code */
-		} else if (GetMode() == MODE_TEE_HISTORIAN)
-		{
-			CPacker TickPacker;
-			TickPacker.Reset();
+	CPacker TickPacker;
+	TickPacker.Reset();
 
-			int dt = m_Tick - m_LastWrittenTick - 1;
-			TickPacker.AddInt(-TEEHISTORIAN_TICK_SKIP);
-			TickPacker.AddInt(dt);
-			if (m_Debug)
-			{
-				dbg_msg("teehistorian", "skip_ticks dt=%d", dt);
-			}
-			Write(TickPacker.Data(), TickPacker.Size());
-		}
-		m_TickWritten = true;
-		m_LastWrittenTick = m_Tick;
-
+	int dt = m_Tick - m_LastWrittenTick - 1;
+	TickPacker.AddInt(-TEEHISTORIAN_TICK_SKIP);
+	TickPacker.AddInt(dt);
+	if (m_Debug)
+	{
+		dbg_msg("teehistorian", "skip_ticks dt=%d", dt);
 	}
+	Write(TickPacker.Data(), TickPacker.Size());
+
+	m_TickWritten = true;
+	m_LastWrittenTick = m_Tick;
+
 }
 
 void CTeeHistorian::EndPlayers()
@@ -1003,15 +989,8 @@ void CTeeHistorian::RecordConsoleCommand(const char* ClientNick, int ClientID, i
 void CTeeHistorian::RecordTestExtra()
 {
 
-	if (GetMode())
-	{
-		if (GetMode() == MODE_SQLITE)
-		{
-			/* code */
-		} else if (GetMode() == MODE_TEE_HISTORIAN) {
-			WriteExtra(UUID_TEEHISTORIAN_TEST, "", 0);
-		}
-	}
+
+	WriteExtra(UUID_TEEHISTORIAN_TEST, "", 0);
 
 }
 
@@ -1111,51 +1090,41 @@ void CTeeHistorian::RecordAuthLogout(const char* ClientNick, int ClientID)
 
 void CTeeHistorian::Finish()
 {
-	if (GetMode()) {
-		dbg_assert(m_State == STATE_START || m_State == STATE_INPUTS || m_State == STATE_BEFORE_ENDTICK || m_State == STATE_BEFORE_TICK, "invalid teehistorian state");
 
-		if (GetMode() == MODE_SQLITE)
-		{
+	dbg_assert(m_State == STATE_START || m_State == STATE_INPUTS || m_State == STATE_BEFORE_ENDTICK || m_State == STATE_BEFORE_TICK, "invalid teehistorian state");
 
+	CPacker Buffer;
+	Buffer.Reset();
+	Buffer.AddInt(-TEEHISTORIAN_FINISH);
 
-		} else if (GetMode() == MODE_TEE_HISTORIAN) {
-
-			CPacker Buffer;
-			Buffer.Reset();
-			Buffer.AddInt(-TEEHISTORIAN_FINISH);
-
-			if (m_Debug)
-			{
-				dbg_msg("teehistorian", "finish");
-			}
-
-			Write(Buffer.Data(), Buffer.Size());
-		}
-
-
-
-		if (m_State == STATE_INPUTS)
-		{
-			EndInputs();
-		}
-
-		if (m_State == STATE_BEFORE_ENDTICK)
-		{
-			EndTick();
-		}
-
-
+	if (m_Debug)
+	{
+		dbg_msg("teehistorian", "finish");
 	}
+
+	Write(Buffer.Data(), Buffer.Size());
+
+
+
+
+	if (m_State == STATE_INPUTS)
+	{
+		EndInputs();
+	}
+
+	if (m_State == STATE_BEFORE_ENDTICK)
+	{
+		EndTick();
+	}
+
+
 
 }
 
 
 void CTeeHistorian::Stop() {
-	if (GetOldMode() != GetMode())
-	{
-		SetOldMode(GetMode());
-	}
 
+	SetOldMode(GetMode());
 	SetMode(MODE_NONE);
 }
 
