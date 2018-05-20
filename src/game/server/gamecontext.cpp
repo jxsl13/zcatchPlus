@@ -957,6 +957,8 @@ void CGameContext::OnClientDrop(int ClientID, const char *pReason)
 		m_apPlayers[m_apPlayers[ClientID]->m_CaughtBy]->ReleaseZCatchVictim(ClientID);
 
 	m_BotDetection->OnPlayerDisconnect(ClientID);
+	// tee historian tracking
+	m_apPlayers[ClientID]->SetTeeHistorianTracked(false);
 
 	AbortVoteKickOnDisconnect(ClientID);
 	m_apPlayers[ClientID]->OnDisconnect(pReason);

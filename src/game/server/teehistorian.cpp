@@ -52,7 +52,31 @@ static char EscapeJsonChar(char c)
 }
 
 void CTeeHistorian::CheckHistorianModeToggled() {
+	SetTrackedPlayersCount(0);
+	// Recount tracked players.
+	for (int i = 0; i < MAX_CLIENTS; ++i)
+	{
+		if(m_pGameContext->m_apPlayers[i] && m_pGameContext->m_apPlayers[i]->GetTeeHistorianTracked()){
+			IncTrackedPlayersCount();
+		}
+	}
 
+	if(GetTrackedPlayersCountPrevousTick() == 0 && GetTrackedPlayersCount() > 0){
+		// previously nobody was tracked, not we got some people tracked
+		Stop();
+		OnSave();
+		SetMode(MODE_TEE_HISTORIAN);
+		ForceGlobalMode(MODE_TEE_HISTORIAN);
+		OnSave();
+
+
+
+	} else if (GetTrackedPlayersCountPrevousTick() > 0 && GetTrackedPlayersCount() == 0)
+	{
+		// previously somebody was tracked, but now nobody is tracked anymore.
+	}
+
+	UpdateTrackedPlayersCountPreviousTick();
 }
 
 void CTeeHistorian::OnInit(IStorage *pStorage, IServer *pServer, IGameController *pController, CTuningParams *pTuning, CGameContext *pGameContext) {
@@ -143,10 +167,8 @@ void CTeeHistorian::OnShutDown(bool FinalShutdown) {
 
 	Finish();
 
-	if (GetOldMode() == MODE_SQLITE)
+	if (GetMode() == MODE_SQLITE)
 	{
-		SetMode(MODE_NONE);
-		SetOldMode(MODE_NONE);
 
 		if (FinalShutdown)
 		{
@@ -157,7 +179,7 @@ void CTeeHistorian::OnShutDown(bool FinalShutdown) {
 		}
 
 
-	} else if (GetOldMode() == MODE_TEE_HISTORIAN)
+	} else if (GetMode() == MODE_TEE_HISTORIAN)
 	{
 		aio_close(m_pTeeHistorianFile);
 		aio_wait(m_pTeeHistorianFile);
@@ -169,10 +191,6 @@ void CTeeHistorian::OnShutDown(bool FinalShutdown) {
 		}
 		aio_free(m_pTeeHistorianFile);
 	}
-
-	SetMode(MODE_NONE);
-	SetOldMode(MODE_NONE);
-
 }
 
 void CTeeHistorian::OnSave() {
@@ -338,8 +356,22 @@ void CTeeHistorian::RetrieveMode(bool OnInit) {
 		SetMode(MODE_NONE);
 		SetOldMode(MODE_NONE);
 	}
+}
 
+void CTeeHistorian::ForceGlobalMode(int Mode) {
 
+	if (Mode == MODE_NONE) {
+		g_Config.m_SvTeeHistorian = 0;
+		g_Config.m_SvSqliteHistorian = 0;
+	} else if (Mode == MODE_SQLITE)
+	{
+		g_Config.m_SvTeeHistorian = 1;
+		g_Config.m_SvSqliteHistorian = 1;
+	} else if (Mode == MODE_TEE_HISTORIAN)
+	{
+		g_Config.m_SvTeeHistorian = 1;
+		g_Config.m_SvSqliteHistorian = 0;
+	}
 
 }
 
@@ -677,7 +709,6 @@ void CTeeHistorian::Write(const void *pData, int DataSize)
 	} else if (GetMode() == MODE_TEE_HISTORIAN) {
 		m_pfnWriteCallback(pData, DataSize, m_pWriteCallbackUserdata);
 	}
-
 }
 
 
@@ -887,7 +918,7 @@ void CTeeHistorian::RecordPlayerJoin(int ClientJoinHash , const char* ClientNick
 }
 
 void CTeeHistorian::RecordPlayerDrop(int ClientJoinHash, const char* ClientNick, int ClientID, int Tick, const char *pReason)
-{
+{	
 	if (GetMode())
 	{
 		if (GetMode() == MODE_SQLITE)
