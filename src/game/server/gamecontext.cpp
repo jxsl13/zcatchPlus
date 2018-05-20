@@ -583,8 +583,24 @@ void CGameContext::OnTick()
 		{
 			m_apPlayers[i]->Tick();
 			m_apPlayers[i]->PostTick();
+
+			/*bot detection*/
+			if (g_Config.m_SvBotDetection && m_apPlayers[i]->GetCharacter())
+			{
+				CNetObj_CharacterCore Char;
+				m_apPlayers[i]->GetCharacter()->GetCore().Write(&Char);
+				m_BotDetection->AddPlayerCore(i, Server()->ClientJoinHash(i), &Char);
+			}
+			/*bot detection*/
 		}
 	}
+
+	/*bot detection*/
+	if(g_Config.m_SvBotDetection)
+	{
+		m_BotDetection->OnTick();
+	}
+	/*bot detection*/
 
 	// update voting
 	if (m_VoteCloseTime)
@@ -606,6 +622,7 @@ void CGameContext::OnTick()
 					if (m_apPlayers[i])
 						Server()->GetClientAddr(i, aaBuf[i], NETADDR_MAXSTRSIZE);
 				bool aVoteChecked[MAX_CLIENTS] = {0};
+
 				for (int i = 0; i < MAX_CLIENTS; i++)
 				{
 					/* zCatch - Allow voting from players in spectators (needed or the last 2 players ingame can kick the whole server),
@@ -676,25 +693,6 @@ void CGameContext::OnTick()
 		SendChat(-1, CGameContext::CHAT_ALL, Server()->GetNextInfoText().c_str());
 	}
 
-
-	/*bot detection*/
-
-	if (g_Config.m_SvBotDetection)
-	{
-
-		for (int i = 0; i < MAX_CLIENTS; i++)
-		{
-			if (m_apPlayers[i] && m_apPlayers[i]->GetCharacter())
-			{
-				CNetObj_CharacterCore Char;
-				m_apPlayers[i]->GetCharacter()->GetCore().Write(&Char);
-				m_BotDetection->AddPlayerCore(i, Server()->ClientJoinHash(i), &Char);
-			}
-		}
-	}
-
-	m_BotDetection->OnTick();
-	/*bot detection*/
 
 
 	// bot detection
@@ -2485,7 +2483,7 @@ void CGameContext::ConMergeRecordsId(IConsole::IResult *pResult, void *pUserData
 	        Source >= MAX_CLIENTS ||
 	        Target >= MAX_CLIENTS) {
 		/* print info */
-		char aBuf[64];
+		char aBuf[128];
 		str_format(aBuf, sizeof(aBuf), "Merging was not successful, because either both IDs are equal or ID's are not valid.");
 		pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "ranking", aBuf);
 		return;
@@ -2502,9 +2500,11 @@ void CGameContext::ConMergeRecordsId(IConsole::IResult *pResult, void *pUserData
 	        str_comp(target, "(invalid)") == 0 ||
 	        str_comp(source, "(connecting)") == 0 ||
 	        str_comp(target, "(connecting)") == 0) {
-		char aBuf[64];
+		char aBuf[256];
 		str_format(aBuf, sizeof(aBuf), "Merging was not successful, because either both one or both IDs are invalid or one of them has not connected to the server yet. Please try again.");
 		pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "ranking", aBuf);
+		free(source);
+		free(target);
 		return;
 	}
 	pSelf->AddFuture(std::async(std::launch::async, &CGameController_zCatch::MergeRankingIntoTarget, pSelf, source, target));

@@ -134,8 +134,6 @@ void CBotDetection::ManageLastInputQueue() {
 void CBotDetection::AddPlayerCore(int ClientID, int JoinHash, CNetObj_CharacterCore *PlayerCore) {
 	if (m_GameContext->m_apPlayers[ClientID])
 	{
-
-
 		m_aPlayersCurrentTick[ClientID].m_CoreAvailable = true;
 		m_aPlayersCurrentTick[ClientID].m_JoinHash = JoinHash;
 		m_aPlayersCurrentTick[ClientID].m_ClientID = ClientID;
@@ -154,7 +152,6 @@ void CBotDetection::AddPlayerCore(int ClientID, int JoinHash, CNetObj_CharacterC
 		m_aPlayersCurrentTick[ClientID].m_Core_HookY = PlayerCore->m_HookY;
 		m_aPlayersCurrentTick[ClientID].m_Core_HookDx = PlayerCore->m_HookDx;
 		m_aPlayersCurrentTick[ClientID].m_Core_HookDy = PlayerCore->m_HookDy;
-
 	}
 
 }
@@ -233,7 +230,7 @@ double CBotDetection::Angle(int x, int y, int x2, int y2) {
 
 void CBotDetection::CalculatePlayerRelations() {
 	int PosX = -1, PosY = -1, PosX2 = -1, PosY2 = -1;
-	int CursorPosX = -1, CursorPosY = -1;
+	int CursorPosX = -std::numeric_limits<int>::max(), CursorPosY = -std::numeric_limits<int>::max();
 	double PosDistance = std::numeric_limits<double>::max(), MyCursorToPosDistance = std::numeric_limits<double>::max();
 
 	for (int i = 0; i < MAX_CLIENTS; i++)
@@ -750,15 +747,15 @@ char* CBotDetection::GetInfoString(int ClientID) {
 	//            m_AvgCursorToPlayerIfInSightInAreaDistance[8][ClientID],
 	//            m_AvgCursorToPlayerIfInSightInAreaDistance[9][ClientID]
 	//           );
-	vec2 Pos0 = vec2(m_aPlayerBacklog[ClientID].front().m_Core_X, m_aPlayerBacklog[ClientID].front().m_Core_Y),
-	     Pos1 = vec2(m_aPlayerBacklog[1].front().m_Core_X, m_aPlayerBacklog[1].front().m_Core_Y);
-	vec2 *Out0 = new vec2, *Out1 = new vec2;
+	//vec2 Pos0 = vec2(m_aPlayerBacklog[ClientID].front().m_Core_X, m_aPlayerBacklog[ClientID].front().m_Core_Y),
+	//     Pos1 = vec2(m_aPlayerBacklog[1].front().m_Core_X, m_aPlayerBacklog[1].front().m_Core_Y);
+	//vec2 *Out0 = new vec2, *Out1 = new vec2;
 
 
-	str_format(aBuf, 512, " %16s : Collision: %d Pos0.x: %.2f Pos0.y: %.2f Pos1.x: %.2f Pos1.y: %.2f Out0.x: %.2f Out0.y: %.2f Out1.x: %.2f Out1.y: %.2f", m_GameContext->Server()->ClientName(ClientID), m_GameContext->Collision()->IntersectLine(Pos0, Pos1, Out0, Out1), Pos0.x, Pos0.y, Pos1.x, Pos1.y, Out0->x, Out0->y, Out1->x, Out1->y);
-	// delete Out0;
-	// delete Out1;
-
+	//str_format(aBuf, 512, " %16s : Collision: %d Pos0.x: %.2f Pos0.y: %.2f Pos1.x: %.2f Pos1.y: %.2f Out0.x: %.2f Out0.y: %.2f Out1.x: %.2f Out1.y: %.2f", m_GameContext->Server()->ClientName(ClientID), m_GameContext->Collision()->IntersectLine(Pos0, Pos1, Out0, Out1), Pos0.x, Pos0.y, Pos1.x, Pos1.y, Out0->x, Out0->y, Out1->x, Out1->y);
+	//delete Out0;
+	//delete Out1;
+	str_format(aBuf, 512, "nothin' to see");
 	return aBuf;
 }
 
@@ -769,6 +766,15 @@ void CBotDetection::OnPlayerConnect(int ClientID) {
 }
 
 void CBotDetection::OnPlayerDisconnect(int ClientID) {
+	const char* NickName = m_GameContext->Server()->ClientName(ClientID);
+	// check if player was ingame and did not disconnect on connecting.
+	if (str_comp(NickName, "(invalid)") == 0 || str_comp(NickName, "(connecting)") == 0)
+	{
+		ResetID(ClientID);
+		ResetLongTimeData(ClientID);
+		return;
+	}
+
 	InsertIntoPlayerAvgTable(ClientID, m_aPlayerBacklog[ClientID].front().m_JoinHash,
 	                         m_GameContext->Server()->ClientName(ClientID),
 	                         m_TimeStampJoined[ClientID],
@@ -796,66 +802,66 @@ void CBotDetection::ResetID(int ClientID) {
 
 	m_CurrentDistanceFromBody[ClientID] = 0;
 	m_MinDistanceFromBody[ClientID] = std::numeric_limits<double>::max();
-	m_MaxDistanceFromBody[ClientID] = 0;
+	m_MaxDistanceFromBody[ClientID] = -std::numeric_limits<double>::max();
 
 	m_aPlayersCurrentTick[ClientID].m_CoreAvailable = false;
 	m_aPlayersCurrentTick[ClientID].m_JoinHash = 0;
 	m_aPlayersCurrentTick[ClientID].m_ClientID = -1;
 	m_aPlayersCurrentTick[ClientID].m_Core_Tick = -1;
-	m_aPlayersCurrentTick[ClientID].m_Core_X = 0;
-	m_aPlayersCurrentTick[ClientID].m_Core_Y = 0;
-	m_aPlayersCurrentTick[ClientID].m_Core_VelX = 0;
-	m_aPlayersCurrentTick[ClientID].m_Core_VelY = 0;
-	m_aPlayersCurrentTick[ClientID].m_Core_Angle = 0;
-	m_aPlayersCurrentTick[ClientID].m_Core_Direction = 0;
-	m_aPlayersCurrentTick[ClientID].m_Core_Jumped = 0;
-	m_aPlayersCurrentTick[ClientID].m_Core_HookedPlayer = 0;
-	m_aPlayersCurrentTick[ClientID].m_Core_HookState = 0;
-	m_aPlayersCurrentTick[ClientID].m_Core_HookTick = 0;
-	m_aPlayersCurrentTick[ClientID].m_Core_HookX = 0;
-	m_aPlayersCurrentTick[ClientID].m_Core_HookY = 0;
-	m_aPlayersCurrentTick[ClientID].m_Core_HookDx = 0;
-	m_aPlayersCurrentTick[ClientID].m_Core_HookDy = 0;
+	m_aPlayersCurrentTick[ClientID].m_Core_X = -1;
+	m_aPlayersCurrentTick[ClientID].m_Core_Y = -1;
+	m_aPlayersCurrentTick[ClientID].m_Core_VelX = -1;
+	m_aPlayersCurrentTick[ClientID].m_Core_VelY = -1;
+	m_aPlayersCurrentTick[ClientID].m_Core_Angle = -1;
+	m_aPlayersCurrentTick[ClientID].m_Core_Direction = -1;
+	m_aPlayersCurrentTick[ClientID].m_Core_Jumped = -1;
+	m_aPlayersCurrentTick[ClientID].m_Core_HookedPlayer = -1;
+	m_aPlayersCurrentTick[ClientID].m_Core_HookState = -1;
+	m_aPlayersCurrentTick[ClientID].m_Core_HookTick = -1;
+	m_aPlayersCurrentTick[ClientID].m_Core_HookX = -1;
+	m_aPlayersCurrentTick[ClientID].m_Core_HookY = -1;
+	m_aPlayersCurrentTick[ClientID].m_Core_HookDx = -1;
+	m_aPlayersCurrentTick[ClientID].m_Core_HookDy = -1;
 	m_aPlayersCurrentTick[ClientID].m_InputAvailable = false;
-	m_aPlayersCurrentTick[ClientID].m_Input_Direction = 0;
+	m_aPlayersCurrentTick[ClientID].m_Input_Direction = -1;
 	m_aPlayersCurrentTick[ClientID].m_Input_TargetX = 0;
 	m_aPlayersCurrentTick[ClientID].m_Input_TargetY = 0;
 	m_aPlayersCurrentTick[ClientID].m_Input_Jump = -1;
 	m_aPlayersCurrentTick[ClientID].m_Input_Fire = -1;
 	m_aPlayersCurrentTick[ClientID].m_Input_Hook = -1;
-	m_aPlayersCurrentTick[ClientID].m_Input_PlayerFlags = 0;
-	m_aPlayersCurrentTick[ClientID].m_Input_WantedWeapon = 0;
-	m_aPlayersCurrentTick[ClientID].m_Input_NextWeapon = 0;
-	m_aPlayersCurrentTick[ClientID].m_Input_PrevWeapon = 0;
+	m_aPlayersCurrentTick[ClientID].m_Input_PlayerFlags = -1;
+	m_aPlayersCurrentTick[ClientID].m_Input_WantedWeapon = -1;
+	m_aPlayersCurrentTick[ClientID].m_Input_NextWeapon = -1;
+	m_aPlayersCurrentTick[ClientID].m_Input_PrevWeapon = -1;
 
 }
 
 void CBotDetection::ResetLongTimeData(int ClientID) {
-	m_AvgDistanceSum[ClientID] = 0;
-	m_AvgDistanceFromBody[ClientID] = 0;
+	m_AvgDistanceSum[ClientID] = -std::numeric_limits<double>::max();
+	m_AvgDistanceFromBody[ClientID] = -std::numeric_limits<double>::max();
 	m_InputCount[ClientID] = 0;
 	m_aPlayersCurrentTick[ClientID].m_JoinTick = m_aPlayersCurrentTick[ClientID].m_Core_Tick;
 
 	for (int i = 0; i < 10; ++i)
 	{
-		m_AvgCursorAngleToPlayerAngleDifferenceInArea[i][ClientID] = 0;
-		m_SumAngleToPlayerDifferenceInArea[i][ClientID] = 0;
+		m_AvgCursorAngleToPlayerAngleDifferenceInArea[i][ClientID] = std::numeric_limits<double>::max();
+		m_SumAngleToPlayerDifferenceInArea[i][ClientID] = std::numeric_limits<double>::max();
 
 		//distances
-		m_AvgCursorToPlayerIfInSightInAreaDistance[i][ClientID] = 0;
-		m_SumCursorToPlayerIfInSightInAreaDistance[i][ClientID] = 0;
+		m_AvgCursorToPlayerIfInSightInAreaDistance[i][ClientID] = std::numeric_limits<double>::max();
+		m_SumCursorToPlayerIfInSightInAreaDistance[i][ClientID] = std::numeric_limits<double>::max();
 
 		m_CountPlayerInSightInArea[i][ClientID] = 0;
 
 		m_MinCursorAngleToPlayerAngleDifferenceInArea[i][ClientID] = std::numeric_limits<double>::max();
 
 		// angles on shots
-		m_AvgAngleDifferenceOnShot[i][ClientID] = 0;
-		m_SumAngleDifferenceOnShot[i][ClientID] = 0;
+		m_AvgAngleDifferenceOnShot[i][ClientID] = std::numeric_limits<double>::max();
+		m_SumAngleDifferenceOnShot[i][ClientID] = std::numeric_limits<double>::max();
 		m_NumShotsInArea[i][ClientID] = 0;
 
-		m_AvgAngleDifferenceOnHook[i][ClientID] = 0;
-		m_SumAngleDifferenceOnHook[i][ClientID] = 0;
+		m_AvgAngleDifferenceOnHook[i][ClientID] = std::numeric_limits<double>::max();
+		m_SumAngleDifferenceOnHook[i][ClientID] = std::numeric_limits<double>::max();
 		m_NumHooksInArea[i][ClientID] = 0;
 
 	}
