@@ -906,12 +906,15 @@ bool CCharacter::TakeDamage(vec2 Force, int Dmg, int From, int Weapon)
 
 	if(GameServer()->m_pController->IsFriendlyFire(m_pPlayer->GetCID(), From) && !g_Config.m_SvTeamdamage)
 		return false;
-
+	if(!GameServer()->m_apPlayers[From]){
+		return false;
+	}
 	// zCatch/TeeVi hard mode
 	auto killer = GameServer()->m_apPlayers[From];
 	auto killerHardMode = &killer->m_HardMode;
 	bool firstOfDoubleKill = false;
-	
+
+
 	// killer hard mode
 	if(killerHardMode->m_Active)
 	{
