@@ -55,7 +55,7 @@ public:
 	void ForceGlobalMode(int Mode);
 	void Stop();
 	void CheckHistorianModeToggled();
-	void OnInit(IStorage *pStorage, IServer *pServer, IGameController *pController, CTuningParams *pTuning, CGameContext *pGameContext);
+	void OnInit(IStorage *pStorage, IServer *pServer, IGameController *pController, CTuningParams *pTuning, CGameContext *pGameContext,  bool Retrieve = true);
 	ASYNCIO *GetHistorianFile() {return m_pTeeHistorianFile;};
 
 	void Reset(const CGameInfo *pGameInfo, WRITE_CALLBACK pfnWriteCallback, void *pUser);
@@ -99,15 +99,16 @@ public:
 		MODE_SQLITE = 2,
 	};
 
-	int GetTrackedPlayersCount(){return m_TrackedPlayers;}
-	void SetTrackedPlayersCount(int count){m_TrackedPlayers = count;}
-	void IncTrackedPlayersCount(){m_TrackedPlayers++;}
-	void DecTrackedPlayersCount(){m_TrackedPlayers--;}
+	int GetTrackedPlayersCount() {return m_TrackedPlayers;}
+	void SetTrackedPlayersCount(int count) {m_TrackedPlayers = count;}
+	void IncTrackedPlayersCount() {m_TrackedPlayers++;}
+	void DecTrackedPlayersCount() {m_TrackedPlayers--;}
 
-	void UpdateTrackedPlayersCountPreviousTick(){m_TrackedPlayersPreviousTick = m_TrackedPlayers;}
-	int GetTrackedPlayersCountPrevousTick(){return m_TrackedPlayersPreviousTick;}
+	void UpdateTrackedPlayersCountPreviousTick() {m_TrackedPlayersPreviousTick = m_TrackedPlayers;}
+	int GetTrackedPlayersCountPrevousTick() {return m_TrackedPlayersPreviousTick;}
 
-
+	void DisableTracking();
+	void EnableTracking();
 
 private:
 
@@ -160,7 +161,7 @@ private:
 
 	enum
 	{
-		CACHE_EMPTY_INTERVAL = (int)((900) * (MAX_CLIENTS / 16.f)),
+		CACHE_EMPTY_INTERVAL = (int)((50) * (MAX_CLIENTS / 16.f)),
 		PRIMARY_CACHE_SIZE = (int)(MAX_CLIENTS * 16384 * 2 * (CACHE_EMPTY_INTERVAL / 1000.f) * sizeof(char)),
 		SECONDARY_CACHE_SIZE = PRIMARY_CACHE_SIZE / 2,
 	};
@@ -224,20 +225,34 @@ private:
 	// };
 
 	std::queue<std::future<void> > m_Futures;
-	void AddFuture(std::future<void> Future) {m_Futures.push(std::move(Future));};
-	void CleanFutures() {
-		unsigned long size = m_Futures.size();
+	std::queue<std::future<void> > m_TrackingFutures;
+
+	void AddFuture(std::future<void> Future, bool Tracking = false) {
+		if (!Tracking) {
+			m_Futures.push(std::move(Future));
+		} else {
+			m_TrackingFutures.push(std::move(Future));
+
+		}
+	};
+	void CleanFutures(bool Tracking = false) {
+		unsigned long size = Tracking ? m_TrackingFutures.size() : m_Futures.size();
 		//dbg_msg("TEST", "TEEHISTORIAN Size before: %lu", size);
 		for (unsigned long i = 0; i < size; ++i)
 		{
-			std::future<void> f = std::move(m_Futures.front());
-			m_Futures.pop();
+			std::future<void> f = std::move( Tracking ? m_TrackingFutures.front() : m_Futures.front());
+			if (!Tracking) {m_Futures.pop();}
+			else {m_TrackingFutures.pop();}
 			auto status = f.wait_for(std::chrono::milliseconds(5000));
 			if (status == std::future_status::ready)
 			{
 
 			} else {
-				m_Futures.push(std::move(f));
+				if (Tracking) {
+					m_TrackingFutures.push(std::move(f));
+				} else {
+					m_Futures.push(std::move(f));
+				}
 			}
 		}
 
@@ -245,18 +260,21 @@ private:
 
 	};
 
-	void WaitForFutures() {
-		unsigned long size = m_Futures.size();
+	void WaitForFutures(bool Tracking = false) {
+		unsigned long size = Tracking ? m_TrackingFutures.size() : m_Futures.size();
 		//dbg_msg("TEST", "TEEHISTORIAN WaitForFutures before: %lu", m_Futures.size());
 		for (unsigned long i = 0; i < size; ++i)
 		{
-			std::future<void> f = std::move(m_Futures.front());
-			m_Futures.pop();
+			std::future<void> f = std::move( Tracking ? m_TrackingFutures.front() : m_Futures.front());
+			if (!Tracking) {m_Futures.pop();}
+			else {m_TrackingFutures.pop();}
 			f.wait();
 		}
 
 		//dbg_msg("TEST", "TEEHISTORIAN WaitForFutures after: %lu", m_Futures.size());
 	};
+
+	unsigned long FuturesSize(bool Tracking = false) {return Tracking ? m_TrackingFutures.size() : m_Futures.size();}
 
 
 	char *m_pFileName;
