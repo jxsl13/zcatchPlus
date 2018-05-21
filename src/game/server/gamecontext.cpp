@@ -2586,7 +2586,7 @@ void CGameContext::OnConsoleInit()
 	// jxsl13 was here. Console Commands
 	Console()->Register("merge_records", "ss", CFGFLAG_SERVER, ConMergeRecords, this, "Merge two records into the target username and delete source records: merge_records <source nickname> <target nickname>", IConsole::ACCESS_LEVEL_ADMIN);
 	Console()->Register("merge_records_id", "ii", CFGFLAG_SERVER, ConMergeRecordsId, this, "Merge two records into the target ID and delete source ID's records: merge_records <source ID> <target ID>", IConsole::ACCESS_LEVEL_ADMIN);
-	Console()->Register("save_tee_historian", "", CFGFLAG_SERVER, ConSaveTeehistorian, this, "Writes latest records to either the Sqlite Database or creates a new Teehistorian File.", IConsole::ACCESS_LEVEL_ADMIN);
+	Console()->Register("save_logging_settings", "", CFGFLAG_SERVER, ConSaveTeehistorian, this, "Writes latest records to either the Sqlite Database or creates a new Teehistorian File.", IConsole::ACCESS_LEVEL_ADMIN);
 	Console()->Register("track", "i", CFGFLAG_SERVER, ConTeehistorianTrackPlayer, this, "Tracks game using TeeHistorian as long as there are tracked players online.");
 
 	Console()->Register("list", "", CFGFLAG_SERVER, ConList, this, "Lists player information like status, but is less a pain in the ass to handle.");
@@ -2596,27 +2596,27 @@ void CGameContext::OnConsoleInit()
 
 }
 
-void CGameContext::ConTrackedPlayers(IConsole::IResult *pResult, void *pUserData){
+void CGameContext::ConTrackedPlayers(IConsole::IResult *pResult, void *pUserData) {
 	CGameContext *pSelf = (CGameContext *)pUserData;
 	char aBuf[128];
-			str_format(aBuf, sizeof(aBuf), "Tracked player count: %d", pSelf->m_TeeHistorian.GetTrackedPlayersCount());
-			pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "TeeHistorian", aBuf);
+	str_format(aBuf, sizeof(aBuf), "Tracked player count: %d", pSelf->m_TeeHistorian.GetTrackedPlayersCount());
+	pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "TeeHistorian", aBuf);
 }
 
-void CGameContext::ConList(IConsole::IResult *pResult, void *pUserData){
+void CGameContext::ConList(IConsole::IResult *pResult, void *pUserData) {
 
 	CGameContext *pSelf = (CGameContext *)pUserData;
-	if(pSelf == 0){
+	if (pSelf == 0) {
 		return;
 	}
 
 	for (int i = 0; i < MAX_CLIENTS; ++i)
 	{
-		if(pSelf->m_apPlayers[i]){
+		if (pSelf->m_apPlayers[i]) {
 
 			const char *pAuthStr = pSelf->Server()->GetAuthLevel(i) == CServer::AUTHED_ADMIN ? "(Admin)" :
-				                       pSelf->Server()->GetAuthLevel(i) == CServer::AUTHED_SUBADMIN ? "(Subadmin)" :
-				                       pSelf->Server()->GetAuthLevel(i) == CServer::AUTHED_MOD ? "(Mod)" : "";
+			                       pSelf->Server()->GetAuthLevel(i) == CServer::AUTHED_SUBADMIN ? "(Subadmin)" :
+			                       pSelf->Server()->GetAuthLevel(i) == CServer::AUTHED_MOD ? "(Mod)" : "";
 
 			char aBuf[128];
 			str_format(aBuf, sizeof(aBuf), "%-3d %-16s %-16s %-9s %-10s", i, pSelf->Server()->ClientName(i), pSelf->Server()->ClientClan(i), pSelf->m_apPlayers[i]->GetTeeHistorianTracked() ? "(tracked)" : "", pAuthStr);
@@ -2629,9 +2629,19 @@ void CGameContext::ConList(IConsole::IResult *pResult, void *pUserData){
 
 void CGameContext::ConSaveTeehistorian(IConsole::IResult *pResult, void *pUserData) {
 	CGameContext *pSelf = (CGameContext *)pUserData;
-
-	pSelf->m_TeeHistorian.Stop();
-	pSelf->AddFuture(std::async(std::launch::async, &CTeeHistorian::OnSave, &(pSelf->m_TeeHistorian)));
+	// if tracking is enabled, do not allow to change the settings.
+	if (pSelf->m_TeeHistorian.GetTrackedPlayersCount() == 0)
+	{
+		pSelf->m_TeeHistorian.Stop();
+		pSelf->AddFuture(std::async(std::launch::async, &CTeeHistorian::OnSave, &(pSelf->m_TeeHistorian)));
+		char aBuf[128];
+		str_format(aBuf, sizeof(aBuf), "Saved logging settings.");
+		pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "TeeHistorian", aBuf);
+	} else {
+		char aBuf[128];
+		str_format(aBuf, sizeof(aBuf), "Could not save settings because player tracking is enabled.");
+		pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "TeeHistorian", aBuf);
+	}
 }
 
 void CGameContext::ConTeehistorianTrackPlayer(IConsole::IResult *pResult, void *pUserData) {
@@ -2653,8 +2663,8 @@ void CGameContext::ConTeehistorianTrackPlayer(IConsole::IResult *pResult, void *
 			str_format(aBuf, sizeof(aBuf), "Player is already being tracked!");
 			pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "TeeHistorian", aBuf);
 		} else { // player is not yet being tracked
-			if(pSelf->m_TeeHistorian.GetTrackedPlayersCount() == 0){
-				ConSaveTeehistorian(pResult,pUserData);
+			if (pSelf->m_TeeHistorian.GetTrackedPlayersCount() == 0) {
+				ConSaveTeehistorian(pResult, pUserData);
 			}
 			pSelf->m_apPlayers[trackedId]->SetTeeHistorianTracked(true);
 			char aBuf[128];

@@ -71,6 +71,15 @@ void CTeeHistorian::CheckHistorianModeToggled() {
 		AddFuture(std::async(std::launch::async, &CTeeHistorian::DisableTracking, this), true);
 	}
 
+	// Reset all changes to tracking if tracking is enabled.
+	if(GetTrackedPlayersCount() > 0){
+		// get mode based on global config
+		RetrieveMode(false);
+		if(GetMode() != MODE_TEE_HISTORIAN){
+			ForceGlobalMode(MODE_TEE_HISTORIAN);
+		}
+	}
+
 	UpdateTrackedPlayersCountPreviousTick();
 }
 
