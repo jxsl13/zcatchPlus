@@ -311,8 +311,6 @@ debug_settings.debug = 1
 debug_settings.optimize = 0
 debug_settings.cc.defines:Add("CONF_DEBUG")
 -- jxsl13 was here sanitizer for debugging stuff --
-debug_settings.cc.flags:Add("-fsanitize=null")
-debug_settings.cc.flags:Add("-fsanitize=alignment")
 debug_settings.cc.flags:Add("-fsanitize=thread")
 
 
