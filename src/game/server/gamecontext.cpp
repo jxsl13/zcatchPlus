@@ -2991,7 +2991,6 @@ void CGameContext::InitNicknameBanList() {
 void CGameContext::SaveNicknameBanListToFile() {
 	// exec the file
 	IOHANDLE File = m_pStorage->OpenFile(g_Config.m_SvNickBanFile, IOFLAG_WRITE, IStorage::TYPE_ALL);
-	dbg_msg("TEST", "#1");
 	char aBuf[256];
 	if (File)
 	{
@@ -3004,7 +3003,6 @@ void CGameContext::SaveNicknameBanListToFile() {
 				str_format(aBuf, sizeof(aBuf), "%s", tempString.c_str());
 				io_write(File, aBuf, strlen(aBuf));
 				io_write_newline(File);
-				dbg_msg("TEST", "#4");
 			}
 			io_close(File);
 		}
@@ -3044,7 +3042,7 @@ void CGameContext::RemoveFromNicknameBanList(int ID) {
 		Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "BannedNicks", "No banned nicknames available.");
 		return;
 	}
-	if (ID < 0 || ID > m_BannedNicks.size() - 1) {
+	if (ID < 0 || ID >= m_BannedNicks.size()) {
 		str_format(aBuf, sizeof(aBuf), "Invalid ID: %d", ID);
 		Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "BannedNicks", aBuf);
 		return;
