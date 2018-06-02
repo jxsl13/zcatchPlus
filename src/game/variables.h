@@ -139,4 +139,6 @@ MACRO_CONFIG_INT(SvSqliteHistorian, sv_sqlite_historian, 0, 0, 1, CFGFLAG_SERVER
 MACRO_CONFIG_STR(SvSqliteHistorianFileName, sv_sqlite_historian_file, 64, "", CFGFLAG_SERVER, "Sqlite Historian file name. Change to have an own file format or leave as is to have the default format.")
 MACRO_CONFIG_INT(SvBotDetection, sv_bot_detection, 1, 0, 1, CFGFLAG_SERVER, "Enable(1) or disables(0) bot detection.")
 MACRO_CONFIG_STR(SvBotDetectionFile, sv_bot_detection_file, 64, "botdetection", CFGFLAG_SERVER, "Bot detection file name.")
+
+MACRO_CONFIG_STR(SvNickBanFile, sv_nick_ban_file, 64, "banned_nicks.txt", CFGFLAG_SERVER, "Name of the file, where banned nicks are stored. Default: banned_nicks.txt")
 #endif

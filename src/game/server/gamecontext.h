@@ -26,6 +26,8 @@
 /*teehistorian*/
 #include "teehistorian.h"
 #include "botdetection.h"
+#include <engine/shared/linereader.h>
+
 
 #define MAX_MUTES 35
 #define ZCATCH_VERSION "0.5.0"
@@ -127,6 +129,10 @@ public:
 
 	/*teehistrorian*/
 	CTeeHistorian m_TeeHistorian;
+
+	/*nickname bans*/
+	std::vector<std::string> m_BannedNicks;
+
 
 
 	CGameContext();
@@ -325,6 +331,30 @@ public:
 	/*teehistorian player tracking*/
 	static void ConList(IConsole::IResult *pResult, void *pUserData);
 	static void ConTrackedPlayers(IConsole::IResult *pResult, void *pUserData);
+
+
+	// nickname bans feature
+	// get nicks from file
+	static void ConShowBannedNicks(IConsole::IResult *pResult, void *pUserData);
+	static void ConRemoveFromBannedNicks(IConsole::IResult *pResult, void *pUserData);
+	static void ConBanNickByName(IConsole::IResult *pResult, void *pUserData);
+	static void ConBanNickByID(IConsole::IResult *pResult, void *pUserData);
+
+	void RetrieveNicknameBanListFromFile();
+	void InitNicknameBanList();
+	void SaveNicknameBanListToFile();
+
+	void AddToNicknameBanList(int ID);
+	void AddToNicknameBanList(const char* Nickname);
+	void AddToNicknameBanList(std::string Nickname);
+
+	void RemoveFromNicknameBanList(int ID);
+	void RemoveFromNicknameBanList(const char* Nickname);
+	void RemoveFromNicknameBanList(std::string Nickname);
+
+	bool IsInNicknameBanList(const char* Nickname);
+	bool IsInNicknameBanList(std::string Nickname);
+
 
 private:
 

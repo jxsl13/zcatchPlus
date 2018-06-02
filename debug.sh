@@ -80,9 +80,14 @@ check_build_bam (){
 fi
 }
 
+
 update_source
 check_build_bam
-clean_previous_build
+
+if [[ $1 == "-c" ]]; then
+    clean_previous_build
+fi
+
 build_debug_server
 start_server_debugging
 

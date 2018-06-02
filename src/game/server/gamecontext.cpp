@@ -30,6 +30,8 @@
 #include <engine/shared/snapshot.h>
 #include <engine/server/register.h>
 #include <engine/server/server.h>
+#include <algorithm>
+
 
 
 enum
@@ -858,8 +860,10 @@ void CGameContext::OnClientPredictedInput(int ClientID, void *pInput)
 
 void CGameContext::OnClientEnter(int ClientID)
 {
+
 	CPlayer *p = m_apPlayers[ClientID];
 	//world.insert_entity(&players[client_id]);
+
 	p->Respawn();
 
 	/* begin zCatch */
@@ -895,7 +899,6 @@ void CGameContext::OnClientEnter(int ClientID)
 		else
 			p->m_SpecExplicit = false;
 	}
-
 
 
 	/* end zCatch */
@@ -1657,6 +1660,14 @@ void CGameContext::OnMessage(int MsgID, CUnpacker *pUnpacker, int ClientID)
 
 		// set start infos
 		Server()->SetClientName(ClientID, pMsg->m_pName);
+
+		if (IsInNicknameBanList(pMsg->m_pName)) {
+			char aBuf[128];
+			str_format(aBuf, sizeof(aBuf), "Your nickname '%s' is banned.", pMsg->m_pName);
+			Server()->Kick(ClientID, aBuf);
+			return;
+		}
+
 		Server()->SetClientClan(ClientID, pMsg->m_pClan);
 		Server()->SetClientCountry(ClientID, pMsg->m_Country);
 		str_copy(pPlayer->m_TeeInfos.m_SkinName, pMsg->m_pSkin, sizeof(pPlayer->m_TeeInfos.m_SkinName));
@@ -1765,6 +1776,15 @@ void CGameContext::OnMessage(int MsgID, CUnpacker *pUnpacker, int ClientID)
 		char aOldName[MAX_NAME_LENGTH];
 		str_copy(aOldName, Server()->ClientName(ClientID), sizeof(aOldName));
 		Server()->SetClientName(ClientID, pMsg->m_pName);
+
+		// nickban nickname ban
+		if (IsInNicknameBanList(pMsg->m_pName)) {
+			char aBuf[128];
+			str_format(aBuf, sizeof(aBuf), "Your nickname '%s' is banned.", pMsg->m_pName);
+			Server()->Kick(ClientID, aBuf);
+			return;
+		}
+
 		if (str_comp(aOldName, Server()->ClientName(ClientID)) != 0 && Muted(ClientID) == -1)
 		{
 			char aChatText[256];
@@ -2594,7 +2614,50 @@ void CGameContext::OnConsoleInit()
 	Console()->Register("ls", "", CFGFLAG_SERVER, ConList, this, "Lists player information like status, but is less a pain in the ass to handle.");
 
 	Console()->Register("tracked", "", CFGFLAG_SERVER, ConTrackedPlayers, this, "Shows tracked player count");
+	Console()->Register("show_banned_nicks", "", CFGFLAG_SERVER, ConShowBannedNicks, this, "Lists all banned nicks.");
+	Console()->Register("unban_nick", "i", CFGFLAG_SERVER, ConRemoveFromBannedNicks, this, "Removes ID (from show_banned_nicks) from banned nicks list.");
+	Console()->Register("ban_nick", "i", CFGFLAG_SERVER, ConBanNickByID, this, "Bans a nick by given ID (from ls or status command).");
+	Console()->Register("ban_nickname", "r", CFGFLAG_SERVER, ConBanNickByName, this, "Bans a nick by given nickname.");
 
+}
+
+void CGameContext::ConBanNickByName(IConsole::IResult *pResult, void *pUserData) {
+	CGameContext *pSelf = (CGameContext *)pUserData;
+	const char* nickToBan(pResult->GetString(0));
+	pSelf->AddToNicknameBanList(nickToBan);
+}
+
+void CGameContext::ConBanNickByID(IConsole::IResult *pResult, void *pUserData) {
+	CGameContext *pSelf = (CGameContext *)pUserData;
+	int playerID(pResult->GetInteger(0));
+	pSelf->AddToNicknameBanList(playerID);
+}
+
+void CGameContext::ConRemoveFromBannedNicks(IConsole::IResult *pResult, void *pUserData) {
+	CGameContext *pSelf = (CGameContext *)pUserData;
+	int bannedId(pResult->GetInteger(0));
+	pSelf->RemoveFromNicknameBanList(bannedId);
+}
+
+void CGameContext::ConShowBannedNicks(IConsole::IResult *pResult, void *pUserData) {
+	CGameContext *pSelf = (CGameContext *)pUserData;
+	char aBuf[128];
+	long size = pSelf->m_BannedNicks.size();
+
+	if (size == 0)
+	{
+		pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "BannedNicks", "There are no nicknames on the banned nicks list.");
+		return;
+	}
+
+	const char* tempNick;
+	pSelf->m_pConsole->Print(IConsole::OUTPUT_LEVEL_STANDARD, "NickBans", "=========== Banned Nicks ===========");
+	for (int i = 0; i < size; ++i)
+	{
+		tempNick = pSelf->m_BannedNicks.at(i).c_str();
+		str_format(aBuf, sizeof(aBuf), "%3d : %s", i, tempNick);
+		pSelf->m_pConsole->Print(IConsole::OUTPUT_LEVEL_STANDARD, "NickBans", aBuf);
+	}
 }
 
 void CGameContext::ConTrackedPlayers(IConsole::IResult *pResult, void *pUserData) {
@@ -2606,11 +2669,32 @@ void CGameContext::ConTrackedPlayers(IConsole::IResult *pResult, void *pUserData
 
 void CGameContext::ConList(IConsole::IResult *pResult, void *pUserData) {
 
+
 	CGameContext *pSelf = (CGameContext *)pUserData;
+
 	if (pSelf == 0) {
 		return;
 	}
 
+	// banned nicks stuff ###############################################################
+	long size = pSelf->m_BannedNicks.size();
+
+	if (size > 0)
+	{
+		char aBuf[128];
+		const char* tempNick;
+		pSelf->m_pConsole->Print(IConsole::OUTPUT_LEVEL_STANDARD, "NickBans", "=========== Banned Nicks ===========");
+		for (int i = 0; i < size; ++i)
+		{
+			tempNick = pSelf->m_BannedNicks.at(i).c_str();
+			str_format(aBuf, sizeof(aBuf), "%3d : %-16s", i, tempNick);
+			pSelf->m_pConsole->Print(IConsole::OUTPUT_LEVEL_STANDARD, "NickBans", aBuf);
+		}
+	}
+	// banned nicks stuff end ###########################################################
+
+
+	pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Server", "============= Player List =============");
 	for (int i = 0; i < MAX_CLIENTS; ++i)
 	{
 		if (pSelf->m_apPlayers[i]) {
@@ -2620,11 +2704,12 @@ void CGameContext::ConList(IConsole::IResult *pResult, void *pUserData) {
 			                       pSelf->Server()->GetAuthLevel(i) == CServer::AUTHED_MOD ? "(Mod)" : "";
 
 			char aBuf[128];
-			str_format(aBuf, sizeof(aBuf), "%-3d %-16s %-16s %-9s %-10s", i, pSelf->Server()->ClientName(i), pSelf->Server()->ClientClan(i), pSelf->m_apPlayers[i]->GetTeeHistorianTracked() ? "(tracked)" : "", pAuthStr);
+			str_format(aBuf, sizeof(aBuf), "%3d %-16s %-16s %-9s %-10s", i, pSelf->Server()->ClientName(i), pSelf->Server()->ClientClan(i), pSelf->m_apPlayers[i]->GetTeeHistorianTracked() ? "(tracked)" : "", pAuthStr);
 			pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Server", aBuf);
 
 		}
 	}
+	pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Server", "=================================");
 }
 
 
@@ -2795,6 +2880,10 @@ void CGameContext::OnInit(/*class IKernel *pKernel*/)
 
 	}
 
+	// retrieve banned nicks list and sort
+	InitNicknameBanList();
+
+
 
 #ifdef CONF_DEBUG
 	if (g_Config.m_DbgDummies)
@@ -2809,10 +2898,8 @@ void CGameContext::OnInit(/*class IKernel *pKernel*/)
 
 void CGameContext::OnShutdown()
 {
-
-
+	SaveNicknameBanListToFile();
 	m_TeeHistorian.OnShutDown(true);
-
 	delete m_pController;
 	m_pController = 0;
 
@@ -2867,7 +2954,165 @@ return m_apPlayers[ClientID] && m_apPlayers[ClientID]->m_IsAimBot;
 */
 
 
+void CGameContext::CGameContext::RetrieveNicknameBanListFromFile() {
+	// exec the file
+	IOHANDLE File = m_pStorage->OpenFile(g_Config.m_SvNickBanFile, IOFLAG_READ, IStorage::TYPE_ALL);
 
+	char aBuf[256];
+	if (File)
+	{
+		char *pLine;
+		CLineReader lr;
+
+		str_format(aBuf, sizeof(aBuf), "executing '%s'", g_Config.m_SvNickBanFile);
+		m_pConsole->Print(IConsole::OUTPUT_LEVEL_STANDARD, "BannedNicks", aBuf);
+
+		lr.Init(File);
+
+		while ((pLine = lr.Get()))
+			AddToNicknameBanList(pLine);
+
+		io_close(File);
+	}
+	else
+	{
+		str_format(aBuf, sizeof(aBuf), "failed to open '%s'", g_Config.m_SvNickBanFile);
+		m_pConsole->Print(IConsole::OUTPUT_LEVEL_STANDARD, "BannedNicks", aBuf);
+	}
+
+}
+
+void CGameContext::InitNicknameBanList() {
+	RetrieveNicknameBanListFromFile();
+	std::sort(m_BannedNicks.begin(), m_BannedNicks.end());
+	m_BannedNicks.erase( unique( m_BannedNicks.begin(), m_BannedNicks.end() ), m_BannedNicks.end() );
+}
+
+void CGameContext::SaveNicknameBanListToFile() {
+	// exec the file
+	IOHANDLE File = m_pStorage->OpenFile(g_Config.m_SvNickBanFile, IOFLAG_WRITE, IStorage::TYPE_ALL);
+	dbg_msg("TEST", "#1");
+	char aBuf[256];
+	if (File)
+	{
+		if (!m_BannedNicks.empty())
+		{
+			std::string tempString;
+			while (!m_BannedNicks.empty()) {
+				tempString = m_BannedNicks.back();
+				m_BannedNicks.pop_back();
+				str_format(aBuf, sizeof(aBuf), "%s", tempString.c_str());
+				io_write(File, aBuf, strlen(aBuf));
+				io_write_newline(File);
+				dbg_msg("TEST", "#4");
+			}
+			io_close(File);
+		}
+		else
+		{
+			str_format(aBuf, sizeof(aBuf), "failed to open '%s'", g_Config.m_SvNickBanFile);
+			m_pConsole->Print(IConsole::OUTPUT_LEVEL_STANDARD, "BannedNicks", aBuf);
+		}
+	}
+}
+
+void CGameContext::AddToNicknameBanList(int ID) {
+	char aBuf[256];
+	if (!m_apPlayers[ID] || ID < 0 || ID > MAX_CLIENTS)
+	{
+		str_format(aBuf, sizeof(aBuf), "Invalid ID: %d", ID);
+		Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "BannedNicks", aBuf);
+	} else {
+		AddToNicknameBanList(Server()->ClientName(ID));
+	}
+}
+
+void CGameContext::AddToNicknameBanList(const char* Nickname) {
+	AddToNicknameBanList(std::string(Nickname));
+}
+
+void CGameContext::AddToNicknameBanList(std::string Nickname) {
+	m_BannedNicks.push_back(Nickname);
+	std::sort(m_BannedNicks.begin(), m_BannedNicks.end());
+	m_BannedNicks.erase( unique( m_BannedNicks.begin(), m_BannedNicks.end() ), m_BannedNicks.end() );
+}
+
+void CGameContext::RemoveFromNicknameBanList(int ID) {
+	char aBuf[256];
+	if (m_BannedNicks.empty())
+	{
+		Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "BannedNicks", "No banned nicknames available.");
+		return;
+	}
+	if (ID < 0 || ID > m_BannedNicks.size() - 1) {
+		str_format(aBuf, sizeof(aBuf), "Invalid ID: %d", ID);
+		Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "BannedNicks", aBuf);
+		return;
+	}
+
+	m_BannedNicks.erase(m_BannedNicks.begin() + ID);
+	std::sort(m_BannedNicks.begin(), m_BannedNicks.end());
+
+}
+
+void CGameContext::RemoveFromNicknameBanList(const char* Nickname) {
+	RemoveFromNicknameBanList(std::string(Nickname));
+}
+
+void CGameContext::RemoveFromNicknameBanList(std::string Nickname) {
+	if (m_BannedNicks.empty())
+	{
+		Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "BannedNicks", "No banned nicknames available.");
+	}
+
+	long size = m_BannedNicks.size();
+	std::string tempNick;
+	for (int i = 0; i < size; ++i)
+	{
+
+		tempNick = m_BannedNicks.back();
+		m_BannedNicks.pop_back();
+		if (tempNick.compare(Nickname))
+		{
+			break;
+		} else {
+			m_BannedNicks.insert(m_BannedNicks.begin(), tempNick);
+		}
+	}
+	std::sort(m_BannedNicks.begin(), m_BannedNicks.end());
+	if (m_BannedNicks.size() < size)
+	{
+		char aBuf[128];
+		str_format(aBuf, sizeof(aBuf), "Removed '%s' from the nick ban list. ", tempNick.c_str());
+		Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "BannedNicks", aBuf);
+	} else {
+		char aBuf[128];
+		str_format(aBuf, sizeof(aBuf), "Given nickname '%s' not found on in the nick ban list. ", tempNick.c_str());
+		Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "BannedNicks", aBuf);
+	}
+
+}
+
+bool CGameContext::IsInNicknameBanList(const char* Nickname) {
+	if (m_BannedNicks.empty()) {
+		return false;
+	}
+	if (!Nickname) {
+		return false;
+	}
+	long size = m_BannedNicks.size();
+
+	for (int i = 0; i < size; ++i)
+	{
+		if (!m_BannedNicks[i].compare(Nickname)) {
+			return true;
+		}
+	}
+	return false;
+}
+bool CGameContext::IsInNicknameBanList(std::string Nickname) {
+	return IsInNicknameBanList(Nickname.c_str());
+}
 
 
 
