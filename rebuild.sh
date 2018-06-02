@@ -2,7 +2,7 @@
 
 # downloads bam if necessary, and builds server from source,
 # does not clean previous build data.
-BASE_DIR=$(PWD)
+BASE_DIR=$(pwd)
 
 back_to_base_directory (){
 	cd $BASE_DIR

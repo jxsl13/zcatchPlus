@@ -1,6 +1,6 @@
 #!/bin/bash
 # updates source and restarts the server with the updated build
-BASE_DIR=$(PWD)
+BASE_DIR=$(pwd)
 
 build_server (){
 	back_to_base_directory

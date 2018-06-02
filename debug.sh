@@ -1,6 +1,6 @@
 #!/bin/bash
 
-BASE_DIR=$(PWD)
+BASE_DIR=$(pwd)
 
 build_debug_server (){
 	back_to_base_directory

@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # downloads bam if necessary, and builds server from source
-BASE_DIR=$(PWD)
+BASE_DIR=$(pwd)
 
 back_to_base_directory (){
 	cd $BASE_DIR
