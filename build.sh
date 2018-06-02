@@ -1,47 +1,20 @@
 #!/bin/bash
 
+# downloads bam if necessary, and builds server from source
 BASE_DIR=$(PWD)
-
-build_debug_server (){
-	back_to_base_directory
-	../bam/bam server_debug
-}
-
-clean_previous_build (){
-	back_to_base_directory
-	../bam/bam -c all
-}
-
-start_server_debugging (){
-	back_to_base_directory
-
-	if [[ "$OSTYPE" == "linux-gnu" ]]; then
-        # ...
-        gdb ./zcatch_srv_d --command 'gdb_commands.txt'
-
-	elif [[ "$OSTYPE" == "darwin"* ]]; then
-        # Mac OSX
-        gdb ./zcatch_srv_x86_d --command 'gdb_commands.txt'
-
-	#elif [[ "$OSTYPE" == "cygwin" ]]; then
-        # POSIX compatibility layer and Linux environment emulation for Windows
-	#elif [[ "$OSTYPE" == "msys" ]]; then
-        # Lightweight shell and GNU utilities compiled for Windows (part of MinGW)
-	#elif [[ "$OSTYPE" == "win32" ]]; then
-        # I'm not sure this can happen.
-	#elif [[ "$OSTYPE" == "freebsd"* ]]; then
-        # ...
-	else
-		echo "Not supported operating system."
-	fi
-}
 
 back_to_base_directory (){
 	cd $BASE_DIR
 }
 
-update_source(){
-	git pull
+build_server (){
+	back_to_base_directory
+	../bam/bam server_release
+}
+
+clean_previous_build (){
+	back_to_base_directory
+	../bam/bam -c all
 }
 
 check_build_bam (){
@@ -80,11 +53,11 @@ check_build_bam (){
 fi
 }
 
-update_source
 check_build_bam
 clean_previous_build
-build_debug_server
-start_server_debugging
+build_server
+
+
 
 
 

@@ -311,9 +311,8 @@ debug_settings.debug = 1
 debug_settings.optimize = 0
 debug_settings.cc.defines:Add("CONF_DEBUG")
 -- jxsl13 was here sanitizer for debugging stuff --
-debug_settings.cc.flags:Add("-fsanitize=address")
-debug_settings.cc.flags:Add("-fsanitize=leak")
-
+--debug_settings.cc.flags:Add("-fsanitize=address")
+--debug_settings.cc.flags:Add("-fsanitize=leak")
 
 release_settings = NewSettings()
 release_settings.config_name = "release"

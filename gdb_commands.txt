@@ -1,0 +1,4 @@
+set logging file DEBUG_LOG.txt
+set logging on
+thread apply all bt
+r

@@ -1,3 +1,7 @@
+#############################################################################
+Same as below applies to this application "zCatch+", a modification of zCatch/TeeVi
+#############################################################################
+
 This software called "zCatch/TeeVi" is a modification of "zCatch" which is
 a modification of "Teeworlds".
 

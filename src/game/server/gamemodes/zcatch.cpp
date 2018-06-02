@@ -23,7 +23,6 @@ CGameController_zCatch::CGameController_zCatch(class CGameContext *pGameServer) 
 	// if treshold of players is reached.
 	m_OldAllowJoin = g_Config.m_SvAllowJoin;
 	m_OldPlayersIngame = 0;
-	m_ReleaseGameInfoSent = false;
 
 }
 

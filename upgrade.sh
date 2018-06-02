@@ -1,10 +1,10 @@
 #!/bin/bash
-
+# updates source and restarts the server with the updated build
 BASE_DIR=$(PWD)
 
-build_debug_server (){
+build_server (){
 	back_to_base_directory
-	../bam/bam server_debug
+	../bam/bam server_release
 }
 
 clean_previous_build (){
@@ -12,16 +12,16 @@ clean_previous_build (){
 	../bam/bam -c all
 }
 
-start_server_debugging (){
+start_server (){
 	back_to_base_directory
 
 	if [[ "$OSTYPE" == "linux-gnu" ]]; then
         # ...
-        gdb ./zcatch_srv_d --command 'gdb_commands.txt'
+        ./zcatch_srv
 
 	elif [[ "$OSTYPE" == "darwin"* ]]; then
         # Mac OSX
-        gdb ./zcatch_srv_x86_d --command 'gdb_commands.txt'
+        ./zcatch_srv_x86
 
 	#elif [[ "$OSTYPE" == "cygwin" ]]; then
         # POSIX compatibility layer and Linux environment emulation for Windows
@@ -42,6 +42,7 @@ back_to_base_directory (){
 
 update_source(){
 	git pull
+    echo "Updated source from remote repository"
 }
 
 check_build_bam (){
@@ -80,11 +81,35 @@ check_build_bam (){
 fi
 }
 
+backup_server_config(){
+    back_to_base_directory
+    if [ -f autoexec.cfg ]; then
+        cp autoexec.cfg ../.
+        git checkout autoexec.cfg
+        echo "Backed up autoexec.cfg"
+    else
+        echo "Could not backup autoexec.cfg, file not found"
+    fi
+}
+
+restore_server_config(){
+    back_to_base_directory
+    if [ -f ../autoexec.cfg ]; then
+        mv ../autoexec.cfg .
+        echo "Restored autoexec.cfg"
+    else
+        echo "Could not restore autoexec.cfg, backup not found"
+    fi
+}
+
+backup_server_config
 update_source
+restore_server_config
+
 check_build_bam
 clean_previous_build
-build_debug_server
-start_server_debugging
+build_server
+start_server
 
 
 
