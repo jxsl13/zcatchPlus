@@ -243,13 +243,17 @@ function build(settings)
 	-- apply freetype settings
 	config.freetype:Apply(client_settings)
 
-	engine_settings.cc.flags:Add("-std=c++11")
-	engine = Compile(engine_settings, Collect("src/engine/shared/*.cpp", "src/base/*.c", "src/base/*.cpp"))
+
+	-- settings.cc.flags:Add("-std=c++11")
+	-- threads need c++11
+	settings.cc.flags:Add("-std=c++11")
+
+	engine_cpp = Compile(settings, Collect("src/engine/shared/*.cpp", "src/base/*.cpp"))
+	engine = Compile(engine_settings, Collect("src/base/*.c"))
 	client = Compile(client_settings, Collect("src/engine/client/*.cpp"))
 
 	-- we need threads in the server
-	-- threads need c++11
-	settings.cc.flags:Add("-std=c++11")
+
 	server = Compile(server_settings, Collect("src/engine/server/*.cpp"))
 
 	versionserver = Compile(settings, Collect("src/versionsrv/*.cpp"))
@@ -280,7 +284,7 @@ function build(settings)
 		engine, client, game_editor, md5, zlib, pnglite, wavpack,
 		client_link_other, client_osxlaunch)
 
-	server_exe = Link(server_settings, "zcatch_srv", engine, server,
+	server_exe = Link(server_settings, "zcatch_srv", engine, engine_cpp, server,
 		game_shared, game_server, md5, zlib, sqlite, server_link_other)
 
 
