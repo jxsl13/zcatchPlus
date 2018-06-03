@@ -4,7 +4,7 @@ BASE_DIR=$(pwd)
 
 build_debug_server (){
 	back_to_base_directory
-	../bam/bam server_debug
+	../bam/bam -a server_debug
 }
 
 clean_previous_build (){

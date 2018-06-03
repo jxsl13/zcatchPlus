@@ -10,7 +10,7 @@ back_to_base_directory (){
 
 build_server (){
 	back_to_base_directory
-	../bam/bam server_release
+	../bam/bam  -a server_release
 }
 
 
