@@ -243,6 +243,7 @@ function build(settings)
 	-- apply freetype settings
 	config.freetype:Apply(client_settings)
 
+	engine_settings.cc.flags:Add("-std=c++11")
 	engine = Compile(engine_settings, Collect("src/engine/shared/*.cpp", "src/base/*.c", "src/base/*.cpp"))
 	client = Compile(client_settings, Collect("src/engine/client/*.cpp"))
 
