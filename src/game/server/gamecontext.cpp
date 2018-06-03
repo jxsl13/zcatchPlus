@@ -961,8 +961,6 @@ void CGameContext::OnClientDrop(int ClientID, const char *pReason)
 
 	m_BotDetection->OnPlayerDisconnect(ClientID);
 
-	// tee historian tracking
-	m_apPlayers[ClientID]->SetTeeHistorianTracked(false);
 
 	AbortVoteKickOnDisconnect(ClientID);
 	m_apPlayers[ClientID]->OnDisconnect(pReason);
@@ -2687,7 +2685,7 @@ void CGameContext::ConList(IConsole::IResult *pResult, void *pUserData) {
 		for (int i = 0; i < size; ++i)
 		{
 			tempNick = pSelf->m_BannedNicks.at(i).c_str();
-			str_format(aBuf, sizeof(aBuf), "%3d : %-16s", i, tempNick);
+			str_format(aBuf, sizeof(aBuf), "%3d : %-20s", i, tempNick);
 			pSelf->m_pConsole->Print(IConsole::OUTPUT_LEVEL_STANDARD, "NickBans", aBuf);
 		}
 	}
@@ -2704,7 +2702,7 @@ void CGameContext::ConList(IConsole::IResult *pResult, void *pUserData) {
 			                       pSelf->Server()->GetAuthLevel(i) == CServer::AUTHED_MOD ? "(Mod)" : "";
 
 			char aBuf[128];
-			str_format(aBuf, sizeof(aBuf), "%3d %-16s %-16s %-9s %-10s", i, pSelf->Server()->ClientName(i), pSelf->Server()->ClientClan(i), pSelf->m_apPlayers[i]->GetTeeHistorianTracked() ? "(tracked)" : "", pAuthStr);
+			str_format(aBuf, sizeof(aBuf), "%3d %-20s %-20s %-9s %-10s", i, pSelf->Server()->ClientName(i), pSelf->Server()->ClientClan(i), pSelf->m_apPlayers[i]->GetTeeHistorianTracked() ? "(tracked)" : "", pAuthStr);
 			pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Server", aBuf);
 
 		}
@@ -2989,6 +2987,9 @@ void CGameContext::InitNicknameBanList() {
 }
 
 void CGameContext::SaveNicknameBanListToFile() {
+	if(m_BannedNicks.size() <= 0){
+		return;
+	}
 	// exec the file
 	IOHANDLE File = m_pStorage->OpenFile(g_Config.m_SvNickBanFile, IOFLAG_WRITE, IStorage::TYPE_ALL);
 	char aBuf[256];

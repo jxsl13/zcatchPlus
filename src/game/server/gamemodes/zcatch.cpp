@@ -12,11 +12,14 @@
 #include <string.h>
 #include <future>
 
+// Global stuff
+int m_OldGameMode;
+
 CGameController_zCatch::CGameController_zCatch(class CGameContext *pGameServer) :
 	IGameController(pGameServer)
 {
 	m_pGameType = "zCatch+";
-	m_OldMode = g_Config.m_SvMode;
+	m_OldGameMode = g_Config.m_SvMode;
 	m_OldSvReleaseGame = g_Config.m_SvLastStandingDeathmatch;
 	// jxsl13 added to save old server config. Needed for last man
 	// standing deathmatch feature to reset to previous state
@@ -54,17 +57,25 @@ void CGameController_zCatch::CheckReleaseGameStatus() {
 
 /* ranking system: create zcatch score table */
 void CGameController_zCatch::OnInitRanking(sqlite3 *rankingDb) {
-	char *zErrMsg = 0;
+	for (int i = 1; i <= 5; ++i)
+	{
 
-	/* lock database access in this process */
-	GameServer()->LockRankingDb();
+		char *zErrMsg = 0;
 
-	/* when another process uses the database, wait up to 10 seconds */
-	sqlite3_busy_timeout(GameServer()->GetRankingDb(), 10000);
+		/* lock database access in this process */
+		GameServer()->LockRankingDb();
 
-	int rc = sqlite3_exec(GameServer()->GetRankingDb(), "\
+		/* when another process uses the database, wait up to 10 seconds */
+		sqlite3_busy_timeout(GameServer()->GetRankingDb(), 10000);
+
+
+		char aMode[16];
+		str_format(aMode, sizeof(aMode), "%s", GetGameModeTableName(i)) ;
+
+		char aQuery[2048];
+		str_format(aQuery, sizeof(aQuery), "\
 			BEGIN; \
-			CREATE TABLE IF NOT EXISTS zCatch( \
+			CREATE TABLE IF NOT EXISTS %s ( \
 				username TEXT PRIMARY KEY, \
 				score UNSIGNED INTEGER DEFAULT 0, \
 				numWins UNSIGNED INTEGER DEFAULT 0, \
@@ -75,27 +86,31 @@ void CGameController_zCatch::OnInitRanking(sqlite3 *rankingDb) {
 				highestSpree UNSIGNED INTEGER DEFAULT 0, \
 				timePlayed UNSIGNED INTEGER DEFAULT 0 \
 			); \
-			CREATE INDEX IF NOT EXISTS zCatch_score_index ON zCatch (score); \
-			CREATE INDEX IF NOT EXISTS zCatch_numWins_index ON zCatch (numWins); \
-			CREATE INDEX IF NOT EXISTS zCatch_numKills_index ON zCatch (numKills); \
-			CREATE INDEX IF NOT EXISTS zCatch_numKillsWallshot_index ON zCatch (numKillsWallshot); \
-			CREATE INDEX IF NOT EXISTS zCatch_numDeaths_index ON zCatch (numDeaths); \
-			CREATE INDEX IF NOT EXISTS zCatch_numShots_index ON zCatch (numShots); \
-			CREATE INDEX IF NOT EXISTS zCatch_highestSpree_index ON zCatch (highestSpree); \
-			CREATE INDEX IF NOT EXISTS zCatch_timePlayed_index ON zCatch (timePlayed); \
+			CREATE INDEX IF NOT EXISTS %s_score_index ON %s (score); \
+			CREATE INDEX IF NOT EXISTS %s_numWins_index ON %s (numWins); \
+			CREATE INDEX IF NOT EXISTS %s_numKills_index ON %s (numKills); \
+			CREATE INDEX IF NOT EXISTS %s_numKillsWallshot_index ON %s (numKillsWallshot); \
+			CREATE INDEX IF NOT EXISTS %s_numDeaths_index ON %s (numDeaths); \
+			CREATE INDEX IF NOT EXISTS %s_numShots_index ON %s (numShots); \
+			CREATE INDEX IF NOT EXISTS %s_highestSpree_index ON %s (highestSpree); \
+			CREATE INDEX IF NOT EXISTS %s_timePlayed_index ON %s (timePlayed); \
 			COMMIT; \
-		", NULL, 0, &zErrMsg);
+		", aMode, aMode, aMode, aMode, aMode, aMode, aMode, aMode, aMode, aMode, aMode, aMode, aMode, aMode, aMode, aMode, aMode);
 
-	/* unlock database access */
-	GameServer()->UnlockRankingDb();
+		int rc = sqlite3_exec(GameServer()->GetRankingDb(), aQuery, NULL, 0, &zErrMsg);
 
-	/* check for error */
-	if (rc != SQLITE_OK) {
-		char aBuf[512];
-		str_format(aBuf, sizeof(aBuf), "SQL error (#%d): %s\n", rc, zErrMsg);
-		GameServer()->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "ranking", aBuf);
-		sqlite3_free(zErrMsg);
-		exit(1);
+		/* unlock database access */
+		GameServer()->UnlockRankingDb();
+
+		/* check for error */
+		if (rc != SQLITE_OK) {
+			char aBuf[512];
+			str_format(aBuf, sizeof(aBuf), "SQL error (#%d): %s\n", rc, zErrMsg);
+			GameServer()->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "ranking", aBuf);
+			sqlite3_free(zErrMsg);
+			exit(1);
+		}
+
 	}
 }
 
@@ -105,7 +120,7 @@ void CGameController_zCatch::Tick()
 	CheckReleaseGameStatus();
 	GameServer()->CleanFutures();
 
-	if (m_OldMode != g_Config.m_SvMode && !GameServer()->m_World.m_Paused)
+	if (m_OldGameMode != g_Config.m_SvMode && !GameServer()->m_World.m_Paused)
 	{
 		EndRound();
 	}
@@ -319,10 +334,12 @@ void CGameController_zCatch::StartRound()
 {
 
 	// if sv_mode changed: restart map (with new mode then)
-	if (m_OldMode != g_Config.m_SvMode)
+	if (m_OldGameMode != g_Config.m_SvMode)
 	{
-		m_OldMode = g_Config.m_SvMode;
-		Server()->MapReload();
+
+		EndRound();
+		m_OldGameMode = g_Config.m_SvMode;
+		//Server()->MapReload();
 	}
 
 	IGameController::StartRound();
@@ -500,17 +517,18 @@ void CGameController_zCatch::SaveRanking(CPlayer *player)
 
 	/* give the points */
 	GameServer()->AddFuture(std::async(std::launch::async, &CGameController_zCatch::SaveScore,
-	                                      GameServer(), // gamecontext
-	                                      name, // username
-	                                      player->m_RankCache.m_Points, // score
-	                                      player->m_RankCache.m_NumWins, // numWins
-	                                      player->m_RankCache.m_NumKills, // numKills
-	                                      player->m_RankCache.m_NumKillsWallshot, // numKillsWallshot
-	                                      player->m_RankCache.m_NumDeaths, // numDeaths
-	                                      player->m_RankCache.m_NumShots, // numShots
-	                                      player->m_zCatchNumKillsInARow, // highestSpree
-	                                      player->m_RankCache.m_TimePlayed / Server()->TickSpeed() // timePlayed
-	                                     ));
+	                                   GameServer(), // gamecontext
+	                                   name, // username
+	                                   player->m_RankCache.m_Points, // score
+	                                   player->m_RankCache.m_NumWins, // numWins
+	                                   player->m_RankCache.m_NumKills, // numKills
+	                                   player->m_RankCache.m_NumKillsWallshot, // numKillsWallshot
+	                                   player->m_RankCache.m_NumDeaths, // numDeaths
+	                                   player->m_RankCache.m_NumShots, // numShots
+	                                   player->m_zCatchNumKillsInARow, // highestSpree
+	                                   player->m_RankCache.m_TimePlayed / Server()->TickSpeed(), // timePlayed
+	                                   0,
+	                                   0));
 	// GameServer()->AddThread(new std::thread(&CGameController_zCatch::SaveScore,
 	//                                         GameServer(), // gamecontext
 	//                                         name, // username
@@ -552,17 +570,31 @@ void CGameController_zCatch::SaveRanking(CPlayer *player)
  * @param highestSpree highest continuous killing spree.
  * @param timePlayed Time played on this server.
  */
-void CGameController_zCatch::SaveScore(CGameContext* GameServer, char *name, int score, int numWins, int numKills, int numKillsWallshot, int numDeaths, int numShots, int highestSpree, int timePlayed) {
+void CGameController_zCatch::SaveScore(CGameContext* GameServer, char *name, int score, int numWins, int numKills, int numKillsWallshot, int numDeaths, int numShots, int highestSpree, int timePlayed, int GameMode, int Free) {
+	// Don't save connecting players
+	if (str_comp(name, "(connecting)") == 0 || str_comp(name, "(invalid)") == 0)
+	{
+		if (!Free)
+		{
+			free(name);
+		}
+		return;
+	}
 
 	/* debug */
 	char aBuf[512];
-	str_format(aBuf, sizeof(aBuf), "Saving user stats of '%s'", name);
+	str_format(aBuf, sizeof(aBuf), "Saving user stats of '%s' in mode: %s", name, GetGameModeTableName(GameMode));
 	GameServer->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "ranking", aBuf);
 
 	/* prepare */
 	const char *zTail;
-	const char *zSql = "\
-		INSERT OR REPLACE INTO zCatch ( \
+
+	char aMode[16];
+	str_format(aMode, sizeof(aMode), "%s", GetGameModeTableName(GameMode)) ;
+
+	char aQuery[1024];
+	str_format(aQuery, sizeof(aQuery), "\
+		INSERT OR REPLACE INTO %s ( \
 			username, score, numWins, numKills, numKillsWallshot, numDeaths, numShots, highestSpree, timePlayed \
 		) \
 		SELECT \
@@ -580,11 +612,12 @@ void CGameController_zCatch::SaveScore(CGameContext* GameServer, char *name, int
 		) new \
 		LEFT JOIN ( \
 			SELECT * \
-			FROM zCatch \
+			FROM %s \
 		) old ON old.username = new.username; \
-		";
+		", aMode, aMode);
+
 	sqlite3_stmt *pStmt = 0;
-	int rc = sqlite3_prepare_v2(GameServer->GetRankingDb(), zSql, strlen(zSql), &pStmt, &zTail);
+	int rc = sqlite3_prepare_v2(GameServer->GetRankingDb(), aQuery, strlen(aQuery), &pStmt, &zTail);
 
 	if (rc == SQLITE_OK)
 	{
@@ -632,7 +665,11 @@ void CGameController_zCatch::SaveScore(CGameContext* GameServer, char *name, int
 	}
 
 	sqlite3_finalize(pStmt);
-	free(name);
+
+	if (!Free) {
+		free(name);
+	}
+
 }
 
 /* when a player typed /top into the chat */
@@ -690,7 +727,7 @@ void CGameController_zCatch::ChatCommandTopFetchDataAndPrint(CGameContext* GameS
 	/* prepare */
 	const char *zTail;
 	char sqlBuf[128];
-	str_format(sqlBuf, sizeof(sqlBuf), "SELECT username, %s FROM zCatch ORDER BY %s DESC LIMIT 5;", column, column);
+	str_format(sqlBuf, sizeof(sqlBuf), "SELECT username, %s FROM %s ORDER BY %s DESC LIMIT 5;", column, GetGameModeTableName(0), column);
 	const char *zSql = sqlBuf;
 	sqlite3_stmt *pStmt = 0;
 	int rc = sqlite3_prepare_v2(GameServer->GetRankingDb(), zSql, strlen(zSql), &pStmt, &zTail);
@@ -781,7 +818,12 @@ void CGameController_zCatch::ChatCommandRankFetchDataAndPrint(CGameContext* Game
 
 	/* prepare */
 	const char *zTail;
-	const char *zSql = "\
+
+	char aMode[16];
+	str_format(aMode, sizeof(aMode), "%s", GetGameModeTableName(0)) ;
+
+	char aQuery[512];
+	str_format(aQuery, sizeof(aQuery), "\
 		SELECT \
 			a.score, \
 			a.numWins, \
@@ -791,13 +833,14 @@ void CGameController_zCatch::ChatCommandRankFetchDataAndPrint(CGameContext* Game
 			a.numShots, \
 			a.highestSpree, \
 			a.timePlayed, \
-			(SELECT COUNT(*) FROM zCatch b WHERE b.score > a.score) + 1, \
-			MAX(0, (SELECT MIN(b.score) FROM zCatch b WHERE b.score > a.score) - a.score) \
-		FROM zCatch a \
+			(SELECT COUNT(*) FROM %s b WHERE b.score > a.score) + 1, \
+			MAX(0, (SELECT MIN(b.score) FROM %s b WHERE b.score > a.score) - a.score) \
+		FROM %s a \
 		WHERE username = ?1\
-		;";
+		;", aMode, aMode, aMode);
+
 	sqlite3_stmt *pStmt = 0;
-	int rc = sqlite3_prepare_v2(GameServer->GetRankingDb(), zSql, strlen(zSql), &pStmt, &zTail);
+	int rc = sqlite3_prepare_v2(GameServer->GetRankingDb(), aQuery, strlen(aQuery), &pStmt, &zTail);
 
 	if (rc == SQLITE_OK)
 	{
@@ -953,29 +996,35 @@ void CGameController_zCatch::ToggleLastStandingDeathmatchAndRelease(int Players_
  */
 void CGameController_zCatch::MergeRankingIntoTarget(CGameContext* GameServer, char* Source, char* Target)
 {
+	for (int i = 1; i <= 5; ++i)
+	{
 
-	int source_score = 0;
-	int source_numWins = 0;
-	int source_numKills = 0;
-	int source_numKillsWallshot = 0;
-	int source_numDeaths = 0;
-	int source_numShots = 0;
-	int source_highestSpree = 0;
-	int source_timePlayed = 0;
+		int source_score = 0;
+		int source_numWins = 0;
+		int source_numKills = 0;
+		int source_numKillsWallshot = 0;
+		int source_numDeaths = 0;
+		int source_numShots = 0;
+		int source_highestSpree = 0;
+		int source_timePlayed = 0;
 
-	/*Sqlite stuff*/
-	/*sqlite statement object*/
-	sqlite3_stmt *pStmt = 0;
-	int source_rc;
-	int source_row;
+		/*Sqlite stuff*/
+		/*sqlite statement object*/
+		sqlite3_stmt *pStmt = 0;
+		int source_rc;
+		int source_row;
 
-	/*error handling*/
-	int err = 0;
+		/*error handling*/
+		int err = 0;
 
 
-	/* prepare */
-	const char *zTail;
-	const char *zSql = "\
+		/* prepare */
+		const char *zTail;
+		char aMode[16];
+		str_format(aMode, sizeof(aMode), "%s", GetGameModeTableName(i)) ;
+
+		char aQuery[256];
+		str_format(aQuery, sizeof(aQuery), "\
 		SELECT \
 			a.score, \
 			a.numWins, \
@@ -985,54 +1034,73 @@ void CGameController_zCatch::MergeRankingIntoTarget(CGameContext* GameServer, ch
 			a.numShots, \
 			a.highestSpree, \
 			a.timePlayed \
-		FROM zCatch a \
+		FROM %s a \
 		WHERE username = trim(?1)\
-		;";
+		;", aMode);
 
+		/* First part: fetch all data from Source player*/
+		/*check if query is ok and create statement object pStmt*/
+		source_rc = sqlite3_prepare_v2(GameServer->GetRankingDb(), aQuery, strlen(aQuery), &pStmt, &zTail);
 
-	/* First part: fetch all data from Source player*/
-	/*check if query is ok and create statement object pStmt*/
-	source_rc = sqlite3_prepare_v2(GameServer->GetRankingDb(), zSql, strlen(zSql), &pStmt, &zTail);
-
-	if (source_rc == SQLITE_OK)
-	{
-		/* bind parameters in query */
-		sqlite3_bind_text(pStmt, 1, Source, strlen(Source), 0);
-
-		/* lock database access in this process, but wait maximum 1 second */
-		if (GameServer->LockRankingDb(1000))
+		if (source_rc == SQLITE_OK)
 		{
+			/* bind parameters in query */
+			sqlite3_bind_text(pStmt, 1, Source, strlen(Source), 0);
 
-			/* when another process uses the database, wait up to 1 second */
-			sqlite3_busy_timeout(GameServer->GetRankingDb(), 1000);
-
-			/* fetch from database */
-			source_row = sqlite3_step(pStmt);
-
-			/* unlock database access */
-			GameServer->UnlockRankingDb();
-
-			/* result row was fetched */
-			if (source_row == SQLITE_ROW)
+			/* lock database access in this process, but wait maximum 1 second */
+			if (GameServer->LockRankingDb(1000))
 			{
-				/*get results from columns*/
-				source_score = sqlite3_column_int(pStmt, 0);
-				source_numWins = sqlite3_column_int(pStmt, 1);
-				source_numKills = sqlite3_column_int(pStmt, 2);
-				source_numKillsWallshot = sqlite3_column_int(pStmt, 3);
-				source_numDeaths = sqlite3_column_int(pStmt, 4);
-				source_numShots = sqlite3_column_int(pStmt, 5);
-				source_highestSpree = sqlite3_column_int(pStmt, 6);
-				source_timePlayed = sqlite3_column_int(pStmt, 7);
 
-				char aBuf[64];
-				str_format(aBuf, sizeof(aBuf), "Fetched data of '%s'", Source);
-				GameServer->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "ranking", aBuf);
+				/* when another process uses the database, wait up to 1 second */
+				sqlite3_busy_timeout(GameServer->GetRankingDb(), 1000);
+
+				/* fetch from database */
+				source_row = sqlite3_step(pStmt);
+
+				/* unlock database access */
+				GameServer->UnlockRankingDb();
+
+				/* result row was fetched */
+				if (source_row == SQLITE_ROW)
+				{
+					/*get results from columns*/
+					source_score = sqlite3_column_int(pStmt, 0);
+					source_numWins = sqlite3_column_int(pStmt, 1);
+					source_numKills = sqlite3_column_int(pStmt, 2);
+					source_numKillsWallshot = sqlite3_column_int(pStmt, 3);
+					source_numDeaths = sqlite3_column_int(pStmt, 4);
+					source_numShots = sqlite3_column_int(pStmt, 5);
+					source_highestSpree = sqlite3_column_int(pStmt, 6);
+					source_timePlayed = sqlite3_column_int(pStmt, 7);
+
+					char aBuf[64];
+					str_format(aBuf, sizeof(aBuf), "Fetched data of '%s' in mode: %s", Source, GetGameModeTableName(i));
+					GameServer->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "ranking", aBuf);
+
+				}
+
+				/* database is locked */
+				else if (source_row == SQLITE_BUSY)
+				{
+					/* print error */
+					char aBuf[64];
+					str_format(aBuf, sizeof(aBuf), "Could not get rank of '%s'. Try again later.", Source);
+					GameServer->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "ranking", aBuf);
+					err++;
+				}
+
+				/* no result found */
+				else if (source_row == SQLITE_DONE)
+				{
+					/* print information */
+					char aBuf[64];
+					str_format(aBuf, sizeof(aBuf), "'%s' has no rank in mode: %s", Source, GetGameModeTableName(i));
+					GameServer->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "ranking", aBuf);
+					err++;
+				}
 
 			}
-
-			/* database is locked */
-			else if (source_row == SQLITE_BUSY)
+			else
 			{
 				/* print error */
 				char aBuf[64];
@@ -1040,68 +1108,51 @@ void CGameController_zCatch::MergeRankingIntoTarget(CGameContext* GameServer, ch
 				GameServer->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "ranking", aBuf);
 				err++;
 			}
-
-			/* no result found */
-			else if (source_row == SQLITE_DONE)
-			{
-				/* print information */
-				char aBuf[64];
-				str_format(aBuf, sizeof(aBuf), "'%s' has no rank", Source);
-				GameServer->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "ranking", aBuf);
-				err++;
-			}
-
 		}
 		else
 		{
 			/* print error */
-			char aBuf[64];
-			str_format(aBuf, sizeof(aBuf), "Could not get rank of '%s'. Try again later.", Source);
+			char aBuf[512];
+			str_format(aBuf, sizeof(aBuf), "SQL error (#%d): %s", source_rc, sqlite3_errmsg(GameServer->GetRankingDb()));
 			GameServer->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "ranking", aBuf);
 			err++;
+
 		}
-	}
-	else
-	{
-		/* print error */
-		char aBuf[512];
-		str_format(aBuf, sizeof(aBuf), "SQL error (#%d): %s", source_rc, sqlite3_errmsg(GameServer->GetRankingDb()));
-		GameServer->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "ranking", aBuf);
-		err++;
 
-	}
+		/*if at least one error ocurred, free everything and do nothing.*/
+		if (err > 0 ) {
+			sqlite3_finalize(pStmt);
+			continue;
+		}
 
-	/*if at least one error ocurred, free everything and do nothing.*/
-	if (err > 0 ) {
+		/*Second part: add fetched data to Target player*/
+		/* give the points to Target player*/
+		CGameController_zCatch::SaveScore(GameServer, // gamecontext
+		                                  Target, // username ---> is freed!!
+		                                  source_score, // score
+		                                  source_numWins, // numWins
+		                                  source_numKills, // numKills
+		                                  source_numKillsWallshot, // numKillsWallshot
+		                                  source_numDeaths, // numDeaths
+		                                  source_numShots, // numShots
+		                                  source_highestSpree, // highestSpree
+		                                  source_timePlayed, // timePlayed
+		                                  i,
+		                                  1); // don't free Target
+
+		/*Cannot use "Target" variable from here on. */
+
+		/*Third part: delete Source player records.*/
+
+		// don't free Source with 1 != 0 (frees)
+		DeleteRanking(GameServer, Source, i, 1);
+		// Source has been freed in DeleteRanking!
 		sqlite3_finalize(pStmt);
-		free(Source);
-		free(Target);
-		return;
+		// Freeing allocated memory is done in these functions, because they are executed as detached threads.
 	}
 
-	/*Second part: add fetched data to Target player*/
-	/* give the points to Target player*/
-	CGameController_zCatch::SaveScore(GameServer, // gamecontext
-	                                  Target, // username ---> is freed!!
-	                                  source_score, // score
-	                                  source_numWins, // numWins
-	                                  source_numKills, // numKills
-	                                  source_numKillsWallshot, // numKillsWallshot
-	                                  source_numDeaths, // numDeaths
-	                                  source_numShots, // numShots
-	                                  source_highestSpree, // highestSpree
-	                                  source_timePlayed // timePlayed
-	                                 );
-
-	/*Cannot use "Target" variable from here on. */
-
-	/*Third part: delete Source player records.*/
-
-	// Target has been freed in SaveScore already !!
-	DeleteRanking(GameServer, Source);
-	// Source has been freed in DeleteRanking!
-	sqlite3_finalize(pStmt);
-	// Freeing allocated memory is done in these functions, because they are executed as detached threads.
+	free(Source);
+	free(Target);
 }
 
 
@@ -1115,11 +1166,16 @@ void CGameController_zCatch::MergeRankingIntoTarget(CGameContext* GameServer, ch
  * @param Name Is the name of the player whose ranking score should be deleted. The name is trimmed from both sides,
  * 			   in order to have a consistent ranking and no faking or faulty deletions.
  */
-void CGameController_zCatch::DeleteRanking(CGameContext* GameServer, char* Name) {
+void CGameController_zCatch::DeleteRanking(CGameContext* GameServer, char* Name, int GameMode, int Free) {
 	const char *zTail;
-	const char *zSql = "DELETE FROM zCatch WHERE username = trim(?1);";
+	char aMode[16];
+	str_format(aMode, sizeof(aMode), "%s", GetGameModeTableName(GameMode)) ;
+
+	char aQuery[128];
+	str_format(aQuery, sizeof(aQuery), "DELETE FROM %s WHERE username = trim(?1);", aMode);
+
 	sqlite3_stmt * pStmt;
-	int rc = sqlite3_prepare_v2(GameServer->GetRankingDb(), zSql, strlen(zSql), &pStmt, &zTail);
+	int rc = sqlite3_prepare_v2(GameServer->GetRankingDb(), aQuery, strlen(aQuery), &pStmt, &zTail);
 	if (rc == SQLITE_OK) {
 
 		/* bind parameters in query */
@@ -1138,7 +1194,7 @@ void CGameController_zCatch::DeleteRanking(CGameContext* GameServer, char* Name)
 		{
 		case SQLITE_DONE:
 			/* Print deletion success message to rcon */
-			str_format(aBuf, sizeof(aBuf), "Deleting records of '%s'" , Name);
+			str_format(aBuf, sizeof(aBuf), "Deleting records of '%s' in mode: %s" , Name, GetGameModeTableName(GameMode));
 			GameServer->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "ranking", aBuf);
 			break;
 		case SQLITE_BUSY:
@@ -1163,7 +1219,10 @@ void CGameController_zCatch::DeleteRanking(CGameContext* GameServer, char* Name)
 	}
 
 	sqlite3_finalize(pStmt);
-	free(Name);
+
+	if (!Free) {
+		free(Name);
+	}
 }
 
 /**
@@ -1173,19 +1232,29 @@ void CGameController_zCatch::DeleteRanking(CGameContext* GameServer, char* Name)
  * 			in the database.
  * @return name of current game mode.
  */
-char* CGameController_zCatch::GetGameModeTableName() {
-	char* aBuf = (char*)malloc(sizeof(char) * 16);
+const char* CGameController_zCatch::GetGameModeTableName(int GameMode) {
+	const char* aBuf;
 
-	switch (g_Config.m_SvMode) {
-	case 1: return strncpy(aBuf, "Laser", 4); break;
-	case 2: return strncpy(aBuf, "Everything", 10); break;
-	case 3: return strncpy(aBuf, "Hammer", 6); break;
-	case 4: return strncpy(aBuf, "Grenade", 7); break;
-	case 5: return strncpy(aBuf, "Ninja", 5); break;
-	default: return strncpy(aBuf, "zCatch", 6); break;
-
-		return aBuf;
-
+	if (!GameMode) {
+		switch (m_OldGameMode) {
+		case 1: return aBuf = "Laser"; break;
+		case 2: return aBuf = "Everything"; break;
+		case 3: return aBuf = "Hammer"; break;
+		case 4: return aBuf = "Grenade"; break;
+		case 5: return aBuf = "Ninja"; break;
+		default: return aBuf = "zCatch"; break;
+			return aBuf;
+		}
+	} else {
+		switch (GameMode) {
+		case 1: return aBuf = "Laser"; break;
+		case 2: return aBuf = "Everything"; break;
+		case 3: return aBuf = "Hammer"; break;
+		case 4: return aBuf = "Grenade"; break;
+		case 5: return aBuf = "Ninja"; break;
+		default: return aBuf = "zCatch"; break;
+			return aBuf;
+		}
 	}
 }
 
