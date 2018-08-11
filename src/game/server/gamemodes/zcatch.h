@@ -14,7 +14,7 @@ class CGameController_zCatch: public IGameController
 	// jxsl13 added
 	int m_OldAllowJoin;
 	int m_OldSvReleaseGame;
-	int m_OldPlayersIngame;
+	int m_OldPlayersIngame{0};
 
 	void RewardWinner(int winnerId);
 

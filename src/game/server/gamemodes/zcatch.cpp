@@ -49,8 +49,8 @@ void CGameController_zCatch::CheckReleaseGameStatus() {
 			GameServer()->SendBroadcast("Release Game was enabled.", -1);
 		} else if (m_OldSvReleaseGame == 0) {
 			// switching from 0 to 1 -> enabling release game
-			GameServer()->SendBroadcast("Release Game was disabled.", -1);
-
+			//GameServer()->SendBroadcast("Release Game was disabled.", -1);
+			// do not do anything, because this part is handled in toggle release game.
 		}
 	}
 }
@@ -129,7 +129,8 @@ void CGameController_zCatch::Tick()
 
 // Also checks if last standing player deathmatch is played before player treshhold is reached
 void CGameController_zCatch::DoWincheck()
-{
+{	
+	// if game is running
 	if (m_GameOverTick == -1)
 	{
 		int Players = 0, Players_Spec = 0, Players_SpecExplicit = 0;
@@ -138,16 +139,22 @@ void CGameController_zCatch::DoWincheck()
 
 		CPlayer *winner = NULL;
 
+		// go through all players
 		for (int i = 0; i < MAX_CLIENTS; i++)
 		{
+			// if player exists, count that player
 			if (GameServer()->m_apPlayers[i])
 			{
 				Players++;
+				// if player has someone caught, add caught players to count of all caught players
 				caughtPlayers += GameServer()->m_apPlayers[i]->m_zCatchNumVictims;
+
+				// count players in spec, explicidly in spec and in spec because they were caught
 				if (GameServer()->m_apPlayers[i]->GetTeam() == TEAM_SPECTATORS)
 					Players_Spec++;
 				else
 				{
+					// weird: if not in spec, set winner
 					winnerId = i;
 					winner = GameServer()->m_apPlayers[i];
 				}
@@ -155,23 +162,33 @@ void CGameController_zCatch::DoWincheck()
 					Players_SpecExplicit++;
 			}
 		}
+
 		int Players_Ingame = Players - Players_SpecExplicit;
 
+
+		// players without explicit spectators
 		if (Players_Ingame <= 1)
 		{
 			//do nothing
 		}
+		// last man standing ingame without all the players, who are caught and/or explicidly spectating 
 		else if ((Players - Players_Spec) == 1)
 		{
+			// go through all players and give the actual winner the score he/she earned
 			for (int i = 0; i < MAX_CLIENTS; i++)
 			{
 				if (GameServer()->m_apPlayers[i] && GameServer()->m_apPlayers[i]->GetTeam() != TEAM_SPECTATORS)
 				{
+					// give score
 					GameServer()->m_apPlayers[i]->m_Score += g_Config.m_SvBonus;
+
+					// release all of his/her victims
 					if (Players_Ingame < g_Config.m_SvLastStandingPlayers)
 						GameServer()->m_apPlayers[i]->ReleaseZCatchVictim(CPlayer::ZCATCH_RELEASE_ALL);
 				}
 			}
+
+			// if winner exists but failed har dmode
 			if (winner && winner->m_HardMode.m_Active && winner->m_HardMode.m_ModeTotalFails.m_Active && winner->m_HardMode.m_ModeTotalFails.m_Fails > winner->m_HardMode.m_ModeTotalFails.m_Max)
 			{
 				winner->ReleaseZCatchVictim(CPlayer::ZCATCH_RELEASE_ALL);
@@ -179,7 +196,8 @@ void CGameController_zCatch::DoWincheck()
 				GameServer()->SendChatTarget(-1, "The winner failed the hard mode.");
 				GameServer()->SendBroadcast("The winner failed the hard mode.", -1);
 			}
-			else if (Players_Ingame < g_Config.m_SvLastStandingPlayers)
+			// winner exists and not enough players to end the round
+			else if (winner && Players_Ingame < g_Config.m_SvLastStandingPlayers)
 			{
 				winner->HardModeRestart();
 
@@ -193,8 +211,10 @@ void CGameController_zCatch::DoWincheck()
 				}
 
 			}
+			// if simply a winner exists
 			else
 			{
+
 
 				// give the winner points
 				if (winnerId > -1)
@@ -215,6 +235,7 @@ void CGameController_zCatch::DoWincheck()
 
 			// checks release game stuff before the last man standing treshold is reached.
 		} else {
+			// if ingame players > 1
 			ToggleLastStandingDeathmatchAndRelease(Players_Ingame, caughtPlayers);
 		}
 
@@ -529,18 +550,7 @@ void CGameController_zCatch::SaveRanking(CPlayer *player)
 	                                   player->m_RankCache.m_TimePlayed / Server()->TickSpeed(), // timePlayed
 	                                   0,
 	                                   0));
-	// GameServer()->AddThread(new std::thread(&CGameController_zCatch::SaveScore,
-	//                                         GameServer(), // gamecontext
-	//                                         name, // username
-	//                                         player->m_RankCache.m_Points, // score
-	//                                         player->m_RankCache.m_NumWins, // numWins
-	//                                         player->m_RankCache.m_NumKills, // numKills
-	//                                         player->m_RankCache.m_NumKillsWallshot, // numKillsWallshot
-	//                                         player->m_RankCache.m_NumDeaths, // numDeaths
-	//                                         player->m_RankCache.m_NumShots, // numShots
-	//                                         player->m_zCatchNumKillsInARow, // highestSpree
-	//                                         player->m_RankCache.m_TimePlayed / Server()->TickSpeed() // timePlayed
-	//                                        ));
+
 
 	/* clean rank cache */
 	player->m_RankCache.m_Points = 0;
@@ -947,39 +957,24 @@ void CGameController_zCatch::FormatRankingColumn(const char* column, char buf[32
  */
 void CGameController_zCatch::ToggleLastStandingDeathmatchAndRelease(int Players_Ingame, int caughtPlayers) {
 
-
-	if (g_Config.m_SvLastStandingDeathmatch) {
-
-		if (m_OldPlayersIngame >= g_Config.m_SvLastStandingPlayers && Players_Ingame < g_Config.m_SvLastStandingPlayers && !caughtPlayers)
-		{
-			// announce only if nobody is caught and there are not enough players ingame to end a round.
-			GameServer()->SendBroadcast("Not enough players to end the round again.", -1);
-			GameServer()->SendChatTarget(-1, "Back to Release Game.");
-			m_OldPlayersIngame = Players_Ingame;
-		} else if (m_OldPlayersIngame < g_Config.m_SvLastStandingPlayers && Players_Ingame == g_Config.m_SvLastStandingPlayers)
-		{
+	// if rls game is enabled
+	if(g_Config.m_SvLastStandingDeathmatch){
+		// 
+		if(Players_Ingame >= g_Config.m_SvLastStandingPlayers && m_OldPlayersIngame < g_Config.m_SvLastStandingPlayers){
 			GameServer()->SendBroadcast("Enough players to end the round. Let the fun begin!", -1);
-			GameServer()->SendChatTarget(-1, "End of Release Game.");
+			GameServer()->SendChatTarget(-1, "Release Game was disabled.");
+			// disable release game 
+			g_Config.m_SvLastStandingDeathmatch = 0;
+
+			// joining is different from what it was
+			if(g_Config.m_SvAllowJoin != m_OldAllowJoin){
+				g_Config.m_SvAllowJoin = m_OldAllowJoin;
+			}
 		}
+	} 
+	m_OldPlayersIngame = Players_Ingame;
 
-
-		if (g_Config.m_SvAllowJoin != 1)
-		{
-			m_OldAllowJoin = g_Config.m_SvAllowJoin;
-		}
-		g_Config.m_SvAllowJoin = 1;
-	} else {
-		if (g_Config.m_SvAllowJoin != m_OldAllowJoin)
-		{
-			g_Config.m_SvAllowJoin = m_OldAllowJoin;
-		}
-	}
-	if (Players_Ingame > m_OldPlayersIngame)
-	{
-		m_OldPlayersIngame = Players_Ingame;
-	}
-
-
+	
 }
 
 
