@@ -50,6 +50,15 @@ void CGameController_zCatch::CheckReleaseGameStatus() {
 			m_OldAllowJoin = g_Config.m_SvAllowJoin;
 			g_Config.m_SvAllowJoin = 1;
 
+			// go through all players and release all of their caught victims, if rls game is enabled.
+			for (int i = 0; i < MAX_CLIENTS; i++)
+			{	
+				if (GameServer()->m_apPlayers[i])
+				{
+					GameServer()->m_apPlayers[i]->ReleaseZCatchVictim(CPlayer::ZCATCH_RELEASE_ALL);
+				}
+			}
+
 		} else if (m_OldSvReleaseGame == 0) {
 			if(g_Config.m_SvAllowJoin != m_OldAllowJoin){
 				g_Config.m_SvAllowJoin = m_OldAllowJoin;
