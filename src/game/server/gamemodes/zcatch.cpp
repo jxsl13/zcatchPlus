@@ -47,10 +47,13 @@ void CGameController_zCatch::CheckReleaseGameStatus() {
 		if (m_OldSvReleaseGame == 1) {
 
 			GameServer()->SendBroadcast("Release Game was enabled.", -1);
+			m_OldAllowJoin = g_Config.m_SvAllowJoin;
+			g_Config.m_SvAllowJoin = 1;
+
 		} else if (m_OldSvReleaseGame == 0) {
-			// switching from 0 to 1 -> enabling release game
-			//GameServer()->SendBroadcast("Release Game was disabled.", -1);
-			// do not do anything, because this part is handled in toggle release game.
+			if(g_Config.m_SvAllowJoin != m_OldAllowJoin){
+				g_Config.m_SvAllowJoin = m_OldAllowJoin;
+			}
 		}
 	}
 }
@@ -965,11 +968,6 @@ void CGameController_zCatch::ToggleLastStandingDeathmatchAndRelease(int Players_
 			GameServer()->SendChatTarget(-1, "Release Game was disabled.");
 			// disable release game 
 			g_Config.m_SvLastStandingDeathmatch = 0;
-
-			// joining is different from what it was
-			if(g_Config.m_SvAllowJoin != m_OldAllowJoin){
-				g_Config.m_SvAllowJoin = m_OldAllowJoin;
-			}
 		}
 	} 
 	m_OldPlayersIngame = Players_Ingame;
