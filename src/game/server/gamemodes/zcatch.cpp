@@ -731,7 +731,6 @@ void CGameController_zCatch::OnChatCommandTop(CPlayer *pPlayer, const char *cate
 	{
 		column = "timePlayed";
 	}
-
 	else
 	{
 		GameServer()->SendChatTarget(pPlayer->GetCID(), "Usage: /top [score|wins|kills|wallshotkills|deaths|shots|spree|time]");
@@ -809,13 +808,13 @@ void CGameController_zCatch::ChatCommandTopFetchDataAndPrint(CGameContext* GameS
 	sqlite3_finalize(pStmt);
 }
 
-/* when a player typed /top into the chat */
+/* when a player typed /rank into the chat */
 void CGameController_zCatch::OnChatCommandOwnRank(CPlayer *pPlayer)
 {
 	OnChatCommandRank(pPlayer, GameServer()->Server()->ClientName(pPlayer->GetCID()));
 }
 
-/* when a player typed /top into the chat */
+/* when a player typed /rank nickname into the chat */
 void CGameController_zCatch::OnChatCommandRank(CPlayer *pPlayer, const char *name)
 {
 	char *queryName = (char*)malloc(MAX_NAME_LENGTH);
@@ -949,12 +948,14 @@ void CGameController_zCatch::ChatCommandRankFetchDataAndPrint(CGameContext* Game
 
 void CGameController_zCatch::FormatRankingColumn(const char* column, char buf[32], int value)
 {
-	if (!str_comp_nocase("score", column))
-		str_format(buf, strlen(buf), "%.*f", value % 100 ? 2 : 0, value / 100.0);
+	size_t size = 32;
+	if (!str_comp_nocase("score", column)){
+		str_format(buf, size, "%.2f", value / 100.0);
+	}
 	else if (!str_comp_nocase("timePlayed", column))
-		str_format(buf, strlen(buf), "%d:%02dh", value / 3600, value / 60 % 60);
+		str_format(buf, size, "%d:%02dh", value / 3600, value / 60 % 60);
 	else
-		str_format(buf, strlen(buf), "%d", value);
+		str_format(buf, size, "%d", value);
 }
 
 
