@@ -770,6 +770,10 @@ void CGameController_zCatch::ChatCommandTopFetchDataAndPrint(CGameContext* GameS
 			{
 				const unsigned char* name = sqlite3_column_text(pStmt, 0);
 				int value = sqlite3_column_int(pStmt, 1);
+				// don't show in top if no score available.
+				if(value == 0){
+					continue;
+				}
 				char aBuf[64], bBuf[32];
 				FormatRankingColumn(column, bBuf, value);
 				str_format(aBuf, sizeof(aBuf), "[%s] %s", bBuf, name);
@@ -897,14 +901,21 @@ void CGameController_zCatch::ChatCommandRankFetchDataAndPrint(CGameContext* Game
 				int scoreToNextRank = sqlite3_column_int(pStmt, 9);
 
 				char aBuf[512];
-				if (g_Config.m_SvMode == 1) // laser
+				// needs at least one win to be ranked
+				if (score > 0)
 				{
-					str_format(aBuf, sizeof(aBuf), "'%s' is rank %d with a score of %.*f points and %d wins (%d kills (%d wallshot), %d deaths, %d shots, spree of %d, %d:%02dh played, %.*f points for next rank)", name, rank, score % 100 ? 2 : 0, score / 100.0, numWins, numKills, numKillsWallshot, numDeaths, numShots, highestSpree, timePlayed / 3600, timePlayed / 60 % 60, scoreToNextRank % 100 ? 2 : 0, scoreToNextRank / 100.0);
+					if (g_Config.m_SvMode == 1) // laser
+					{
+						str_format(aBuf, sizeof(aBuf), "'%s' is rank %d with a score of %.*f points and %d wins (%d kills (%d wallshot), %d deaths, %d shots, spree of %d, %d:%02dh played, %.*f points for next rank)", name, rank, score % 100 ? 2 : 0, score / 100.0, numWins, numKills, numKillsWallshot, numDeaths, numShots, highestSpree, timePlayed / 3600, timePlayed / 60 % 60, scoreToNextRank % 100 ? 2 : 0, scoreToNextRank / 100.0);
+					}
+					else
+					{
+						str_format(aBuf, sizeof(aBuf), "'%s' is rank %d with a score of %.*f points and %d wins (%d kills, %d deaths, %d shots, spree of %d, %d:%02dh played, %.*f points for next rank)", name, rank, score % 100 ? 2 : 0, score / 100.0, numWins, numKills, numDeaths, numShots, highestSpree, timePlayed / 3600, timePlayed / 60 % 60, scoreToNextRank % 100 ? 2 : 0, scoreToNextRank / 100.0);
+					}
+				} else {
+					str_format(aBuf, sizeof(aBuf), "'%s' has no rank", name);
 				}
-				else
-				{
-					str_format(aBuf, sizeof(aBuf), "'%s' is rank %d with a score of %.*f points and %d wins (%d kills, %d deaths, %d shots, spree of %d, %d:%02dh played, %.*f points for next rank)", name, rank, score % 100 ? 2 : 0, score / 100.0, numWins, numKills, numDeaths, numShots, highestSpree, timePlayed / 3600, timePlayed / 60 % 60, scoreToNextRank % 100 ? 2 : 0, scoreToNextRank / 100.0);
-				}
+				
 				GameServer->SendChatTarget(clientId, aBuf);
 			}
 
