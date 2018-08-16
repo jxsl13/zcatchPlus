@@ -2280,6 +2280,8 @@ void CServer::RegisterCommands()
 	Console()->Register("status", "", CFGFLAG_SERVER, ConStatus, this, "List players");
 	Console()->Register("shutdown", "", CFGFLAG_SERVER | CFGFLAG_NONTEEHISTORIC, ConShutdown, this, "Shut down");
 	Console()->Register("logout", "", CFGFLAG_SERVER | CFGFLAG_NONTEEHISTORIC, ConLogout, this, "Logout of rcon");
+	Console()->Register("exit", "", CFGFLAG_SERVER | CFGFLAG_NONTEEHISTORIC, ConLogout, this, "Logout of rcon");
+	Console()->Register("q", "", CFGFLAG_SERVER | CFGFLAG_NONTEEHISTORIC, ConLogout, this, "Logout of rcon");
 
 	Console()->Register("record", "?s", CFGFLAG_SERVER | CFGFLAG_STORE, ConRecord, this, "Record to a file");
 	Console()->Register("stoprecord", "", CFGFLAG_SERVER, ConStopRecord, this, "Stop recording");
