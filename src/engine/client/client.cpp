@@ -1451,6 +1451,8 @@ void CClient::PumpNetwork()
 	{
 		if(Packet.m_ClientID == -1)
 			ProcessConnlessPacket(&Packet);
+		else
+			ProcessServerPacket(&Packet);
 	}
 }
 

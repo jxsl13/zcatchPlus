@@ -462,12 +462,23 @@ void CCharacter::FireWeapon()
 
 		case WEAPON_GUN:
 		{
-			new CProjectile(GameWorld(), WEAPON_GUN,
+			CProjectile *pProj = new CProjectile(GameWorld(), WEAPON_GUN,
 				m_pPlayer->GetCID(),
 				ProjStartPos,
 				Direction,
 				(int)(Server()->TickSpeed()*GameServer()->Tuning()->m_GunLifetime),
 				1, 0, 0, -1, WEAPON_GUN);
+
+			// pack the Projectile and send it to the client Directly
+			CNetObj_Projectile p;
+			pProj->FillInfo(&p);
+
+			CMsgPacker Msg(NETMSGTYPE_SV_EXTRAPROJECTILE);
+			Msg.AddInt(1);
+			for(unsigned i = 0; i < sizeof(CNetObj_Projectile)/sizeof(int); i++)
+				Msg.AddInt(((int *)&p)[i]);
+
+			Server()->SendMsg(&Msg, MSGFLAG_VITAL, m_pPlayer->GetCID());
 
 			GameServer()->CreateSound(m_Pos, SOUND_GUN_FIRE);
 		} break;
@@ -476,6 +487,9 @@ void CCharacter::FireWeapon()
 		{
 			int ShotSpread = 2;
 
+			CMsgPacker Msg(NETMSGTYPE_SV_EXTRAPROJECTILE);
+			Msg.AddInt(ShotSpread*2+1);
+
 			for(int i = -ShotSpread; i <= ShotSpread; ++i)
 			{
 				float Spreading[] = {-0.185f, -0.070f, 0, 0.070f, 0.185f};
@@ -483,13 +497,22 @@ void CCharacter::FireWeapon()
 				a += Spreading[i+2];
 				float v = 1-(absolute(i)/(float)ShotSpread);
 				float Speed = mix((float)GameServer()->Tuning()->m_ShotgunSpeeddiff, 1.0f, v);
-				new CProjectile(GameWorld(), WEAPON_SHOTGUN,
+				CProjectile *pProj = new CProjectile(GameWorld(), WEAPON_SHOTGUN,
 					m_pPlayer->GetCID(),
 					ProjStartPos,
 					vec2(cosf(a), sinf(a))*Speed,
 					(int)(Server()->TickSpeed()*GameServer()->Tuning()->m_ShotgunLifetime),
 					1, 0, 0, -1, WEAPON_SHOTGUN);
+
+				// pack the Projectile and send it to the client Directly
+				CNetObj_Projectile p;
+				pProj->FillInfo(&p);
+
+				for(unsigned i = 0; i < sizeof(CNetObj_Projectile)/sizeof(int); i++)
+					Msg.AddInt(((int *)&p)[i]);
 			}
+
+			Server()->SendMsg(&Msg, MSGFLAG_VITAL, m_pPlayer->GetCID());
 
 			GameServer()->CreateSound(m_Pos, SOUND_SHOTGUN_FIRE);
 		} break;
@@ -503,11 +526,21 @@ void CCharacter::FireWeapon()
 				(int)(Server()->TickSpeed()*GameServer()->Tuning()->m_GrenadeLifetime),
 				1, true, 0, SOUND_GRENADE_EXPLODE, WEAPON_GRENADE);
 
+			// pack the Projectile and send it to the client Directly
+			CNetObj_Projectile p;
+			pProj->FillInfo(&p);
+			
 			pProj->InitAffectedCharacters();
 			if(m_Core.m_HookedPlayer >= 0)
 				pProj->SetAffectedCharacter(m_Core.m_HookedPlayer);
 			
 			pProj->m_OwnerLastDieTick = GetPlayer()->m_DieTick;
+
+			CMsgPacker Msg(NETMSGTYPE_SV_EXTRAPROJECTILE);
+			Msg.AddInt(1);
+			for(unsigned i = 0; i < sizeof(CNetObj_Projectile)/sizeof(int); i++)
+				Msg.AddInt(((int *)&p)[i]);
+			Server()->SendMsg(&Msg, MSGFLAG_VITAL, m_pPlayer->GetCID());
 
 			GameServer()->CreateSound(m_Pos, SOUND_GRENADE_FIRE);
 		} break;
