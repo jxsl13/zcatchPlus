@@ -68,7 +68,14 @@ public:
 	// rainbow game stuff
 	int m_RainbowCount{0};
 	bool m_SomoneHasRainbow{false};
-	void GiveRainbowToRandomPlayer(bool condition = true);
+	/**
+	 * @brief gives rainbow to a person that is not the victim
+	 * @details [long description]
+	 * 
+	 * @param VictimID set this to -1 to choose between everyone.
+	 * @param condition [description]
+	 */
+	void GiveRainbowToRandomPlayer(int VictimID, bool condition = true);
 
 };
 

@@ -75,10 +75,13 @@ public:
 	} m_TeeInfos;
 
 	// rainbow stuff
-	bool IsRainbowTee(){return m_IsRainbowBodyTee || m_IsRainbowFeetTee;}
+	bool IsRainbowTee(){ return m_IsRainbowBodyTee || m_IsRainbowFeetTee;}
+	void ResetRainbowTee(){ m_IsRainbowBodyTee = false; m_IsRainbowFeetTee = false;}
+	void GiveBodyRainbow(){ m_IsRainbowBodyTee = true;}
+	void GiveFeetRainbow(){ m_IsRainbowFeetTee = true;}
 	bool m_IsRainbowBodyTee{false};
 	bool m_IsRainbowFeetTee{false};
-	
+	// rainbow end
 
 	int m_RespawnTick;
 	int m_DieTick;
