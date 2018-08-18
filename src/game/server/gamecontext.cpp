@@ -3250,12 +3250,13 @@ void CGameContext::AddToNicknameBanList(std::string Nickname) {
 
 void CGameContext::RemoveFromNicknameBanList(int ID) {
 	char aBuf[256];
+
 	if (m_BannedNicks.empty())
 	{
 		Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "BannedNicks", "No banned nicknames available.");
 		return;
 	}
-	if (ID < 0 || ID >= m_BannedNicks.size()) {
+	if (ID < 0 || static_cast<unsigned long>(ID) >= m_BannedNicks.size()) {
 		str_format(aBuf, sizeof(aBuf), "Invalid ID: %d", ID);
 		Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "BannedNicks", aBuf);
 		return;
@@ -3276,7 +3277,7 @@ void CGameContext::RemoveFromNicknameBanList(std::string Nickname) {
 		Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "BannedNicks", "No banned nicknames available.");
 	}
 
-	long size = m_BannedNicks.size();
+	unsigned long size = m_BannedNicks.size();
 	std::string tempNick;
 	for (int i = 0; i < size; ++i)
 	{
