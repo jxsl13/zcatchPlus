@@ -385,7 +385,7 @@ int CGameController_zCatch::OnCharacterDeath(class CCharacter *pVictim, class CP
 			victim->m_Score -= g_Config.m_SvKillPenalty;
 			++victim->m_Deaths;
 			// give rainbow to random player if rls game is enabled.
-			GiveRainbowToRandomPlayer(g_Config.m_SvLastStandingDeathmatch);
+			GiveRainbowToRandomPlayer(g_Config.m_SvLastStandingDeathmatch && !m_SomoneHasRainbow);
 
 		}
 	}
