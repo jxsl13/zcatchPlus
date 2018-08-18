@@ -404,9 +404,6 @@ void CGameController_zCatch::OnPlayerInfoChange(class CPlayer *pP)
 		return;
 	}
 
-	dbg_msg("TEST_BEFORE", "0x%x", pP->m_TeeInfos.m_ColorBody);
-	dbg_msg("TEST_BEFORE", "KILLS %d", pP->m_zCatchNumKillsInARow);
-
 	if (pP->m_zCatchNumKillsInARow <= 20) {
 		switch (pP->m_zCatchNumKillsInARow) {
 		case 0:
@@ -501,7 +498,6 @@ void CGameController_zCatch::OnPlayerInfoChange(class CPlayer *pP)
 		pP->m_TeeInfos.m_ColorFeet = 0x000000;
 	}
 	pP->m_TeeInfos.m_UseCustomColor = 1;
-	dbg_msg("TEST_AFTER", "0x%x", pP->m_TeeInfos.m_ColorBody);
 
 	if (g_Config.m_SvColorIndicator && pP->m_zCatchNumKillsInARow <= 20)
 	{
