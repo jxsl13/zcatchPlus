@@ -2818,7 +2818,7 @@ void CGameContext::ConList(IConsole::IResult *pResult, void *pUserData) {
 			char aClan[MAX_CLAN_LENGTH];
 			char aIP[NETADDR_MAXSTRSIZE];
 			char aTracked[4];
-			char aAdminLevel[12];
+			char aAdminLevel[4];
 			char aFlags[20];
 			char aSecureConnection[5];
 
@@ -2827,32 +2827,34 @@ void CGameContext::ConList(IConsole::IResult *pResult, void *pUserData) {
 			str_format(aID, sizeof(aID), "%-2d", i);
 			str_format(aName, sizeof(aName), "%s", pSelf->Server()->ClientName(i));
 			str_format(aClan, sizeof(aClan), "%s", pSelf->Server()->ClientClan(i));
+
 			net_addr_str(pCServer->m_NetServer.ClientAddr(i), aIP, sizeof(aIP), true);
-			str_format(aIP, sizeof(aIP), "%s", aIP);
+			dbg_msg("TEST", "%s", aIP);
+			//str_format(aIP, sizeof(aIP), "%s", aIP);
 			str_format(aFlags, sizeof(aFlags), "[%d]", pSelf->m_apPlayers[i]->m_PlayerFlags);
 
 			str_format(aTracked, sizeof(aTracked), "%s",
-				pSelf->m_apPlayers[i]->GetTeeHistorianTracked() ? "[T]" : "");
+				pSelf->m_apPlayers[i]->GetTeeHistorianTracked() ? "[T]" : "[N]");
 
 			str_format(aSecureConnection, sizeof(aSecureConnection), "%s",
-				pCServer->m_NetServer.HasSecurityToken(i) ? "[S]" : "[NS]");
+				pCServer->m_NetServer.HasSecurityToken(i) ? "[S]" : "[N]");
 
 			switch (pSelf->Server()->GetAuthLevel(i)) {
 			case CServer::AUTHED_ADMIN:
-				str_format(aAdminLevel, sizeof(aAdminLevel), "%10s", "(Admin)");
+				str_format(aAdminLevel, sizeof(aAdminLevel), "%s", "[A]");
 				break;
 			case CServer::AUTHED_SUBADMIN:
-				str_format(aAdminLevel, sizeof(aAdminLevel), "%10s", "(Subadmin)");
+				str_format(aAdminLevel, sizeof(aAdminLevel), "%s", "[S]");
 				break;
 			case CServer::AUTHED_MOD:
-				str_format(aAdminLevel, sizeof(aAdminLevel), "%10s", "(Mod)");
+				str_format(aAdminLevel, sizeof(aAdminLevel), "%s", "[M]");
 				break;
 			default:
-				str_format(aAdminLevel, sizeof(aAdminLevel),  "%10s", "");
+				str_format(aAdminLevel, sizeof(aAdminLevel),  "%s", "[N]");
 				break;
 			}
 
-			str_format(aBuf, sizeof(aBuf), "%s: %4s%-5s%-4s  %-32s %s Nick='%s'  Clan='%s' ", aID, aSecureConnection, aFlags, aTracked, aIP, aAdminLevel, aName, aClan);
+			str_format(aBuf, sizeof(aBuf), "%s: %3s%-3s%-3s  %-48s %3s %-16s  %12s ", aID, aSecureConnection, aFlags, aTracked, aIP, aAdminLevel, aName, aClan);
 
 			pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Server", aBuf);
 
