@@ -74,6 +74,11 @@ public:
 		int m_ColorFeet;
 	} m_TeeInfos;
 
+	// rainbow stuff
+	bool m_IsRainbowBodyTee{false};
+	bool m_IsRainbowFeetTee{false};
+	
+
 	int m_RespawnTick;
 	int m_DieTick;
 	int m_Score;
@@ -184,6 +189,8 @@ public:
 		bool m_ModeInvisiblePlayers; // TODO
 	} m_HardMode;
 
+	void DoRainbowBodyStep();
+	void DoRainbowFeetStep();
 	bool AddHardMode(const char*);
 	const char* AddRandomHardMode();
 	void ResetHardMode();
@@ -216,6 +223,10 @@ private:
 
 	CGameContext *GameServer() const { return m_pGameServer; }
 	IServer *Server() const;
+
+	// rainbow stuff
+	int m_RainbowBodyStep{0};
+	int m_RainbowFeetStep{0};
 
 	//
 	bool m_Spawning;

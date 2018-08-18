@@ -2,6 +2,8 @@
 /* If you are missing that file, acquire a complete release at teeworlds.com.                */
 /* Modified by Teelevision for zCatch/TeeVi, see readme.txt and license.txt.                 */
 #include <new>
+#include <iomanip>
+#include <sstream>
 #include <base/math.h>
 #include <engine/shared/config.h>
 #include <engine/map.h>
@@ -2618,7 +2620,67 @@ void CGameContext::OnConsoleInit()
 	Console()->Register("unban_nick", "i", CFGFLAG_SERVER, ConRemoveFromBannedNicks, this, "Removes ID (from show_banned_nicks) from banned nicks list.");
 	Console()->Register("ban_nick_by_id", "i", CFGFLAG_SERVER, ConBanNickByID, this, "Bans a nick by given ID (from ls or status command).");
 	Console()->Register("ban_nick_by_name", "r", CFGFLAG_SERVER, ConBanNickByName, this, "Bans a nick by given nickname.");
+	
+	Console()->Register("give_rainbow", "i", CFGFLAG_SERVER, ConGiveRainbow, this, "Enables Rainbow for given id.");
+	Console()->Register("give_rainbow_body", "i", CFGFLAG_SERVER, ConGiveRainbowBody, this, "Enables Rainbow body for given id.");
+	Console()->Register("give_rainbow_feet", "i", CFGFLAG_SERVER, ConGiveRainbowFeet, this, "Enables Rainbow feet for given id.");
 
+
+}
+
+void CGameContext::ConGiveRainbowFeet(IConsole::IResult *pResult, void *pUserData){
+	CGameContext *pSelf = (CGameContext *)pUserData;
+	if(!pSelf || !pResult){
+		dbg_msg("", "CGameContext::Error in ConGiveRainbow");
+		return;
+	}
+
+	int playerID(pResult->GetInteger(0));
+	if(playerID >= 0 && playerID < MAX_CLIENTS){
+		pSelf->m_apPlayers[playerID]->m_IsRainbowFeetTee = true;
+	} else {
+		char aBuf[128];
+		str_format(aBuf, sizeof(aBuf), "Invalid id given. Try 'status', 'ls' or 'list'");
+		pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Server", aBuf);
+
+	}
+}
+
+void CGameContext::ConGiveRainbowBody(IConsole::IResult *pResult, void *pUserData){
+	CGameContext *pSelf = (CGameContext *)pUserData;
+	if(!pSelf || !pResult){
+		dbg_msg("", "CGameContext::Error in ConGiveRainbow");
+		return;
+	}
+
+	int playerID(pResult->GetInteger(0));
+	if(playerID >= 0 && playerID < MAX_CLIENTS){
+		pSelf->m_apPlayers[playerID]->m_IsRainbowBodyTee = true;
+	} else {
+		char aBuf[128];
+		str_format(aBuf, sizeof(aBuf), "Invalid id given. Try 'status', 'ls' or 'list'");
+		pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Server", aBuf);
+
+	}
+}
+
+void CGameContext::ConGiveRainbow(IConsole::IResult *pResult, void *pUserData){
+	CGameContext *pSelf = (CGameContext *)pUserData;
+	if(!pSelf || !pResult){
+		dbg_msg("", "CGameContext::Error in ConGiveRainbow");
+		return;
+	}
+
+	int playerID(pResult->GetInteger(0));
+	if(playerID >= 0 && playerID < MAX_CLIENTS){
+		pSelf->m_apPlayers[playerID]->m_IsRainbowBodyTee = true;
+		pSelf->m_apPlayers[playerID]->m_IsRainbowFeetTee = true;
+	} else {
+		char aBuf[128];
+		str_format(aBuf, sizeof(aBuf), "Invalid id given. Try 'status', 'ls' or 'list'");
+		pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Server", aBuf);
+
+	}
 }
 
 void CGameContext::ConBanNickByName(IConsole::IResult *pResult, void *pUserData) {
@@ -2741,34 +2803,53 @@ void CGameContext::ConList(IConsole::IResult *pResult, void *pUserData) {
 	// bans stuff end
 
 
-	pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Server", "======================= Player List =======================");
+	pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Server", "================================= Player List =================================");
 
-	char aAddrStr[NETADDR_MAXSTRSIZE];
 	CServer* pCServer = pSelf->GetBanServer()->Server();
 	for (int i = 0; i < MAX_CLIENTS; ++i)
 	{
 		if (pSelf->m_apPlayers[i] && pCServer->m_aClients[i].m_State != CServer::CClient::STATE_EMPTY) {
 
-			net_addr_str(pCServer->m_NetServer.ClientAddr(i), aAddrStr, sizeof(aAddrStr), true);
+			// variables needed
+			char aBuf[256];
+			char aID[2];
+			char aName[MAX_NAME_LENGTH];
+			char aClan[MAX_CLAN_LENGTH];
+			char aIP[NETADDR_MAXSTRSIZE];
+			char aTracked[12];
+			char aAdminLevel[12];
 
-			const char *pAuthStr = pSelf->Server()->GetAuthLevel(i) == CServer::AUTHED_ADMIN ? "(Admin)" :
-			                       pSelf->Server()->GetAuthLevel(i) == CServer::AUTHED_SUBADMIN ? "(Subadmin)" :
-			                       pSelf->Server()->GetAuthLevel(i) == CServer::AUTHED_MOD ? "(Mod)" : "";
 
-			char aBuf[128];
-			str_format(aBuf, sizeof(aBuf), "%3d %-20s %-20s %-16s %12s %12s",
-				i,
-				pSelf->Server()->ClientName(i),
-				pSelf->Server()->ClientClan(i),
-				aAddrStr,
-				pSelf->m_apPlayers[i]->GetTeeHistorianTracked() ? "(tracked)" : "",
-				pAuthStr);
+			str_format(aID, sizeof(aID), "%-2d", i);
+			str_format(aName, sizeof(aName), "%-16s", pSelf->Server()->ClientName(i));
+			str_format(aClan, sizeof(aClan), "%-16s", pSelf->Server()->ClientClan(i));
+			net_addr_str(pCServer->m_NetServer.ClientAddr(i), aIP, sizeof(aIP), true);
+			str_format(aIP, sizeof(aIP), "%-48s", aIP);
+			str_format(aTracked, sizeof(aTracked), "%-12s",
+				pSelf->m_apPlayers[i]->GetTeeHistorianTracked() ? "(tracked)" : "");
+
+			switch (pSelf->Server()->GetAuthLevel(i)) {
+			case CServer::AUTHED_ADMIN:
+				str_format(aAdminLevel, sizeof(aAdminLevel), "%-12s", "(Admin)");
+				break;
+			case CServer::AUTHED_SUBADMIN:
+				str_format(aAdminLevel, sizeof(aAdminLevel), "%-12s", "(Subadmin)");
+				break;
+			case CServer::AUTHED_MOD:
+				str_format(aAdminLevel, sizeof(aAdminLevel), "%-12s", "(Mod)");
+				break;
+			default:
+				str_format(aAdminLevel, sizeof(aAdminLevel),  "%-12s", "");
+				break;
+			}
+
+			str_format(aBuf, sizeof(aBuf), "%s %s %s    %s %s %s ", aID, aName, aClan, aIP, aTracked, aAdminLevel);
 
 			pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Server", aBuf);
 
 		}
 	}
-	pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Server", "=====================================================");
+	pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Server", "=========================================================================");
 }
 
 

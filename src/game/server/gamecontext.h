@@ -345,6 +345,12 @@ public:
 	static void ConBanNickByName(IConsole::IResult *pResult, void *pUserData);
 	static void ConBanNickByID(IConsole::IResult *pResult, void *pUserData);
 
+	// fun stuff
+	static void ConGiveRainbow(IConsole::IResult *pResult, void *pUserData);
+	static void ConGiveRainbowBody(IConsole::IResult *pResult, void *pUserData);
+	static void ConGiveRainbowFeet(IConsole::IResult *pResult, void *pUserData);
+
+
 	void RetrieveNicknameBanListFromFile();
 	void InitNicknameBanList();
 	void SaveNicknameBanListToFile();
@@ -359,6 +365,8 @@ public:
 
 	bool IsInNicknameBanList(const char* Nickname);
 	bool IsInNicknameBanList(std::string Nickname);
+
+
 
 
 private:

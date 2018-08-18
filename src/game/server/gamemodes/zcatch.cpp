@@ -305,6 +305,12 @@ int CGameController_zCatch::OnCharacterDeath(class CCharacter *pVictim, class CP
 
 	CPlayer *victim = pVictim->GetPlayer();
 
+	// disable rainbow.
+	if(victim->m_IsRainbowBodyTee || victim->m_IsRainbowFeetTee){
+		 victim->m_IsRainbowBodyTee = false;
+		 victim->m_IsRainbowFeetTee = false;
+	}
+
 	if (pKiller != victim)
 	{
 		/* count players playing */
@@ -394,6 +400,109 @@ int CGameController_zCatch::OnCharacterDeath(class CCharacter *pVictim, class CP
 
 void CGameController_zCatch::OnPlayerInfoChange(class CPlayer *pP)
 {
+	if(!g_Config.m_SvColorIndicator){
+		return;
+	}
+
+	dbg_msg("TEST_BEFORE", "0x%x", pP->m_TeeInfos.m_ColorBody);
+	dbg_msg("TEST_BEFORE", "KILLS %d", pP->m_zCatchNumKillsInARow);
+
+	if (pP->m_zCatchNumKillsInARow <= 20) {
+		switch (pP->m_zCatchNumKillsInARow) {
+		case 0:
+			pP->m_TeeInfos.m_ColorBody = 0x1800ff;
+			pP->m_TeeInfos.m_ColorFeet = 0x695cff;
+			break;
+		case 1:
+			pP->m_TeeInfos.m_ColorBody = 0x0028ff;
+			pP->m_TeeInfos.m_ColorFeet = 0x5c78ff;
+			break;
+		case 2:
+			pP->m_TeeInfos.m_ColorBody = 0x0088ff;
+			pP->m_TeeInfos.m_ColorFeet = 0x5cb5ff;
+			break;
+		case 3:
+			pP->m_TeeInfos.m_ColorBody = 0x00fbff;
+			pP->m_TeeInfos.m_ColorFeet = 0x5cfeff;
+			break;
+		case 4:
+			pP->m_TeeInfos.m_ColorBody = 0x00ff91;
+			pP->m_TeeInfos.m_ColorFeet = 0x5cffb6;
+			break;
+		case 5:
+			pP->m_TeeInfos.m_ColorBody = 0x00ff23;
+			pP->m_TeeInfos.m_ColorFeet = 0x5cff71;
+			break;
+		case 6:
+			pP->m_TeeInfos.m_ColorBody = 0x3cff00;
+			pP->m_TeeInfos.m_ColorFeet = 0x84ff5c;
+			break;
+		case 7:
+			pP->m_TeeInfos.m_ColorBody = 0x9cff00;
+			pP->m_TeeInfos.m_ColorFeet = 0xc1ff5c;
+			break;
+		case 8:
+			pP->m_TeeInfos.m_ColorBody = 0xfbff00;
+			pP->m_TeeInfos.m_ColorFeet = 0xffff5c;
+			break;
+		case 9:
+			pP->m_TeeInfos.m_ColorBody = 0xffe000;
+			pP->m_TeeInfos.m_ColorFeet = 0xffeb5c;
+			break;
+		case 10:
+			pP->m_TeeInfos.m_ColorBody = 0xffc000;
+			pP->m_TeeInfos.m_ColorFeet = 0xffd65c;
+			break;
+		case 11:
+			pP->m_TeeInfos.m_ColorBody = 0xffa100;
+			pP->m_TeeInfos.m_ColorFeet = 0xffc25c;
+			break;
+		case 12:
+			pP->m_TeeInfos.m_ColorBody = 0xff7900;
+			pP->m_TeeInfos.m_ColorFeet = 0xffa85c;
+			break;
+		case 13:
+			pP->m_TeeInfos.m_ColorBody = 0xff4c00;
+			pP->m_TeeInfos.m_ColorFeet = 0xff8c5c;
+			break;
+		case 14:
+			pP->m_TeeInfos.m_ColorBody = 0xff1f00;
+			pP->m_TeeInfos.m_ColorFeet = 0xff6f5c;
+			break;
+		case 15:
+			pP->m_TeeInfos.m_ColorBody = 0xff0020;
+			pP->m_TeeInfos.m_ColorFeet = 0xff5c74;
+			break;
+		case 16:
+			pP->m_TeeInfos.m_ColorBody = 0x800046;
+			pP->m_TeeInfos.m_ColorFeet = 0x802e5d;
+			break;
+		case 17:
+			pP->m_TeeInfos.m_ColorBody = 0xff00f9;
+			pP->m_TeeInfos.m_ColorFeet = 0xff5cfe;
+			break;
+		case 18:
+			pP->m_TeeInfos.m_ColorBody = 0x9900ff;
+			pP->m_TeeInfos.m_ColorFeet = 0xbb5cff;
+			break;
+		case 19:
+			pP->m_TeeInfos.m_ColorBody = 0x5700ff;
+			pP->m_TeeInfos.m_ColorFeet = 0x925cff;
+			break;
+		default:
+			pP->m_IsRainbowBodyTee = true;
+			pP->m_IsRainbowFeetTee = true;
+			break;
+
+		}
+	}
+
+	if (pP->m_HardMode.m_Active) {
+		pP->m_TeeInfos.m_ColorFeet = 0x000000;
+	}
+	pP->m_TeeInfos.m_UseCustomColor = 1;
+	dbg_msg("TEST_AFTER", "0x%x", pP->m_TeeInfos.m_ColorBody);
+
 	if (g_Config.m_SvColorIndicator && pP->m_zCatchNumKillsInARow <= 20)
 	{
 		int Num = max(0, 160 - pP->m_zCatchNumKillsInARow * 10);
@@ -404,6 +513,7 @@ void CGameController_zCatch::OnPlayerInfoChange(class CPlayer *pP)
 			pP->m_TeeInfos.m_ColorFeet = pP->m_zCatchNumKillsInARow == 20 ? 0x40ff00 : pP->m_TeeInfos.m_ColorBody;
 		pP->m_TeeInfos.m_UseCustomColor = 1;
 	}
+
 }
 
 void CGameController_zCatch::StartRound()
