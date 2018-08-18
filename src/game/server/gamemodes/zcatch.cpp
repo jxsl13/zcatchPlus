@@ -318,8 +318,8 @@ int CGameController_zCatch::OnCharacterDeath(class CCharacter *pVictim, class CP
 
 	CPlayer *victim = pVictim->GetPlayer();
 
-	// disable rainbow.
-	if(victim->m_IsRainbowBodyTee || victim->m_IsRainbowFeetTee){
+	// disable rainbow always when someone is killed.
+	if(victim->IsRainbowTee()){
 		 victim->m_IsRainbowBodyTee = false;
 		 victim->m_IsRainbowFeetTee = false;
 	}
@@ -327,7 +327,7 @@ int CGameController_zCatch::OnCharacterDeath(class CCharacter *pVictim, class CP
 	if (pKiller != victim)
 	{
 		// if rls game enabled, give the killer the rainbow
-		if (g_Config.m_SvLastStandingDeathmatch) {
+		if (g_Config.m_SvLastStandingDeathmatch && !m_SomoneHasRainbow) {
 			pKiller->m_IsRainbowBodyTee = true;
 			pKiller->m_IsRainbowFeetTee = true;
 		}
