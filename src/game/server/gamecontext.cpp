@@ -3288,7 +3288,7 @@ void CGameContext::RemoveFromNicknameBanList(std::string Nickname) {
 
 	unsigned long size = m_BannedNicks.size();
 	std::string tempNick;
-	for (int i = 0; i < size; ++i)
+	for (unsigned long i = 0; i < size; ++i)
 	{
 
 		tempNick = m_BannedNicks.back();
