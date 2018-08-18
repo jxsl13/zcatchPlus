@@ -75,6 +75,7 @@ public:
 	} m_TeeInfos;
 
 	// rainbow stuff
+	bool IsRainbowTee(){return m_IsRainbowBodyTee || m_IsRainbowFeetTee;}
 	bool m_IsRainbowBodyTee{false};
 	bool m_IsRainbowFeetTee{false};
 	

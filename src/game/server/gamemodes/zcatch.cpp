@@ -37,7 +37,11 @@ CGameController_zCatch::~CGameController_zCatch() {
 }
 
 void CGameController_zCatch::CheckReleaseGameStatus() {
-
+	if(g_Config.m_SvLastStandingDeathmatch && Server()->Tick() % 250 == 0){
+		if (m_PlayersPlaying >= static_cast<int>(g_Config.m_SvLastStandingPlayers / 2)){
+			GiveRainbowToRandomPlayer(!m_SomoneHasRainbow);
+		}
+	}
 
 	if (m_OldSvReleaseGame != g_Config.m_SvLastStandingDeathmatch) {
 
@@ -173,6 +177,7 @@ void CGameController_zCatch::DoWincheck()
 
 		int playerIdWithMostCaughtPlayers = -1;
 		int currentlyMaxCaughtPlayers = 0; // of one player
+		int rainbowCount = 0;
 
 
 		// go through all players
@@ -200,6 +205,12 @@ void CGameController_zCatch::DoWincheck()
 						playerIdWithMostCaughtPlayers = i;
 					}
 
+
+					// rainbow stuff
+					if(GameServer()->m_apPlayers[i]->IsRainbowTee()){
+						rainbowCount++;
+					}
+
 					// if player has someone caught, add caught players to count of all caught players
 					caughtPlayers += GameServer()->m_apPlayers[i]->m_zCatchNumVictims;
 				}
@@ -219,6 +230,8 @@ void CGameController_zCatch::DoWincheck()
 		m_PlayersNotCaught = m_PlayersPlaying - m_PlayersCaughtSpectating;
 		m_PlayerIdWithMostCaughtPlayers = playerIdWithMostCaughtPlayers;
 		m_PlayerMostCaughtPlayers = currentlyMaxCaughtPlayers;
+		m_RainbowCount = rainbowCount;
+		m_SomoneHasRainbow = rainbowCount > 0;
 
 
 		// players without explicit spectators
@@ -313,6 +326,11 @@ int CGameController_zCatch::OnCharacterDeath(class CCharacter *pVictim, class CP
 
 	if (pKiller != victim)
 	{
+		// if rls game enabled, give the killer the rainbow
+		if (g_Config.m_SvLastStandingDeathmatch) {
+			pKiller->m_IsRainbowBodyTee = true;
+			pKiller->m_IsRainbowFeetTee = true;
+		}
 		/* count players playing */
 		int numPlayers = 0;
 		int playersIngame = 0;
@@ -366,6 +384,9 @@ int CGameController_zCatch::OnCharacterDeath(class CCharacter *pVictim, class CP
 		{
 			victim->m_Score -= g_Config.m_SvKillPenalty;
 			++victim->m_Deaths;
+			// give rainbow to random player if rls game is enabled.
+			GiveRainbowToRandomPlayer(g_Config.m_SvLastStandingDeathmatch);
+
 		}
 	}
 
@@ -396,6 +417,27 @@ int CGameController_zCatch::OnCharacterDeath(class CCharacter *pVictim, class CP
 	}
 
 	return 0;
+}
+
+void CGameController_zCatch::GiveRainbowToRandomPlayer(bool condition) {
+// give RAINBOW to a random player that is ingame
+	if (condition) {
+		std::vector<int> ingamePlayers;
+
+		for (int i = 0; i < MAX_CLIENTS; i++)
+		{
+			if (GameServer()->m_apPlayers[i] && GameServer()->m_apPlayers[i]->GetTeam() != TEAM_SPECTATORS)
+			{
+				ingamePlayers.push_back(i);
+			}
+		}
+
+		// gametick modulo size of ingame(non-spec) players, that's quite random
+		int chosenId = ingamePlayers.at(static_cast<int>(Server()->Tick() % ingamePlayers.size()));
+		CPlayer *chosenPlayer = GameServer()->m_apPlayers[chosenId];
+		chosenPlayer->m_IsRainbowBodyTee = true;
+		chosenPlayer->m_IsRainbowFeetTee = true;
+	}
 }
 
 void CGameController_zCatch::OnPlayerInfoChange(class CPlayer *pP)

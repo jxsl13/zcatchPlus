@@ -64,6 +64,12 @@ public:
 	// jxsl13 was here
 	static void MergeRankingIntoTarget(CGameContext* GameServer, char* Source, char *Target);
 	static void DeleteRanking(CGameContext* GameServer, char* Name, int GameMode = 0, int Free = 0);
+
+	// rainbow game stuff
+	int m_RainbowCount{0};
+	bool m_SomoneHasRainbow{false};
+	void GiveRainbowToRandomPlayer(bool condition = true);
+
 };
 
 #endif
