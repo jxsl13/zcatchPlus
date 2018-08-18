@@ -2778,6 +2778,7 @@ void CGameContext::ConList(IConsole::IResult *pResult, void *pUserData) {
 		if (pThis->m_BanAddrPool.First()) {
 			str_format(aMsg, sizeof(aMsg), "======================== Bans(%i) ========================", cntBan);
 			pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Server", aMsg);
+
 			for (CNetBan::CBanAddr *pBan = pThis->m_BanAddrPool.First(); pBan; pBan = pBan->m_pNext)
 			{
 				pThis->MakeBanInfo(pBan, aBuf, sizeof(aBuf), CNetBan::MSGTYPE_LIST);
@@ -2786,9 +2787,11 @@ void CGameContext::ConList(IConsole::IResult *pResult, void *pUserData) {
 				pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Server", aMsg);
 			}
 		}
+
 		if (pThis->m_BanRangePool.First()) {
 			str_format(aMsg, sizeof(aMsg), "======================== Range Bans(%i) ========================", cntRange);
 			pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Server", aMsg);
+
 			for (CNetBan::CBanRange *pBan = pThis->m_BanRangePool.First(); pBan; pBan = pBan->m_pNext)
 			{
 				pThis->MakeBanInfo(pBan, aBuf, sizeof(aBuf), CNetBan::MSGTYPE_LIST);
@@ -2796,8 +2799,6 @@ void CGameContext::ConList(IConsole::IResult *pResult, void *pUserData) {
 				pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Server", aMsg);
 			}
 		}
-		
-		pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Server", aMsg);
 
 	}
 	// bans stuff end
@@ -2812,38 +2813,46 @@ void CGameContext::ConList(IConsole::IResult *pResult, void *pUserData) {
 
 			// variables needed
 			char aBuf[256];
-			char aID[2];
+			char aID[8];
 			char aName[MAX_NAME_LENGTH];
 			char aClan[MAX_CLAN_LENGTH];
 			char aIP[NETADDR_MAXSTRSIZE];
-			char aTracked[12];
+			char aTracked[4];
 			char aAdminLevel[12];
+			char aFlags[20];
+			char aSecureConnection[5];
+
 
 
 			str_format(aID, sizeof(aID), "%-2d", i);
-			str_format(aName, sizeof(aName), "%-16s", pSelf->Server()->ClientName(i));
-			str_format(aClan, sizeof(aClan), "%-16s", pSelf->Server()->ClientClan(i));
+			str_format(aName, sizeof(aName), "%s", pSelf->Server()->ClientName(i));
+			str_format(aClan, sizeof(aClan), "%s", pSelf->Server()->ClientClan(i));
 			net_addr_str(pCServer->m_NetServer.ClientAddr(i), aIP, sizeof(aIP), true);
-			str_format(aIP, sizeof(aIP), "%-48s", aIP);
-			str_format(aTracked, sizeof(aTracked), "%-12s",
-				pSelf->m_apPlayers[i]->GetTeeHistorianTracked() ? "(tracked)" : "");
+			str_format(aIP, sizeof(aIP), "%s", aIP);
+			str_format(aFlags, sizeof(aFlags), "[%d]", pSelf->m_apPlayers[i]->m_PlayerFlags);
+
+			str_format(aTracked, sizeof(aTracked), "%s",
+				pSelf->m_apPlayers[i]->GetTeeHistorianTracked() ? "[T]" : "");
+
+			str_format(aSecureConnection, sizeof(aSecureConnection), "%s",
+				pCServer->m_NetServer.HasSecurityToken(i) ? "[S]" : "[NS]");
 
 			switch (pSelf->Server()->GetAuthLevel(i)) {
 			case CServer::AUTHED_ADMIN:
-				str_format(aAdminLevel, sizeof(aAdminLevel), "%-12s", "(Admin)");
+				str_format(aAdminLevel, sizeof(aAdminLevel), "%10s", "(Admin)");
 				break;
 			case CServer::AUTHED_SUBADMIN:
-				str_format(aAdminLevel, sizeof(aAdminLevel), "%-12s", "(Subadmin)");
+				str_format(aAdminLevel, sizeof(aAdminLevel), "%10s", "(Subadmin)");
 				break;
 			case CServer::AUTHED_MOD:
-				str_format(aAdminLevel, sizeof(aAdminLevel), "%-12s", "(Mod)");
+				str_format(aAdminLevel, sizeof(aAdminLevel), "%10s", "(Mod)");
 				break;
 			default:
-				str_format(aAdminLevel, sizeof(aAdminLevel),  "%-12s", "");
+				str_format(aAdminLevel, sizeof(aAdminLevel),  "%10s", "");
 				break;
 			}
 
-			str_format(aBuf, sizeof(aBuf), "%s %s %s    %s %s %s ", aID, aName, aClan, aIP, aTracked, aAdminLevel);
+			str_format(aBuf, sizeof(aBuf), "%s: %4s%-5s%-4s  %-32s %s Nick='%s'  Clan='%s' ", aID, aSecureConnection, aFlags, aTracked, aIP, aAdminLevel, aName, aClan);
 
 			pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Server", aBuf);
 
