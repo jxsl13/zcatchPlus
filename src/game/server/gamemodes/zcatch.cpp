@@ -37,11 +37,11 @@ CGameController_zCatch::~CGameController_zCatch() {
 }
 
 void CGameController_zCatch::CheckReleaseGameStatus() {
-	if(g_Config.m_SvLastStandingDeathmatch && Server()->Tick() % 250 == 0){
-		if (m_PlayersPlaying >= static_cast<int>(g_Config.m_SvLastStandingPlayers / 2)){
-			GiveRainbowToRandomPlayer(!m_SomoneHasRainbow);
-		}
-	}
+	//if(g_Config.m_SvLastStandingDeathmatch && Server()->Tick() % 250 == 0){
+		//if (m_PlayersPlaying >= static_cast<int>(g_Config.m_SvLastStandingPlayers / 2)){
+			//GiveRainbowToRandomPlayer(!m_SomoneHasRainbow);
+		//}
+	//}
 
 	if (m_OldSvReleaseGame != g_Config.m_SvLastStandingDeathmatch) {
 
