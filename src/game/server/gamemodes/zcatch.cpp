@@ -58,6 +58,7 @@ void CGameController_zCatch::CheckReleaseGameStatus() {
 
 				// reset global rls game config.
 				g_Config.m_SvLastStandingDeathmatch = m_OldSvReleaseGame;
+				return;
 			}
 			m_OldSvReleaseGame = g_Config.m_SvLastStandingDeathmatch;
 
