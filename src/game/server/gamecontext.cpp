@@ -2829,8 +2829,7 @@ void CGameContext::ConList(IConsole::IResult *pResult, void *pUserData) {
 			str_format(aClan, sizeof(aClan), "%s", pSelf->Server()->ClientClan(i));
 
 			net_addr_str(pCServer->m_NetServer.ClientAddr(i), aIP, sizeof(aIP), true);
-			dbg_msg("TEST", "%s", aIP);
-			//str_format(aIP, sizeof(aIP), "%s", aIP);
+
 			str_format(aFlags, sizeof(aFlags), "[%d]", pSelf->m_apPlayers[i]->m_PlayerFlags);
 
 			str_format(aTracked, sizeof(aTracked), "%s",
@@ -2854,7 +2853,7 @@ void CGameContext::ConList(IConsole::IResult *pResult, void *pUserData) {
 				break;
 			}
 
-			str_format(aBuf, sizeof(aBuf), "%s: %3s%-3s%-3s  %-48s %3s %-16s  %12s ", aID, aSecureConnection, aFlags, aTracked, aIP, aAdminLevel, aName, aClan);
+			str_format(aBuf, sizeof(aBuf), "%s: %3s%-3s%-3s  %-22s %3s %-16s  %12s ", aID, aSecureConnection, aFlags, aTracked, aIP, aAdminLevel, aName, aClan);
 
 			pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Server", aBuf);
 
