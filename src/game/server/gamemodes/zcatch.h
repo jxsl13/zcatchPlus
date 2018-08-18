@@ -15,6 +15,15 @@ class CGameController_zCatch: public IGameController
 	int m_OldAllowJoin;
 	int m_OldSvReleaseGame;
 	int m_OldPlayersIngame{0};
+	// player information
+	int m_PlayersOnline{0};
+	int m_PlayersExplicitlySpectating{0};
+	int m_PlayersPlaying{0};
+	int m_PlayersNotCaught{0};
+	int m_PlayersCaughtSpectating{0};
+	int m_PlayerIdWithMostCaughtPlayers{-1};
+	int m_PlayerMostCaughtPlayers{0};
+
 
 	void RewardWinner(int winnerId);
 

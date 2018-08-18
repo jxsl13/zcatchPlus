@@ -1,6 +1,5 @@
 #include "teehistorian.h"
 
-#include <engine/shared/config.h>
 #include <engine/shared/snapshot.h>
 #include <game/gamecore.h>
 #include <engine/shared/protocol.h>
@@ -52,11 +51,15 @@ static char EscapeJsonChar(char c)
 }
 
 void CTeeHistorian::CheckHistorianModeToggled() {
+	// tracking stuff begin
 	SetTrackedPlayersCount(0);
+	ResetFirstTrackedPlayerId();
 	// Recount tracked players.
 	for (int i = 0; i < MAX_CLIENTS; ++i)
 	{
 		if (m_pGameContext->m_apPlayers[i] && m_pGameContext->m_apPlayers[i]->GetTeeHistorianTracked()) {
+			// only updates if if the id was not previously set
+			SetFirstTrackedPlayerId(i);
 			IncTrackedPlayersCount();
 		}
 	}
@@ -84,11 +87,10 @@ void CTeeHistorian::CheckHistorianModeToggled() {
 }
 
 void CTeeHistorian::EnableTracking() {
-	//SetOldMode(GetMode());
 
+	SetOldMode(GetMode());
 	SetMode(MODE_NONE);
 	ForceGlobalMode(MODE_NONE);
-
 
 	WaitForFutures();
 
@@ -96,17 +98,14 @@ void CTeeHistorian::EnableTracking() {
 	OnShutDown(false);
 	SetMode(MODE_TEE_HISTORIAN);
 	ForceGlobalMode(MODE_TEE_HISTORIAN);
-	OnInit(m_pStorage, m_pServer, m_pController, m_pTuning, m_pGameContext, false);
+
+	OnInit(m_pStorage, m_pServer, m_pController, m_pTuning, m_pGameContext, m_pTeeHistorianFile ? true : false);
 	sqlite_unlock(&m_SqliteMutex);
+
 	dbg_msg("TeeHistorian", "Started tracking");
-
-	//std::this_thread::sleep_for(std::chrono::milliseconds(CACHE_EMPTY_INTERVAL * 2));
-
 }
 
 void CTeeHistorian::DisableTracking() {
-	SetMode(MODE_NONE);
-	ForceGlobalMode(MODE_NONE);
 
 	WaitForFutures();
 
@@ -116,8 +115,8 @@ void CTeeHistorian::DisableTracking() {
 	ForceGlobalMode(GetOldMode());
 	OnInit(m_pStorage, m_pServer, m_pController, m_pTuning, m_pGameContext, false);
 	sqlite_unlock(&m_SqliteMutex);
+
 	dbg_msg("TeeHistorian", "Stopped tracking");
-	//std::this_thread::sleep_for(std::chrono::milliseconds(CACHE_EMPTY_INTERVAL * 2));
 }
 
 void CTeeHistorian::OnInit(IStorage *pStorage, IServer *pServer, IGameController *pController, CTuningParams *pTuning, CGameContext *pGameContext, bool Retrieve) {
@@ -136,11 +135,12 @@ void CTeeHistorian::OnInit(IStorage *pStorage, IServer *pServer, IGameController
 	if (GetMode()) {
 		char aGameUuid[UUID_MAXSTRSIZE];
 		FormatUuid(m_GameUuid, aGameUuid, sizeof(aGameUuid));
-		char aFilename[64];
+		char aFilename[128];
 
 
 		if (GetMode() == MODE_SQLITE)
 		{
+			// file name not empty
 			if (str_comp(g_Config.m_SvSqliteHistorianFileName, "") != 0) {
 				str_format(aFilename, sizeof(aFilename), "teehistorian/%s.db", g_Config.m_SvSqliteHistorianFileName);
 			} else {
@@ -156,11 +156,11 @@ void CTeeHistorian::OnInit(IStorage *pStorage, IServer *pServer, IGameController
 				sqlite_unlock(&m_SqliteMutex);
 
 				dbg_msg("SQLiteHistorian", "Created Database: %s", aFilename);
+				// need big cache if everything is being tracked
 				dbg_msg("CACHE", "Primary: %d  Secondary: %d", PRIMARY_CACHE_SIZE, SECONDARY_CACHE_SIZE);
-
-
 				m_QueryCachePrimary = (char*)malloc(PRIMARY_CACHE_SIZE);
 				m_QueryCacheSecondary = (char*)malloc(SECONDARY_CACHE_SIZE);
+
 
 				AddFuture(std::async(std::launch::async, &CTeeHistorian::DatabaseWriter, this));
 
@@ -168,8 +168,12 @@ void CTeeHistorian::OnInit(IStorage *pStorage, IServer *pServer, IGameController
 
 		} else if (GetMode() == MODE_TEE_HISTORIAN) {
 
-
-			str_format(aFilename, sizeof(aFilename), "teehistorian/%s.teehistorian", aGameUuid);
+			if (IsPlayerTrackingEnabled())
+				{
+					str_format(aFilename, sizeof(aFilename), "teehistorian/%s-ID-%02d.teehistorian", aGameUuid, GetFirstTrackedPlayerId());
+				} else {
+					str_format(aFilename, sizeof(aFilename), "teehistorian/%s.teehistorian", aGameUuid);
+				}
 
 			IOHANDLE File = m_pStorage->OpenFile(aFilename, IOFLAG_WRITE, IStorage::TYPE_SAVE);
 			if (!File)
@@ -188,7 +192,7 @@ void CTeeHistorian::OnInit(IStorage *pStorage, IServer *pServer, IGameController
 
 			CTeeHistorian::CGameInfo GameInfo;
 			GameInfo.m_GameUuid = m_GameUuid;
-			GameInfo.m_pServerVersion = "jsxl's zcatch " GAME_VERSION;
+			GameInfo.m_pServerVersion = "jxsl13's zCatch+ Modification - " GAME_VERSION;
 			GameInfo.m_StartTime = time(0);
 
 			GameInfo.m_pServerName = g_Config.m_SvName;
@@ -211,7 +215,6 @@ void CTeeHistorian::OnInit(IStorage *pStorage, IServer *pServer, IGameController
 }
 
 void CTeeHistorian::OnShutDown(bool FinalShutdown) {
-
 
 	Finish();
 
@@ -238,6 +241,7 @@ void CTeeHistorian::OnShutDown(bool FinalShutdown) {
 			//GameContext->Server()->SetErrorShutdown("teehistorian close error");
 		}
 		aio_free(m_pTeeHistorianFile);
+		dbg_msg("Teehistorian", "Closed the TeeHistorian file!");
 	}
 }
 
@@ -252,7 +256,6 @@ void CTeeHistorian::OnSave() {
 
 void CTeeHistorian::DatabaseWriter() {
 	while (true) {
-
 		std::this_thread::sleep_for(std::chrono::milliseconds(CACHE_EMPTY_INTERVAL));
 
 		if (m_PrimaryCacheSize > 0 && sqlite_lock(&m_PrimaryCacheMutex, 1000))
@@ -376,8 +379,8 @@ CTeeHistorian::CTeeHistorian()
 	SetMode(MODE_NONE);
 	SetOldMode(MODE_NONE);
 	m_GameUuid = RandomUuid();
-
 }
+
 CTeeHistorian::~CTeeHistorian() {
 	free(m_HistorianMode);
 	free(m_OldHistorianMode);
@@ -738,7 +741,7 @@ void CTeeHistorian::RecordDeadPlayer(int ClientID)
 		}
 
 		if (GetMode() == MODE_SQLITE) {
-
+			// nothing todo for sqlite
 		} else if (GetMode() == MODE_TEE_HISTORIAN) {
 			if (pPrev->m_Alive) {
 				CPacker Buffer;
@@ -1138,7 +1141,7 @@ void CTeeHistorian::RecordAuthLogin(const char* ClientNick, int ClientID, int Le
 	{
 		if (GetMode() == MODE_SQLITE)
 		{
-			/* code */
+			// todo: log login
 		} else if (GetMode() == MODE_TEE_HISTORIAN)
 		{
 			/*teehistorian only*/
@@ -1167,7 +1170,7 @@ void CTeeHistorian::RecordAuthLogout(const char* ClientNick, int ClientID)
 	{
 		if (GetMode() == MODE_SQLITE)
 		{
-			/* code */
+			// todo: log logout
 		} else if (GetMode() == MODE_TEE_HISTORIAN)
 		{
 			CPacker Buffer;
@@ -1202,9 +1205,6 @@ void CTeeHistorian::Finish()
 
 	Write(Buffer.Data(), Buffer.Size());
 
-
-
-
 	if (m_State == STATE_INPUTS)
 	{
 		EndInputs();
@@ -1214,9 +1214,6 @@ void CTeeHistorian::Finish()
 	{
 		EndTick();
 	}
-
-
-
 }
 
 
@@ -1240,7 +1237,9 @@ void CTeeHistorian::CreateDatabase(const char* filename) {
 		CreatePlayerInputTable();
 		CreateRconActivityTable();
 		CreatePlayerConnectedStateTable();
+		CreateRconActivityTable();
 		OptimizeDatabase();
+
 		char *ErrMsg;
 		sqlite_exec(m_SqliteDB, "BEGIN TRANSACTION", &ErrMsg);
 		if (ErrMsg)
@@ -1394,33 +1393,31 @@ void CTeeHistorian::InsertIntoRconActivityTable(char* NickName, char *TimeStamp,
 
 	sqlite3_stmt *pStmt = 0;
 
-	if (GetMode() == MODE_SQLITE)
-	{
-		/* prepare */
-		const char *zTail;
-		const char *zSql = "\
+	/* prepare */
+	const char *zTail;
+	const char *zSql = "\
 		INSERT OR REPLACE INTO RconActivity (NickName, TimeStamp, Command, Arguments) \
 		VALUES ( trim(?1), ?2, ?3, ?4) \
 		;";
 
-		int rc = sqlite_prepare_statement(m_SqliteDB, zSql, &pStmt, &zTail);
+	int rc = sqlite_prepare_statement(m_SqliteDB, zSql, &pStmt, &zTail);
 
-		if (rc == SQLITE_OK)
-		{
-			/* bind parameters in query */
-			sqlite_bind_text(pStmt, 1, NickName);
-			sqlite_bind_text(pStmt, 2, TimeStamp);
-			sqlite_bind_text(pStmt, 3, Command);
-			sqlite_bind_text(pStmt, 4, Arguments);
+	if (rc == SQLITE_OK)
+	{
+		/* bind parameters in query */
+		sqlite_bind_text(pStmt, 1, NickName);
+		sqlite_bind_text(pStmt, 2, TimeStamp);
+		sqlite_bind_text(pStmt, 3, Command);
+		sqlite_bind_text(pStmt, 4, Arguments);
 
-			AppendQuery(sqlite_expand(pStmt));
-		}
-		else
-		{
-			dbg_msg("ERROR SQLITE", "InsertIntoRconActivityTable:");
-			dbg_msg("SQLiteHistorian", "SQL error (#%d): %s", rc, sqlite_errmsg(m_SqliteDB));
-		}
+		AppendQuery(sqlite_expand(pStmt));
 	}
+	else
+	{
+		dbg_msg("ERROR SQLITE", "InsertIntoRconActivityTable:");
+		dbg_msg("SQLiteHistorian", "SQL error (#%d): %s", rc, sqlite_errmsg(m_SqliteDB));
+	}
+
 	free(NickName);
 	free(TimeStamp);
 	free(Command);
@@ -1444,36 +1441,34 @@ void CTeeHistorian::InsertIntoPlayerMovementTable(int ClientJoinHash, char *Time
 
 	sqlite3_stmt *pStmt = 0;
 
-	if (GetMode() == MODE_SQLITE)
-	{
-		/* prepare */
-		const char *zTail;
-		const char *zSql = "\
+	/* prepare */
+	const char *zTail;
+	const char *zSql = "\
 		INSERT OR REPLACE INTO PlayerMovement (JoinHash, TimeStamp, Tick, X, Y, OldX, OldY) \
 		VALUES ( ?1, trim(?2), ?3, ?4, ?5, ?6, ?7 ) \
 		;";
 
-		int rc = sqlite_prepare_statement(m_SqliteDB, zSql, &pStmt, &zTail);
+	int rc = sqlite_prepare_statement(m_SqliteDB, zSql, &pStmt, &zTail);
 
-		if (rc == SQLITE_OK)
-		{
-			/* bind parameters in query */
-			sqlite_bind_int(pStmt, 1, ClientJoinHash);
-			sqlite_bind_text(pStmt, 2, TimeStamp);
-			sqlite_bind_int(pStmt, 3, Tick);
-			sqlite_bind_int(pStmt, 4, x);
-			sqlite_bind_int(pStmt, 5, y);
-			sqlite_bind_int(pStmt, 6, old_x);
-			sqlite_bind_int(pStmt, 7, old_y);
+	if (rc == SQLITE_OK)
+	{
+		/* bind parameters in query */
+		sqlite_bind_int(pStmt, 1, ClientJoinHash);
+		sqlite_bind_text(pStmt, 2, TimeStamp);
+		sqlite_bind_int(pStmt, 3, Tick);
+		sqlite_bind_int(pStmt, 4, x);
+		sqlite_bind_int(pStmt, 5, y);
+		sqlite_bind_int(pStmt, 6, old_x);
+		sqlite_bind_int(pStmt, 7, old_y);
 
-			AppendQuery(sqlite_expand(pStmt));
-		}
-		else
-		{
-			dbg_msg("ERROR SQLITE", "InsertIntoPlayerMovementTable:");
-			dbg_msg("SQLiteHistorian", "SQL error (#%d): %s", rc, sqlite_errmsg(m_SqliteDB));
-		}
+		AppendQuery(sqlite_expand(pStmt));
 	}
+	else
+	{
+		dbg_msg("ERROR SQLITE", "InsertIntoPlayerMovementTable:");
+		dbg_msg("SQLiteHistorian", "SQL error (#%d): %s", rc, sqlite_errmsg(m_SqliteDB));
+	}
+
 	free(TimeStamp);
 	sqlite_finalize(pStmt);
 }
@@ -1500,43 +1495,40 @@ void CTeeHistorian::InsertIntoPlayerInputTable(int ClientJoinHash, char *TimeSta
 
 	sqlite3_stmt *pStmt = 0;
 
-	if (GetMode() == MODE_SQLITE)
-	{
-		/* prepare */
-		const char *zTail;
-		const char *zSql = "\
+	/* prepare */
+	const char *zTail;
+	const char *zSql = "\
 		INSERT OR REPLACE INTO PlayerInput (JoinHash, TimeStamp, Tick, Direction, TargetX, TargetY, Jump, Fire, Hook, PlayerFlags, WantedWeapon, NextWeapon, PrevWeapon) \
 		VALUES ( ?1, trim(?2), ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13 ) \
 		;";
-		
-		int rc = sqlite_prepare_statement(m_SqliteDB, zSql, &pStmt, &zTail);
 
-		if (rc == SQLITE_OK)
-		{
-			/* bind parameters in query */
-			sqlite_bind_int(pStmt, 1, ClientJoinHash);
-			sqlite_bind_text(pStmt, 2, TimeStamp);
-			sqlite_bind_int(pStmt, 3, Tick);
-			sqlite_bind_int(pStmt, 4, Direction);
-			sqlite_bind_int(pStmt, 5, TargetX);
-			sqlite_bind_int(pStmt, 6, TargetY);
-			sqlite_bind_int(pStmt, 7, Jump);
-			sqlite_bind_int(pStmt, 8, Fire);
-			sqlite_bind_int(pStmt, 9, Hook);
-			sqlite_bind_int(pStmt, 10, PlayerFlags);
-			sqlite_bind_int(pStmt, 11, WantedWeapon);
-			sqlite_bind_int(pStmt, 12, NextWeapon);
-			sqlite_bind_int(pStmt, 13, PrevWeapon);
+	int rc = sqlite_prepare_statement(m_SqliteDB, zSql, &pStmt, &zTail);
 
-			AppendQuery(sqlite_expand(pStmt));
-		}
-		else
-		{
-			dbg_msg("ERROR SQLITE", "InsertIntoPlayerInputTable:");
-			dbg_msg("SQLiteHistorian", "SQL error (#%d): %s", rc, sqlite_errmsg(m_SqliteDB));
-		}
+	if (rc == SQLITE_OK)
+	{
+		/* bind parameters in query */
+		sqlite_bind_int(pStmt, 1, ClientJoinHash);
+		sqlite_bind_text(pStmt, 2, TimeStamp);
+		sqlite_bind_int(pStmt, 3, Tick);
+		sqlite_bind_int(pStmt, 4, Direction);
+		sqlite_bind_int(pStmt, 5, TargetX);
+		sqlite_bind_int(pStmt, 6, TargetY);
+		sqlite_bind_int(pStmt, 7, Jump);
+		sqlite_bind_int(pStmt, 8, Fire);
+		sqlite_bind_int(pStmt, 9, Hook);
+		sqlite_bind_int(pStmt, 10, PlayerFlags);
+		sqlite_bind_int(pStmt, 11, WantedWeapon);
+		sqlite_bind_int(pStmt, 12, NextWeapon);
+		sqlite_bind_int(pStmt, 13, PrevWeapon);
 
+		AppendQuery(sqlite_expand(pStmt));
 	}
+	else
+	{
+		dbg_msg("ERROR SQLITE", "InsertIntoPlayerInputTable:");
+		dbg_msg("SQLiteHistorian", "SQL error (#%d): %s", rc, sqlite_errmsg(m_SqliteDB));
+	}
+
 	free(TimeStamp);
 	sqlite_finalize(pStmt);
 }
@@ -1556,36 +1548,34 @@ void CTeeHistorian::InsertIntoPlayerInputTable(int ClientJoinHash, char *TimeSta
  */
 void CTeeHistorian::InsertIntoPlayerConnectedStateTable(int ClientJoinHash, char  *NickName, int ClientID, char *TimeStamp, int Tick, bool ConnectedState, char *Reason) {
 	sqlite3_stmt *pStmt = 0;
-	if (GetMode() == MODE_SQLITE)
-	{
-		/* prepare */
-		const char *zTail;
-		const char *zSql = "\
+	/* prepare */
+	const char *zTail;
+	const char *zSql = "\
 		INSERT OR REPLACE INTO PlayerConnectedState (JoinHash, NickName, ClientID, TimeStamp, Tick, ConnectedState, Reason) \
 		VALUES ( ?1, trim(?2), ?3, ?4, ?5, ?6, ?7) \
 		;";
 
-		int rc = sqlite_prepare_statement(m_SqliteDB, zSql, &pStmt, &zTail);
+	int rc = sqlite_prepare_statement(m_SqliteDB, zSql, &pStmt, &zTail);
 
-		if (rc == SQLITE_OK)
-		{
-			/* bind parameters in query */
-			sqlite_bind_int(pStmt, 1, ClientJoinHash);
-			sqlite_bind_text(pStmt, 2, NickName);
-			sqlite_bind_int(pStmt, 3, ClientID);
-			sqlite_bind_text(pStmt, 4, TimeStamp);
-			sqlite_bind_int(pStmt, 5, Tick);
-			sqlite_bind_text(pStmt, 6, ConnectedState ? "joined" : "left");
-			sqlite_bind_text(pStmt, 7, Reason);
+	if (rc == SQLITE_OK)
+	{
+		/* bind parameters in query */
+		sqlite_bind_int(pStmt, 1, ClientJoinHash);
+		sqlite_bind_text(pStmt, 2, NickName);
+		sqlite_bind_int(pStmt, 3, ClientID);
+		sqlite_bind_text(pStmt, 4, TimeStamp);
+		sqlite_bind_int(pStmt, 5, Tick);
+		sqlite_bind_text(pStmt, 6, ConnectedState ? "joined" : "left");
+		sqlite_bind_text(pStmt, 7, Reason);
 
-			AppendQuery(sqlite_expand(pStmt));
-		}
-		else
-		{
-			dbg_msg("ERROR SQLITE", "InsertIntoPlayerConnectedStateTable:");
-			dbg_msg("SQLiteHistorian", "SQL error (#%d): %s", rc, sqlite_errmsg(m_SqliteDB));
-		}
+		AppendQuery(sqlite_expand(pStmt));
 	}
+	else
+	{
+		dbg_msg("ERROR SQLITE", "InsertIntoPlayerConnectedStateTable:");
+		dbg_msg("SQLiteHistorian", "SQL error (#%d): %s", rc, sqlite_errmsg(m_SqliteDB));
+	}
+
 	free(NickName);
 	free(TimeStamp);
 	free(Reason);

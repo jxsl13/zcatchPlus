@@ -118,7 +118,7 @@ MACRO_CONFIG_INT(SvSuicideTime, sv_suicide_time, 15, 0, 60, CFGFLAG_SERVER|CFGFL
 MACRO_CONFIG_INT(SvKillPenalty, sv_kill_penalty, 5, 0, 50, CFGFLAG_SERVER|CFGFLAG_NONTEEHISTORIC, "The amount of points which the score will be decreased on each suicide")
 
 // zCatch/TeeVi
-MACRO_CONFIG_INT(SvLastStandingPlayers, sv_last_standing_players, 5, 2, 16, CFGFLAG_SERVER, "How many players are needed to have last standing rounds")
+MACRO_CONFIG_INT(SvLastStandingPlayers, sv_last_standing_players, 5, 2, 16, CFGFLAG_SERVER|CFGFLAG_NONTEEHISTORIC, "How many players are needed to have last standing rounds")
 // MACRO_CONFIG_INT(SvBotDetection, sv_bot_detection, 0, 0, 3, CFGFLAG_SERVER, "Bot detection (0=off, 1=fast aim, 2=follow, 3=all)")
 MACRO_CONFIG_INT(SvRanking, sv_ranking, 1, 0, 1, CFGFLAG_SERVER, "Ranking system (0=off, 1=sqlite)")
 MACRO_CONFIG_STR(SvRankingFile, sv_ranking_file, 255, "ranking.db", CFGFLAG_SERVER|CFGFLAG_NONTEEHISTORIC, "File in which the ranking and scores are saved.")
@@ -135,10 +135,10 @@ MACRO_CONFIG_INT(SvRifleRegenerationTime, sv_rifle_regeneration_time, 1200, 0, 1
 MACRO_CONFIG_INT(SvShotgunRegenerationTime, sv_shotgun_regeneration_time, 1000, 0, 10000, CFGFLAG_SERVER|CFGFLAG_NONTEEHISTORIC, "Default: 1000 - Time after which the shotgun's projectiles regenerate.")
 
 
-MACRO_CONFIG_INT(SvSqliteHistorian, sv_sqlite_historian, 0, 0, 1, CFGFLAG_SERVER, "Enable SQLite logging: Needs sv_tee_historian 1 (enabled) in order to work. May cause lag if the sqlite file gets too big. Change sv_sqlite_historian_file to \"\" and execute save_tee_historian to create an new file.")
-MACRO_CONFIG_STR(SvSqliteHistorianFileName, sv_sqlite_historian_file, 64, "", CFGFLAG_SERVER, "Sqlite Historian file name. Change to have an own file format or leave as is to have the default format.")
+MACRO_CONFIG_INT(SvSqliteHistorian, sv_sqlite_historian, 0, 0, 1, CFGFLAG_SERVER|CFGFLAG_NONTEEHISTORIC, "Enable SQLite logging: Needs sv_tee_historian 1 (enabled) in order to work. May cause lag if the sqlite file gets too big. Change sv_sqlite_historian_file to \"\" and execute save_tee_historian to create an new file.")
+MACRO_CONFIG_STR(SvSqliteHistorianFileName, sv_sqlite_historian_file, 64, "", CFGFLAG_SERVER|CFGFLAG_NONTEEHISTORIC, "Sqlite Historian file name. Change to have an own file format or leave as is to have the default format.")
 MACRO_CONFIG_INT(SvBotDetection, sv_bot_detection, 1, 0, 1, CFGFLAG_SERVER, "Enable(1) or disables(0) bot detection.")
-MACRO_CONFIG_STR(SvBotDetectionFile, sv_bot_detection_file, 64, "botdetection", CFGFLAG_SERVER, "Bot detection file name.")
+MACRO_CONFIG_STR(SvBotDetectionFile, sv_bot_detection_file, 64, "botdetection", CFGFLAG_SERVER|CFGFLAG_NONTEEHISTORIC, "Bot detection file name.")
 
-MACRO_CONFIG_STR(SvNickBanFile, sv_nick_ban_file, 64, "banned_nicks.txt", CFGFLAG_SERVER, "Name of the file, where banned nicks are stored. Default: banned_nicks.txt")
+MACRO_CONFIG_STR(SvNickBanFile, sv_nick_ban_file, 128, "banned_nicks.txt", CFGFLAG_SERVER|CFGFLAG_NONTEEHISTORIC, "Name of the file, where banned nicks are stored. Default: banned_nicks.txt")
 #endif

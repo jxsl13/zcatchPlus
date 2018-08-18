@@ -25,8 +25,6 @@ CGameController_zCatch::CGameController_zCatch(class CGameContext *pGameServer) 
 	// standing deathmatch feature to reset to previous state
 	// if treshold of players is reached.
 	m_OldAllowJoin = g_Config.m_SvAllowJoin;
-	m_OldPlayersIngame = 0;
-
 }
 
 CGameController_zCatch::~CGameController_zCatch() {
@@ -42,9 +40,26 @@ void CGameController_zCatch::CheckReleaseGameStatus() {
 
 
 	if (m_OldSvReleaseGame != g_Config.m_SvLastStandingDeathmatch) {
-		m_OldSvReleaseGame = g_Config.m_SvLastStandingDeathmatch;
 
-		if (m_OldSvReleaseGame == 1) {
+		// rls game was enabled
+		if (g_Config.m_SvLastStandingDeathmatch == 1) {
+
+			// if this condition is not met,
+			// reset everything back to before the rls game
+			if(static_cast<double>(m_PlayerMostCaughtPlayers) > m_PlayersPlaying * 0.45)
+			{
+				char aBuf[64];
+				str_format(aBuf, 64, "Could not enable the Release Game");
+				GameServer()->SendChatTarget(-1, aBuf);
+
+				str_format(aBuf, 64, "%s is dominating with %d caught players!",
+					GameServer()->Server()->ClientName(m_PlayerIdWithMostCaughtPlayers), m_PlayerMostCaughtPlayers);
+				GameServer()->SendChatTarget(-1, aBuf);
+
+				// reset global rls game config.
+				g_Config.m_SvLastStandingDeathmatch = m_OldSvReleaseGame;
+			}
+			m_OldSvReleaseGame = g_Config.m_SvLastStandingDeathmatch;
 
 			GameServer()->SendBroadcast("Release Game was enabled.", -1);
 			m_OldAllowJoin = g_Config.m_SvAllowJoin;
@@ -52,17 +67,21 @@ void CGameController_zCatch::CheckReleaseGameStatus() {
 
 			// go through all players and release all of their caught victims, if rls game is enabled.
 			for (int i = 0; i < MAX_CLIENTS; i++)
-			{	
+			{
 				if (GameServer()->m_apPlayers[i])
 				{
 					GameServer()->m_apPlayers[i]->ReleaseZCatchVictim(CPlayer::ZCATCH_RELEASE_ALL);
 				}
 			}
 
-		} else if (m_OldSvReleaseGame == 0) {
+		// rls game was disabled
+		} else if (g_Config.m_SvLastStandingDeathmatch == 0) {
+			m_OldSvReleaseGame = g_Config.m_SvLastStandingDeathmatch;
+
 			if(g_Config.m_SvAllowJoin != m_OldAllowJoin){
 				g_Config.m_SvAllowJoin = m_OldAllowJoin;
 			}
+
 		}
 	}
 }
@@ -147,9 +166,13 @@ void CGameController_zCatch::DoWincheck()
 	{
 		int Players = 0, Players_Spec = 0, Players_SpecExplicit = 0;
 		int winnerId = -1;
-		int caughtPlayers = 0;
-
 		CPlayer *winner = NULL;
+
+		int caughtPlayers = 0; // in total
+
+		int playerIdWithMostCaughtPlayers = -1;
+		int currentlyMaxCaughtPlayers = 0; // of one player
+
 
 		// go through all players
 		for (int i = 0; i < MAX_CLIENTS; i++)
@@ -158,18 +181,28 @@ void CGameController_zCatch::DoWincheck()
 			if (GameServer()->m_apPlayers[i])
 			{
 				Players++;
-				// if player has someone caught, add caught players to count of all caught players
-				caughtPlayers += GameServer()->m_apPlayers[i]->m_zCatchNumVictims;
 
 				// count players in spec, explicidly in spec and in spec because they were caught
 				if (GameServer()->m_apPlayers[i]->GetTeam() == TEAM_SPECTATORS)
 					Players_Spec++;
 				else
 				{
-					// weird: if not in spec, set winner
+					// if not in spec, set winner
 					winnerId = i;
 					winner = GameServer()->m_apPlayers[i];
+
+					// update dominating player if he has at least one enemy caught
+					if(GameServer()->m_apPlayers[i]->m_zCatchNumVictims > 0
+						&& GameServer()->m_apPlayers[i]->m_zCatchNumVictims > currentlyMaxCaughtPlayers)
+					{
+						currentlyMaxCaughtPlayers = GameServer()->m_apPlayers[i]->m_zCatchNumVictims;
+						playerIdWithMostCaughtPlayers = i;
+					}
+
+					// if player has someone caught, add caught players to count of all caught players
+					caughtPlayers += GameServer()->m_apPlayers[i]->m_zCatchNumVictims;
 				}
+
 				if (GameServer()->m_apPlayers[i]->m_SpecExplicit)
 					Players_SpecExplicit++;
 			}
@@ -177,13 +210,22 @@ void CGameController_zCatch::DoWincheck()
 
 		int Players_Ingame = Players - Players_SpecExplicit;
 
+		// Update member variables
+		m_PlayersOnline = Players;
+		m_PlayersPlaying = Players_Ingame;
+		m_PlayersExplicitlySpectating = Players_SpecExplicit;
+		m_PlayersCaughtSpectating = Players_Spec - m_PlayersExplicitlySpectating;
+		m_PlayersNotCaught = m_PlayersPlaying - m_PlayersCaughtSpectating;
+		m_PlayerIdWithMostCaughtPlayers = playerIdWithMostCaughtPlayers;
+		m_PlayerMostCaughtPlayers = currentlyMaxCaughtPlayers;
+
 
 		// players without explicit spectators
 		if (Players_Ingame <= 1)
 		{
 			//do nothing
 		}
-		// last man standing ingame without all the players, who are caught and/or explicidly spectating 
+		// last man standing ingame without all the players, who are caught and/or explicidly spectating
 		else if ((Players - Players_Spec) == 1)
 		{
 			// go through all players and give the actual winner the score he/she earned

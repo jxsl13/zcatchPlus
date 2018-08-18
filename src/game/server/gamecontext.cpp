@@ -152,10 +152,8 @@ void CGameContext::CommandCallback(int ClientID, int FlagMask, const char *pCmd,
 {
 	CGameContext *pSelf = (CGameContext *)pUser;
 
-	if (pSelf->m_TeeHistorian.GetMode())
-	{
-		pSelf->m_TeeHistorian.RecordConsoleCommand(pSelf->Server()->ClientName(ClientID), ClientID, FlagMask, pCmd, pResult);
-	}
+	// teehistorian stuff
+	pSelf->m_TeeHistorian.RecordConsoleCommand(pSelf->Server()->ClientName(ClientID), ClientID, FlagMask, pCmd, pResult);
 }
 
 
@@ -987,10 +985,7 @@ void CGameContext::OnClientDrop(int ClientID, const char *pReason)
  */
 void CGameContext::OnClientEngineJoin(int ClientID)
 {
-	if (m_TeeHistorian.GetMode())
-	{
-		m_TeeHistorian.RecordPlayerJoin(Server()->ClientJoinHash(ClientID), Server()->ClientName(ClientID), ClientID, Server()->Tick());
-	}
+	m_TeeHistorian.RecordPlayerJoin(Server()->ClientJoinHash(ClientID), Server()->ClientName(ClientID), ClientID, Server()->Tick());
 }
 
 void CGameContext::OnClientEngineDrop(int ClientID, const char *pReason)
@@ -2606,16 +2601,18 @@ void CGameContext::OnConsoleInit()
 	Console()->Register("merge_records", "ss", CFGFLAG_SERVER, ConMergeRecords, this, "Merge two records into the target username and delete source records: merge_records <source nickname> <target nickname>", IConsole::ACCESS_LEVEL_ADMIN);
 	Console()->Register("merge_records_id", "ii", CFGFLAG_SERVER, ConMergeRecordsId, this, "Merge two records into the target ID and delete source ID's records: merge_records <source ID> <target ID>", IConsole::ACCESS_LEVEL_ADMIN);
 	Console()->Register("save_logging_settings", "", CFGFLAG_SERVER, ConSaveTeehistorian, this, "Writes latest records to either the Sqlite Database or creates a new Teehistorian File.", IConsole::ACCESS_LEVEL_ADMIN);
-	Console()->Register("track", "i", CFGFLAG_SERVER, ConTeehistorianTrackPlayer, this, "Tracks game using TeeHistorian as long as there are tracked players online.");
+	Console()->Register("track", "i", CFGFLAG_SERVER, ConTeehistorianTrackPlayer, this, "Tracks game using TeeHistorian as long as the tracked player is online.");
+	Console()->Register("untrack", "i", CFGFLAG_SERVER, ConTeehistorianUntrackPlayer, this, "Stops tracking the game using TeeHistorian.");
+	Console()->Register("untrack_all", "", CFGFLAG_SERVER, ConTeehistorianUntrackAllPlayers, this, "Stops tracking all players.");
 
-	Console()->Register("list", "", CFGFLAG_SERVER, ConList, this, "Lists player information like status, but is less a pain in the ass to handle.");
-	Console()->Register("ls", "", CFGFLAG_SERVER, ConList, this, "Lists player information like status, but is less a pain in the ass to handle.");
+	Console()->Register("list", "", CFGFLAG_SERVER, ConList, this, "Lists player information like status, but is less of a pain in the ass to handle.");
+	Console()->Register("ls", "", CFGFLAG_SERVER, ConList, this, "Lists player information like status, but is less of a pain in the ass to handle.");
 
 	Console()->Register("tracked", "", CFGFLAG_SERVER, ConTrackedPlayers, this, "Shows tracked player count");
 	Console()->Register("show_banned_nicks", "", CFGFLAG_SERVER, ConShowBannedNicks, this, "Lists all banned nicks.");
 	Console()->Register("unban_nick", "i", CFGFLAG_SERVER, ConRemoveFromBannedNicks, this, "Removes ID (from show_banned_nicks) from banned nicks list.");
-	Console()->Register("ban_nick", "i", CFGFLAG_SERVER, ConBanNickByID, this, "Bans a nick by given ID (from ls or status command).");
-	Console()->Register("ban_nickname", "r", CFGFLAG_SERVER, ConBanNickByName, this, "Bans a nick by given nickname.");
+	Console()->Register("ban_nick_by_id", "i", CFGFLAG_SERVER, ConBanNickByID, this, "Bans a nick by given ID (from ls or status command).");
+	Console()->Register("ban_nick_by_name", "r", CFGFLAG_SERVER, ConBanNickByName, this, "Bans a nick by given nickname.");
 
 }
 
@@ -2669,6 +2666,7 @@ void CGameContext::ConList(IConsole::IResult *pResult, void *pUserData) {
 
 
 	CGameContext *pSelf = (CGameContext *)pUserData;
+	//pSelf->Server()->
 
 	if (pSelf == 0) {
 		return;
@@ -2681,16 +2679,22 @@ void CGameContext::ConList(IConsole::IResult *pResult, void *pUserData) {
 	{
 		char aBuf[128];
 		const char* tempNick;
-		pSelf->m_pConsole->Print(IConsole::OUTPUT_LEVEL_STANDARD, "NickBans", "=========== Banned Nicks ===========");
+		str_format(aBuf, sizeof(aBuf), "=========== Banned Nicks(%ld) ===========", size);
+		pSelf->m_pConsole->Print(IConsole::OUTPUT_LEVEL_STANDARD, "NickBans", aBuf);
 		for (int i = 0; i < size; ++i)
 		{
 			tempNick = pSelf->m_BannedNicks.at(i).c_str();
 			str_format(aBuf, sizeof(aBuf), "%3d : %-20s", i, tempNick);
 			pSelf->m_pConsole->Print(IConsole::OUTPUT_LEVEL_STANDARD, "NickBans", aBuf);
 		}
+	} else {
+		pSelf->m_pConsole->Print(IConsole::OUTPUT_LEVEL_STANDARD, "NickBans", "=========== Banned Nicks(0) ===========");
 	}
 	// banned nicks stuff end ###########################################################
 
+	// bans stuff
+
+	// bans stuff end
 
 	pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Server", "============= Player List =============");
 	for (int i = 0; i < MAX_CLIENTS; ++i)
@@ -2728,9 +2732,79 @@ void CGameContext::ConSaveTeehistorian(IConsole::IResult *pResult, void *pUserDa
 	}
 }
 
+void CGameContext::ConTeehistorianUntrackAllPlayers(IConsole::IResult *pResult, void *pUserData){
+	CGameContext *pSelf = (CGameContext *)pUserData;
+	int countPlayers = 0;
+	for (int i = 0; i < MAX_CLIENTS; ++i)
+	{
+		if(pSelf->m_apPlayers[i] && pSelf->m_apPlayers[i]->GetTeeHistorianTracked()){
+			pSelf->m_apPlayers[i]->SetTeeHistorianTracked(false);
+			countPlayers++;
+		}
+	}
+
+	// Send console message
+	char aBuf[128];
+	str_format(aBuf, sizeof(aBuf), "Untracked %d player.", countPlayers);
+	pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "TeeHistorian", aBuf);
+
+	// Disable tracking if nobody is being tracked anymore and save teehistorian file.
+	if (pSelf->m_TeeHistorian.GetTrackedPlayersCount() == 0) {
+			ConSaveTeehistorian(pResult, pUserData);
+	}
+
+}
+
+void CGameContext::ConTeehistorianUntrackPlayer(IConsole::IResult *pResult, void *pUserData){
+	CGameContext *pSelf = (CGameContext *)pUserData;
+	int trackedId(pResult->GetInteger(0));
+
+
+	// illegal id: out of player id range
+	if (trackedId < 0 || trackedId > MAX_CLIENTS) {
+		char aBuf[128];
+		str_format(aBuf, sizeof(aBuf), "Given ID \'%d\' is not valid.", trackedId);
+		pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "TeeHistorian", aBuf);
+
+	} else if (pSelf->m_apPlayers[trackedId]) // player exists
+	{
+		// player is being tracked
+		if (pSelf->m_apPlayers[trackedId]->GetTeeHistorianTracked())
+		{
+			char aBuf[128];
+			pSelf->m_apPlayers[trackedId]->SetTeeHistorianTracked(false);
+			str_format(aBuf, sizeof(aBuf), "\'%s\' is not being tracked anymore!", pSelf->Server()->ClientName(trackedId));
+			pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "TeeHistorian", aBuf);
+			// Disable tracking if nobody is being tracked anymore
+			if (pSelf->m_TeeHistorian.GetTrackedPlayersCount() == 0) {
+				ConSaveTeehistorian(pResult, pUserData);
+			}
+
+		} else { // player is not being tracked
+			char aBuf[128];
+			str_format(aBuf, sizeof(aBuf), "\'%s\' is not being tracked!", pSelf->Server()->ClientName(trackedId));
+			pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "TeeHistorian", aBuf);
+		}
+	} else	// id is valid, but there is no such player on the server.
+	{
+		char aBuf[128];
+		str_format(aBuf, sizeof(aBuf), "There is no player with the id \'%d\' online", trackedId);
+		pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "TeeHistorian", aBuf);
+	}
+
+}
+
 void CGameContext::ConTeehistorianTrackPlayer(IConsole::IResult *pResult, void *pUserData) {
 	CGameContext *pSelf = (CGameContext *)pUserData;
 	int trackedId(pResult->GetInteger(0));
+
+	if(pSelf->m_TeeHistorian.IsPlayerTrackingEnabled()){
+		char aBuf[128];
+		str_format(aBuf, sizeof(aBuf), "\'%s\' is already being tracked. You can track at most one player. ",
+			pSelf->Server()->ClientName(pSelf->m_TeeHistorian.GetFirstTrackedPlayerId()));
+		pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "TeeHistorian", aBuf);
+		return;
+	}
 
 	// illegal id: out of player id range
 	if (trackedId < 0 || trackedId > MAX_CLIENTS) {

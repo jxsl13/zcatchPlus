@@ -3,6 +3,7 @@
 #define  GAME_SERVER_TEE_HISTORIAN_H
 
 #include <engine/console.h>
+#include <engine/shared/config.h>
 #include <engine/shared/packer.h>
 #include <engine/shared/protocol.h>
 #include <engine/shared/uuid_manager.h>
@@ -99,16 +100,20 @@ public:
 		MODE_SQLITE = 2,
 	};
 
+	bool IsPlayerTrackingEnabled(){return GetTrackedPlayersCount() > 0;}
 	int GetTrackedPlayersCount() {return m_TrackedPlayers;}
 	void SetTrackedPlayersCount(int count) {m_TrackedPlayers = count;}
 	void IncTrackedPlayersCount() {m_TrackedPlayers++;}
 	void DecTrackedPlayersCount() {m_TrackedPlayers--;}
-
+	void ResetFirstTrackedPlayerId(){m_FirstTrackedPlayerId = -1;}
+	void SetFirstTrackedPlayerId(int ID){m_FirstTrackedPlayerId = m_FirstTrackedPlayerId < 0 ? ID : m_FirstTrackedPlayerId;}
+	int GetFirstTrackedPlayerId(){return m_FirstTrackedPlayerId;}
 	void UpdateTrackedPlayersCountPreviousTick() {m_TrackedPlayersPreviousTick = m_TrackedPlayers;}
 	int GetTrackedPlayersCountPrevousTick() {return m_TrackedPlayersPreviousTick;}
 
 	void DisableTracking();
 	void EnableTracking();
+
 
 private:
 
@@ -299,6 +304,7 @@ private:
 	/*teehistorian player tracking*/
 	int m_TrackedPlayers;
 	int m_TrackedPlayersPreviousTick;
+	int m_FirstTrackedPlayerId{-1};
 	/*teehistorian player tracking*/
 };
 

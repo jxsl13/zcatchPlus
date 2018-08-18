@@ -328,6 +328,10 @@ public:
 
 	/*teehistorian player tracking*/
 	static void ConTeehistorianTrackPlayer(IConsole::IResult *pResult, void *pUserData);
+	static void ConTeehistorianUntrackPlayer(IConsole::IResult *pResult, void *pUserData);
+	static void ConTeehistorianUntrackAllPlayers(IConsole::IResult *pResult, void *pUserData);
+
+
 	/*teehistorian player tracking*/
 	static void ConList(IConsole::IResult *pResult, void *pUserData);
 	static void ConTrackedPlayers(IConsole::IResult *pResult, void *pUserData);
