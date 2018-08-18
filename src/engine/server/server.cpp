@@ -2116,8 +2116,9 @@ void CServer::ConStatus(IConsole::IResult *pResult, void *pUser)
 				           pThis->m_aClients[i].m_aName, pThis->m_aClients[i].m_Score, pAuthStr);
 
 			}
-			else
+			else {
 				str_format(aBuf, sizeof(aBuf), "id=%d addr=%s connecting", i, aAddrStr);
+			}
 			pThis->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Server", aBuf);
 		}
 	}

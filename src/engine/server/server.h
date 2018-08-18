@@ -94,6 +94,7 @@ public:
 	class IGameServer *GameServer() { return m_pGameServer; }
 	class IConsole *Console() { return m_pConsole; }
 	class IStorage *Storage() { return m_pStorage; }
+	class CServerBan *GetBanServer(){ return &m_ServerBan;}
 
 	enum
 	{

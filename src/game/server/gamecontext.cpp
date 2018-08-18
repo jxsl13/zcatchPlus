@@ -32,6 +32,11 @@
 #include <engine/server/server.h>
 #include <algorithm>
 
+#include <engine/shared/netban.h>
+#include <engine/server/server.h>
+
+
+
 
 
 enum
@@ -2666,11 +2671,11 @@ void CGameContext::ConList(IConsole::IResult *pResult, void *pUserData) {
 
 
 	CGameContext *pSelf = (CGameContext *)pUserData;
-	//pSelf->Server()->
 
 	if (pSelf == 0) {
 		return;
 	}
+
 
 	// banned nicks stuff ###############################################################
 	long size = pSelf->m_BannedNicks.size();
@@ -2679,7 +2684,7 @@ void CGameContext::ConList(IConsole::IResult *pResult, void *pUserData) {
 	{
 		char aBuf[128];
 		const char* tempNick;
-		str_format(aBuf, sizeof(aBuf), "=========== Banned Nicks(%ld) ===========", size);
+		str_format(aBuf, sizeof(aBuf), "===================== Banned Nicks(%ld) =====================", size);
 		pSelf->m_pConsole->Print(IConsole::OUTPUT_LEVEL_STANDARD, "NickBans", aBuf);
 		for (int i = 0; i < size; ++i)
 		{
@@ -2687,31 +2692,83 @@ void CGameContext::ConList(IConsole::IResult *pResult, void *pUserData) {
 			str_format(aBuf, sizeof(aBuf), "%3d : %-20s", i, tempNick);
 			pSelf->m_pConsole->Print(IConsole::OUTPUT_LEVEL_STANDARD, "NickBans", aBuf);
 		}
-	} else {
-		pSelf->m_pConsole->Print(IConsole::OUTPUT_LEVEL_STANDARD, "NickBans", "=========== Banned Nicks(0) ===========");
 	}
 	// banned nicks stuff end ###########################################################
 
 	// bans stuff
 
+	CNetBan *pThis = static_cast<CNetBan*>(pSelf->GetBanServer());
+
+	if (pThis->m_BanAddrPool.First() || pThis->m_BanRangePool.First()) {
+		int cntBan = 0;
+		int cntRange = 0;
+		for (CNetBan::CBanAddr *pBan = pThis->m_BanAddrPool.First(); pBan; pBan = pBan->m_pNext)
+		{
+			cntBan++;
+		}
+		for (CNetBan::CBanRange *pBan = pThis->m_BanRangePool.First(); pBan; pBan = pBan->m_pNext)
+		{
+			cntRange++;
+		}
+
+		int Count = 0;
+		char aBuf[256], aMsg[256];
+		if (pThis->m_BanAddrPool.First()) {
+			str_format(aMsg, sizeof(aMsg), "======================== Bans(%i) ========================", cntBan);
+			pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Server", aMsg);
+			for (CNetBan::CBanAddr *pBan = pThis->m_BanAddrPool.First(); pBan; pBan = pBan->m_pNext)
+			{
+				pThis->MakeBanInfo(pBan, aBuf, sizeof(aBuf), CNetBan::MSGTYPE_LIST);
+				str_format(aMsg, sizeof(aMsg), "#%i %s", Count++, aBuf);
+
+				pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Server", aMsg);
+			}
+		}
+		if (pThis->m_BanRangePool.First()) {
+			str_format(aMsg, sizeof(aMsg), "======================== Range Bans(%i) ========================", cntRange);
+			pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Server", aMsg);
+			for (CNetBan::CBanRange *pBan = pThis->m_BanRangePool.First(); pBan; pBan = pBan->m_pNext)
+			{
+				pThis->MakeBanInfo(pBan, aBuf, sizeof(aBuf), CNetBan::MSGTYPE_LIST);
+				str_format(aMsg, sizeof(aMsg), "#%i %s", Count++, aBuf);
+				pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Server", aMsg);
+			}
+		}
+		
+		pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Server", aMsg);
+
+	}
 	// bans stuff end
 
-	pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Server", "============= Player List =============");
+
+	pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Server", "======================= Player List =======================");
+
+	char aAddrStr[NETADDR_MAXSTRSIZE];
+	CServer* pCServer = pSelf->GetBanServer()->Server();
 	for (int i = 0; i < MAX_CLIENTS; ++i)
 	{
-		if (pSelf->m_apPlayers[i]) {
+		if (pSelf->m_apPlayers[i] && pCServer->m_aClients[i].m_State != CServer::CClient::STATE_EMPTY) {
+
+			net_addr_str(pCServer->m_NetServer.ClientAddr(i), aAddrStr, sizeof(aAddrStr), true);
 
 			const char *pAuthStr = pSelf->Server()->GetAuthLevel(i) == CServer::AUTHED_ADMIN ? "(Admin)" :
 			                       pSelf->Server()->GetAuthLevel(i) == CServer::AUTHED_SUBADMIN ? "(Subadmin)" :
 			                       pSelf->Server()->GetAuthLevel(i) == CServer::AUTHED_MOD ? "(Mod)" : "";
 
 			char aBuf[128];
-			str_format(aBuf, sizeof(aBuf), "%3d %-20s %-20s %-9s %-10s", i, pSelf->Server()->ClientName(i), pSelf->Server()->ClientClan(i), pSelf->m_apPlayers[i]->GetTeeHistorianTracked() ? "(tracked)" : "", pAuthStr);
+			str_format(aBuf, sizeof(aBuf), "%3d %-20s %-20s %-16s %12s %12s",
+				i,
+				pSelf->Server()->ClientName(i),
+				pSelf->Server()->ClientClan(i),
+				aAddrStr,
+				pSelf->m_apPlayers[i]->GetTeeHistorianTracked() ? "(tracked)" : "",
+				pAuthStr);
+
 			pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Server", aBuf);
 
 		}
 	}
-	pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Server", "=================================");
+	pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Server", "=====================================================");
 }
 
 

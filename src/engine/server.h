@@ -93,6 +93,7 @@ public:
 	virtual std::string GetNextInfoText() = 0;
 
 	virtual int GetNumLoggedInAdmins() = 0;
+	virtual class CServerBan *GetBanServer() = 0;
 };
 
 class IGameServer : public IInterface
