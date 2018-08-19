@@ -2622,6 +2622,7 @@ void CGameContext::OnConsoleInit()
 	Console()->Register("ban_nick_by_name", "r", CFGFLAG_SERVER, ConBanNickByName, this, "Bans a nick by given nickname.");
 	Console()->Register("show_irregular_flags_all", "", CFGFLAG_SERVER, ConShowAllIrregularFlags, this, "Shows all irregular flags of all players");
 	Console()->Register("show_irregular_flags", "i", CFGFLAG_SERVER, ConShowIrregularFlags, this, "Shows all irregular flags of given player id.");
+	Console()->Register("show_flags_current", "i", CFGFLAG_SERVER, ConShowCurrentFlags, this, "Shows irregular flags of given player id at the current moment.");
 
 	Console()->Register("give_rainbow", "i", CFGFLAG_SERVER, ConGiveRainbow, this, "Enables Rainbow for given id.");
 	Console()->Register("give_rainbow_body", "i", CFGFLAG_SERVER, ConGiveRainbowBody, this, "Enables Rainbow body for given id.");
@@ -2629,6 +2630,18 @@ void CGameContext::OnConsoleInit()
 
 
 }
+
+void CGameContext::ConShowCurrentFlags(IConsole::IResult *pResult, void *pUserData){
+	CGameContext *pSelf = (CGameContext *)pUserData;
+	if(!pSelf || !pResult){
+		dbg_msg("", "CGameContext::Error in ConShowIrregularFlags");
+		return;
+	}
+
+	int playerID(pResult->GetInteger(0));
+	pSelf->PrintIrregularFlags(playerID, true);
+}
+
 
 void CGameContext::ConShowAllIrregularFlags(IConsole::IResult *pResult, void *pUserData) {
 	CGameContext *pSelf = (CGameContext *)pUserData;
@@ -2640,43 +2653,11 @@ void CGameContext::ConShowAllIrregularFlags(IConsole::IResult *pResult, void *pU
 	for (int p = 0; p < MAX_CLIENTS; ++p)
 	{
 		if (pSelf->m_apPlayers[p]) {
-
-			std::vector<int> v = pSelf->m_apPlayers[p]->GetIrregularFlags();
-			char aBuf[128];
-			if (v.size() <= 0)
-		{
-			str_format(aBuf, sizeof(aBuf), "Player '%s' has no irregular flags.", pSelf->Server()->ClientName(p));
-			pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Server", aBuf);
-			continue;
-		}
-			str_format(aBuf, sizeof(aBuf), "Showing Irregular Flags of player '%s'", pSelf->Server()->ClientName(p));
-			pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Server", aBuf);
-
-			for (size_t i = 0; i < v.size(); ++i)
-			{
-				// show bit mask instead of integer
-				std::stringstream s;
-				int flags = v.at(i);
-				// fill front with zeros
-				int len = static_cast<int>(std::log2(static_cast<double>(flags)));
-				for (int i = 0; i < IRREGULAR_FLAG_LENGTH - len; ++i) { s << 0;}
-				// end of filling
-				int remainder = 0;
-				while (flags > 0) {
-					remainder = flags % 2;
-					s << remainder;
-					flags = flags / 2;
-				}
-
-				str_format(aBuf, sizeof(aBuf), "%s Value: %d", s.str().c_str(), v.at(i));
-				pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Server", aBuf);
-			}
-
+			pSelf->PrintIrregularFlags(p, false);
 		}
 	}
 
 }
-
 
 void CGameContext::ConShowIrregularFlags(IConsole::IResult *pResult, void *pUserData){
 	CGameContext *pSelf = (CGameContext *)pUserData;
@@ -2686,47 +2667,7 @@ void CGameContext::ConShowIrregularFlags(IConsole::IResult *pResult, void *pUser
 	}
 
 	int playerID(pResult->GetInteger(0));
-
-	if (playerID >= 0 && playerID < MAX_CLIENTS && pSelf->m_apPlayers[playerID]) {
-		std::vector<int> v = pSelf->m_apPlayers[playerID]->GetIrregularFlags();
-		char aBuf[128];
-		if (v.size() <= 0)
-		{
-			str_format(aBuf, sizeof(aBuf), "Player '%s' has no irregular flags.", pSelf->Server()->ClientName(playerID));
-			pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Server", aBuf);
-			return;
-		}
-		str_format(aBuf, sizeof(aBuf), "Showing Irregular Flags of player '%s'", pSelf->Server()->ClientName(playerID));
-		pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Server", aBuf);
-
-		for (size_t i = 0; i < v.size(); ++i)
-		{
-			// show bit mask instead of integer
-			std::stringstream s;
-			int flags = v.at(i);
-			// fill front with zeros
-			int len = static_cast<int>(std::log2(static_cast<double>(flags)));
-			for (int i = 0; i < IRREGULAR_FLAG_LENGTH - len; ++i){ s << 0;}
-			// end of filling
-			int remainder = 0;
-			while(flags > 0){
-				remainder = flags % 2;
-				s << remainder;
-				flags = flags / 2;
-			}
-
-			str_format(aBuf, sizeof(aBuf), "%s Value: %d", s.str().c_str(), v.at(i));
-			pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Server", aBuf);
-		}
-
-
-
-	} else {
-		char aBuf[128];
-		str_format(aBuf, sizeof(aBuf), "Invalid id given.");
-		pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Server", aBuf);
-
-	}
+	pSelf->PrintIrregularFlags(playerID, false);
 }
 
 void CGameContext::ConGiveRainbowFeet(IConsole::IResult *pResult, void *pUserData){
@@ -2847,7 +2788,7 @@ void CGameContext::ConList(IConsole::IResult *pResult, void *pUserData) {
 	{
 		char aBuf[128];
 		const char* tempNick;
-		str_format(aBuf, sizeof(aBuf), "===================== Banned Nicks(%ld) =====================", size);
+		str_format(aBuf, sizeof(aBuf), "================================= Banned Nicks(%ld) =================================", size);
 		pSelf->m_pConsole->Print(IConsole::OUTPUT_LEVEL_STANDARD, "NickBans", aBuf);
 		for (int i = 0; i < size; ++i)
 		{
@@ -2877,7 +2818,7 @@ void CGameContext::ConList(IConsole::IResult *pResult, void *pUserData) {
 		int Count = 0;
 		char aBuf[256], aMsg[256];
 		if (pThis->m_BanAddrPool.First()) {
-			str_format(aMsg, sizeof(aMsg), "======================== Bans(%i) ========================", cntBan);
+			str_format(aMsg, sizeof(aMsg), "================================= Bans(%i) =================================", cntBan);
 			pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Server", aMsg);
 
 			for (CNetBan::CBanAddr *pBan = pThis->m_BanAddrPool.First(); pBan; pBan = pBan->m_pNext)
@@ -2890,7 +2831,7 @@ void CGameContext::ConList(IConsole::IResult *pResult, void *pUserData) {
 		}
 
 		if (pThis->m_BanRangePool.First()) {
-			str_format(aMsg, sizeof(aMsg), "======================== Range Bans(%i) ========================", cntRange);
+			str_format(aMsg, sizeof(aMsg), "================================= Range Bans(%i) =================================", cntRange);
 			pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Server", aMsg);
 
 			for (CNetBan::CBanRange *pBan = pThis->m_BanRangePool.First(); pBan; pBan = pBan->m_pNext)
@@ -3274,6 +3215,51 @@ return m_apPlayers[ClientID] && m_apPlayers[ClientID]->m_IsAimBot;
 }
 */
 
+void CGameContext::PrintIrregularFlags(int ClientID, bool currentFlags){
+	if(ClientID >= 0 && ClientID < MAX_CLIENTS && m_apPlayers[ClientID]){
+		std::vector<int> v;
+		if(!currentFlags){
+			v = m_apPlayers[ClientID]->GetIrregularFlags();
+		} else {
+			v ={m_apPlayers[ClientID]->m_PlayerFlags};
+		}
+
+		char aBuf[128];
+		if (v.size() <= 0)
+		{
+			str_format(aBuf, sizeof(aBuf), "Player '%s' has no %s flags.", Server()->ClientName(ClientID), currentFlags ? "current" : "irregular");
+			Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Server", aBuf);
+			return;
+		}
+		str_format(aBuf, sizeof(aBuf), "Showing %s flags of player '%s'.", currentFlags ? "current" : "irregular ", Server()->ClientName(ClientID));
+		Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Server", aBuf);
+
+		for (size_t i = 0; i < v.size(); ++i)
+		{
+			// show bit mask instead of integer
+			std::stringstream s;
+			int flags = v.at(i);
+			// fill front with zeros
+			int len = static_cast<int>(std::log2(static_cast<double>(flags)));
+			for (int i = 0; i < IRREGULAR_FLAG_LENGTH - len; ++i){ s << 0;}
+			// end of filling
+			int remainder = 0;
+			while(flags > 0){
+				remainder = flags % 2;
+				s << remainder;
+				flags = flags / 2;
+			}
+
+			str_format(aBuf, sizeof(aBuf), "%s Value: %d", s.str().c_str(), v.at(i));
+			Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Server", aBuf);
+		}
+
+	} else {
+		char aBuf[128];
+		str_format(aBuf, sizeof(aBuf), "Invalid id given.");
+		Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Server", aBuf);
+	}
+}
 
 void CGameContext::CGameContext::RetrieveNicknameBanListFromFile() {
 	// exec the file

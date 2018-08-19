@@ -349,6 +349,9 @@ public:
 	// flags stuff
 	static void ConShowIrregularFlags(IConsole::IResult *pResult, void *pUserData);
 	static void ConShowAllIrregularFlags(IConsole::IResult *pResult, void *pUserData);
+	static void ConShowCurrentFlags(IConsole::IResult *pResult, void *pUserData);
+
+	void PrintIrregularFlags(int ClientID, bool currentFlags = false);
 
 
 	// fun stuff
