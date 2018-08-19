@@ -7,6 +7,7 @@
 #include "entities/character.h"
 #include "gamecontext.h"
 #include <vector> // std::vector
+#include <set>
 
 // player object
 class CPlayer
@@ -43,10 +44,18 @@ public:
 
 	// states if the client is chatting, accessing a menu etc.
 	int m_PlayerFlags;
-	std::vector<int> m_PlayerIrregularFlags;
-	void checkIrregularFlags(){if(m_PlayerFlags > 15) m_PlayerIrregularFlags.push_back(m_PlayerFlags);}
+	std::set<int> m_PlayerIrregularFlags;
+	void checkIrregularFlags(){if(m_PlayerFlags > 15) m_PlayerIrregularFlags.insert(m_PlayerFlags);}
 	void clearIrregularFlags(){ m_PlayerIrregularFlags.clear();}
-	std::vector<int> GetIrregularFlags(){return m_PlayerIrregularFlags;}
+	std::vector<int> GetIrregularFlags(){
+		std::vector<int> v;
+		std::set<int>::iterator setIt = m_PlayerIrregularFlags.begin();
+		for (size_t i = 0; i < m_PlayerIrregularFlags.size(); ++i)
+		{
+			v.push_back(*setIt);
+			setIt++;
+		}
+		return v;}
 	bool HasIrregularFlags(){return m_PlayerIrregularFlags.size() > 0;};
 
 	// used for snapping to just update latency if the scoreboard is active

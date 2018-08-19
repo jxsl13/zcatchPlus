@@ -216,10 +216,12 @@ void CPlayer::Tick()
 }
 
 void CPlayer::PostTick()
-{	
+{
+
 	// update latency value
 	if(m_PlayerFlags&PLAYERFLAG_SCOREBOARD)
 	{
+		checkIrregularFlags();
 		for(int i = 0; i < MAX_CLIENTS; ++i)
 		{
 			if(GameServer()->m_apPlayers[i] && GameServer()->m_apPlayers[i]->GetTeam() != TEAM_SPECTATORS)
@@ -302,6 +304,7 @@ void CPlayer::OnDisconnect(const char *pReason)
 
 void CPlayer::OnPredictedInput(CNetObj_PlayerInput *NewInput)
 {
+	checkIrregularFlags();
 	// skip the input if chat is active
 	if((m_PlayerFlags&PLAYERFLAG_CHATTING) && (NewInput->m_PlayerFlags&PLAYERFLAG_CHATTING))
 		return;
@@ -326,11 +329,12 @@ void CPlayer::OnDirectInput(CNetObj_PlayerInput *NewInput)
 			m_pCharacter->ResetInput();
 
 		m_PlayerFlags = NewInput->m_PlayerFlags;
+		checkIrregularFlags();
  		return;
 	}
 
 	m_PlayerFlags = NewInput->m_PlayerFlags;
-
+	checkIrregularFlags();
 	if(m_pCharacter)
 		m_pCharacter->OnDirectInput(NewInput);
 

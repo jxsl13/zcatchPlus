@@ -30,7 +30,8 @@
 
 
 #define MAX_MUTES 35
-#define ZCATCH_VERSION "0.5.0"
+#define ZCATCH_VERSION "0.6.0"
+#define IRREGULAR_FLAG_LENGTH 32
 
 /*
 	Tick

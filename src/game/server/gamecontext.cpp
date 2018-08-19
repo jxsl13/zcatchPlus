@@ -33,7 +33,7 @@
 #include <engine/server/register.h>
 #include <engine/server/server.h>
 #include <algorithm>
-
+#include <cmath>
 #include <engine/shared/netban.h>
 #include <engine/server/server.h>
 
@@ -2656,8 +2656,11 @@ void CGameContext::ConShowAllIrregularFlags(IConsole::IResult *pResult, void *pU
 			{
 				// show bit mask instead of integer
 				std::stringstream s;
-				s << std::setfill('0') << std::setw(8);
 				int flags = v.at(i);
+				// fill front with zeros
+				int len = static_cast<int>(std::log2(static_cast<double>(flags)));
+				for (int i = 0; i < IRREGULAR_FLAG_LENGTH - len; ++i) { s << 0;}
+				// end of filling
 				int remainder = 0;
 				while (flags > 0) {
 					remainder = flags % 2;
@@ -2700,8 +2703,11 @@ void CGameContext::ConShowIrregularFlags(IConsole::IResult *pResult, void *pUser
 		{
 			// show bit mask instead of integer
 			std::stringstream s;
-			s << std::setfill('0') << std::setw(8);
 			int flags = v.at(i);
+			// fill front with zeros
+			int len = static_cast<int>(std::log2(static_cast<double>(flags)));
+			for (int i = 0; i < IRREGULAR_FLAG_LENGTH - len; ++i){ s << 0;}
+			// end of filling
 			int remainder = 0;
 			while(flags > 0){
 				remainder = flags % 2;
