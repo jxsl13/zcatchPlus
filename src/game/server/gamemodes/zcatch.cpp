@@ -25,6 +25,10 @@ CGameController_zCatch::CGameController_zCatch(class CGameContext *pGameServer) 
 	// standing deathmatch feature to reset to previous state
 	// if treshold of players is reached.
 	m_OldAllowJoin = g_Config.m_SvAllowJoin;
+	if (g_Config.m_SvLastStandingDeathmatch)
+	{
+		g_Config.m_SvAllowJoin = 1;
+	}
 }
 
 CGameController_zCatch::~CGameController_zCatch() {
