@@ -5,6 +5,7 @@
 #define ENGINE_SERVER_SERVER_H
 
 #include <engine/server.h>
+#include <engine/shared/fifo.h>
 
 
 #include <string>
@@ -168,6 +169,9 @@ public:
 	CSnapIDPool m_IDPool;
 	CNetServer m_NetServer;
 	CEcon m_Econ;
+#if defined(CONF_FAMILY_UNIX)
+	CFifo m_Fifo;
+#endif
 	CServerBan m_ServerBan;
 
 	IEngineMap *m_pMap;
@@ -186,7 +190,7 @@ public:
 	char m_aCurrentMap[64];
 	unsigned m_CurrentMapCrc;
 	unsigned char *m_pCurrentMapData;
-	int m_CurrentMapSize;
+	unsigned int m_CurrentMapSize;
 
 	CDemoRecorder m_DemoRecorder;
 	CRegister m_Register;
