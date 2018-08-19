@@ -130,7 +130,7 @@ void CGameController_zCatch::OnInitRanking(sqlite3 *rankingDb) {
 			CREATE INDEX IF NOT EXISTS %s_numShots_index ON %s (numShots); \
 			CREATE INDEX IF NOT EXISTS %s_highestSpree_index ON %s (highestSpree); \
 			CREATE INDEX IF NOT EXISTS %s_timePlayed_index ON %s (timePlayed); \
-			CREATE VIEW IF NOT EXISTS %sView(username,kd) \
+			CREATE VIEW IF NOT EXISTS %sView (username, kd) \
 			AS \
 			SELECT username, (t.numKills + t.numKillsWallshot)/(t.numDeaths) as kd FROM %s as t \
 			ORDER BY kd DESC LIMIT 5; \
@@ -436,11 +436,13 @@ void CGameController_zCatch::GiveRainbowToRandomPlayer(int VictimID, bool condit
 		}
 
 		// gametick modulo size of ingame(non-spec) players, that's quite random
-		int chosenId = ingamePlayers.at(static_cast<int>(Server()->Tick() % ingamePlayers.size()));
-		CPlayer *chosenPlayer = GameServer()->m_apPlayers[chosenId];
-		// give that person the rainbow body and feet
-		chosenPlayer->GiveBodyRainbow();
-		chosenPlayer->GiveFeetRainbow();
+		if (ingamePlayers.size() > 0) {
+			int chosenId = ingamePlayers.at(static_cast<int>(Server()->Tick() % ingamePlayers.size()));
+			CPlayer *chosenPlayer = GameServer()->m_apPlayers[chosenId];
+			// give that person the rainbow body and feet
+			chosenPlayer->GiveBodyRainbow();
+			chosenPlayer->GiveFeetRainbow();
+		}
 
 	}
 }
