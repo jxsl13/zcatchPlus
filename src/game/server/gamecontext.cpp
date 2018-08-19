@@ -2668,7 +2668,7 @@ void CGameContext::ConShowAllIrregularFlags(IConsole::IResult *pResult, void *pU
 					flags = flags / 2;
 				}
 
-				str_format(aBuf, sizeof(aBuf), "%s", s.str().c_str());
+				str_format(aBuf, sizeof(aBuf), "%s Value: %d", s.str().c_str(), flags);
 				pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Server", aBuf);
 			}
 
