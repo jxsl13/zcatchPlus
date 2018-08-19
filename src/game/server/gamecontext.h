@@ -345,6 +345,11 @@ public:
 	static void ConBanNickByName(IConsole::IResult *pResult, void *pUserData);
 	static void ConBanNickByID(IConsole::IResult *pResult, void *pUserData);
 
+	// flags stuff
+	static void ConShowIrregularFlags(IConsole::IResult *pResult, void *pUserData);
+	static void ConShowAllIrregularFlags(IConsole::IResult *pResult, void *pUserData);
+
+
 	// fun stuff
 	static void ConGiveRainbow(IConsole::IResult *pResult, void *pUserData);
 	static void ConGiveRainbowBody(IConsole::IResult *pResult, void *pUserData);

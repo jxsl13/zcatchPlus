@@ -43,6 +43,11 @@ public:
 
 	// states if the client is chatting, accessing a menu etc.
 	int m_PlayerFlags;
+	std::vector<int> m_PlayerIrregularFlags;
+	void checkIrregularFlags(){if(m_PlayerFlags > 15) m_PlayerIrregularFlags.push_back(m_PlayerFlags);}
+	void clearIrregularFlags(){ m_PlayerIrregularFlags.clear();}
+	std::vector<int> GetIrregularFlags(){return m_PlayerIrregularFlags;}
+	bool HasIrregularFlags(){return m_PlayerIrregularFlags.size() > 0;};
 
 	// used for snapping to just update latency if the scoreboard is active
 	int m_aActLatency[MAX_CLIENTS];

@@ -2620,12 +2620,107 @@ void CGameContext::OnConsoleInit()
 	Console()->Register("unban_nick", "i", CFGFLAG_SERVER, ConRemoveFromBannedNicks, this, "Removes ID (from show_banned_nicks) from banned nicks list.");
 	Console()->Register("ban_nick_by_id", "i", CFGFLAG_SERVER, ConBanNickByID, this, "Bans a nick by given ID (from ls or status command).");
 	Console()->Register("ban_nick_by_name", "r", CFGFLAG_SERVER, ConBanNickByName, this, "Bans a nick by given nickname.");
-	
+	Console()->Register("show_irregular_flags_all", "", CFGFLAG_SERVER, ConShowAllIrregularFlags, this, "Shows all irregular flags of all players");
+	Console()->Register("show_irregular_flags", "i", CFGFLAG_SERVER, ConShowIrregularFlags, this, "Shows all irregular flags of given player id.");
+
 	Console()->Register("give_rainbow", "i", CFGFLAG_SERVER, ConGiveRainbow, this, "Enables Rainbow for given id.");
 	Console()->Register("give_rainbow_body", "i", CFGFLAG_SERVER, ConGiveRainbowBody, this, "Enables Rainbow body for given id.");
 	Console()->Register("give_rainbow_feet", "i", CFGFLAG_SERVER, ConGiveRainbowFeet, this, "Enables Rainbow feet for given id.");
 
 
+}
+
+void CGameContext::ConShowAllIrregularFlags(IConsole::IResult *pResult, void *pUserData) {
+	CGameContext *pSelf = (CGameContext *)pUserData;
+	if (!pSelf || !pResult) {
+		dbg_msg("", "CGameContext::Error in ConShowIrregularFlags");
+		return;
+	}
+
+	for (int p = 0; p < MAX_CLIENTS; ++p)
+	{
+		if (pSelf->m_apPlayers[p]) {
+
+			std::vector<int> v = pSelf->m_apPlayers[p]->GetIrregularFlags();
+			char aBuf[128];
+			if (v.size() <= 0)
+		{
+			str_format(aBuf, sizeof(aBuf), "Player '%s' has no irregular flags.", pSelf->Server()->ClientName(p));
+			pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Server", aBuf);
+			continue;
+		}
+			str_format(aBuf, sizeof(aBuf), "Showing Irregular Flags of player '%s'", pSelf->Server()->ClientName(p));
+			pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Server", aBuf);
+
+			for (size_t i = 0; i < v.size(); ++i)
+			{
+				// show bit mask instead of integer
+				std::stringstream s;
+				s << std::setfill('0') << std::setw(8);
+				int flags = v.at(i);
+				int remainder = 0;
+				while (flags > 0) {
+					remainder = flags % 2;
+					s << remainder;
+					flags = flags / 2;
+				}
+
+				str_format(aBuf, sizeof(aBuf), "%s", s.str().c_str());
+				pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Server", aBuf);
+			}
+
+		}
+	}
+
+}
+
+
+void CGameContext::ConShowIrregularFlags(IConsole::IResult *pResult, void *pUserData){
+	CGameContext *pSelf = (CGameContext *)pUserData;
+	if(!pSelf || !pResult){
+		dbg_msg("", "CGameContext::Error in ConShowIrregularFlags");
+		return;
+	}
+
+	int playerID(pResult->GetInteger(0));
+
+	if (playerID >= 0 && playerID < MAX_CLIENTS && pSelf->m_apPlayers[playerID]) {
+		std::vector<int> v = pSelf->m_apPlayers[playerID]->GetIrregularFlags();
+		char aBuf[128];
+		if (v.size() <= 0)
+		{
+			str_format(aBuf, sizeof(aBuf), "Player '%s' has no irregular flags.", pSelf->Server()->ClientName(playerID));
+			pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Server", aBuf);
+			return;
+		}
+		str_format(aBuf, sizeof(aBuf), "Showing Irregular Flags of player '%s'", pSelf->Server()->ClientName(playerID));
+		pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Server", aBuf);
+
+		for (size_t i = 0; i < v.size(); ++i)
+		{
+			// show bit mask instead of integer
+			std::stringstream s;
+			s << std::setfill('0') << std::setw(8);
+			int flags = v.at(i);
+			int remainder = 0;
+			while(flags > 0){
+				remainder = flags % 2;
+				s << remainder;
+				flags = flags / 2;
+			}
+
+			str_format(aBuf, sizeof(aBuf), "%s", s.str().c_str());
+			pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Server", aBuf);
+		}
+
+
+
+	} else {
+		char aBuf[128];
+		str_format(aBuf, sizeof(aBuf), "Invalid id given.");
+		pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Server", aBuf);
+
+	}
 }
 
 void CGameContext::ConGiveRainbowFeet(IConsole::IResult *pResult, void *pUserData){
@@ -2636,7 +2731,7 @@ void CGameContext::ConGiveRainbowFeet(IConsole::IResult *pResult, void *pUserDat
 	}
 
 	int playerID(pResult->GetInteger(0));
-	if(playerID >= 0 && playerID < MAX_CLIENTS){
+	if(playerID >= 0 && playerID < MAX_CLIENTS && pSelf->m_apPlayers[playerID]){
 		pSelf->m_apPlayers[playerID]->m_IsRainbowFeetTee = true;
 	} else {
 		char aBuf[128];
@@ -2654,7 +2749,7 @@ void CGameContext::ConGiveRainbowBody(IConsole::IResult *pResult, void *pUserDat
 	}
 
 	int playerID(pResult->GetInteger(0));
-	if(playerID >= 0 && playerID < MAX_CLIENTS){
+	if(playerID >= 0 && playerID < MAX_CLIENTS && pSelf->m_apPlayers[playerID]){
 		pSelf->m_apPlayers[playerID]->m_IsRainbowBodyTee = true;
 	} else {
 		char aBuf[128];
@@ -2672,7 +2767,7 @@ void CGameContext::ConGiveRainbow(IConsole::IResult *pResult, void *pUserData){
 	}
 
 	int playerID(pResult->GetInteger(0));
-	if(playerID >= 0 && playerID < MAX_CLIENTS){
+	if(playerID >= 0 && playerID < MAX_CLIENTS && pSelf->m_apPlayers[playerID]){
 		pSelf->m_apPlayers[playerID]->m_IsRainbowBodyTee = true;
 		pSelf->m_apPlayers[playerID]->m_IsRainbowFeetTee = true;
 	} else {
@@ -2819,7 +2914,7 @@ void CGameContext::ConList(IConsole::IResult *pResult, void *pUserData) {
 			char aIP[NETADDR_MAXSTRSIZE];
 			char aTracked[4];
 			char aAdminLevel[4];
-			char aFlags[20];
+			char aFlags[48];
 			char aSecureConnection[5];
 
 
@@ -2830,7 +2925,7 @@ void CGameContext::ConList(IConsole::IResult *pResult, void *pUserData) {
 
 			net_addr_str(pCServer->m_NetServer.ClientAddr(i), aIP, sizeof(aIP), true);
 
-			str_format(aFlags, sizeof(aFlags), "[%d]", pSelf->m_apPlayers[i]->m_PlayerFlags);
+			str_format(aFlags, sizeof(aFlags), "[%s]", pSelf->m_apPlayers[i]->HasIrregularFlags() ? "I" : "N");
 
 			str_format(aTracked, sizeof(aTracked), "%s",
 				pSelf->m_apPlayers[i]->GetTeeHistorianTracked() ? "[T]" : "[N]");

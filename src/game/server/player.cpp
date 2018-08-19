@@ -87,6 +87,7 @@ CPlayer::~CPlayer()
 	/*teehistorian player tracking*/
 	m_TeeHistorianTracked = false;
 	/*teehistorian player tracking*/
+	clearIrregularFlags();
 }
 
 void CPlayer::Tick()
@@ -178,7 +179,7 @@ void CPlayer::Tick()
 		++m_LastActionTick;
 		++m_TeamChangeTick;
  	}
-	
+
 	// bot detection
 	// old bot detection
 	/*
@@ -187,7 +188,9 @@ void CPlayer::Tick()
 	m_CurrentTarget.y = m_LatestActivity.m_TargetY;
 	m_AimBotTargetSpeed = abs(distance(m_CurrentTarget, m_LastTarget));
 	*/
-	
+
+	checkIrregularFlags();
+
 	// zCatch/TeeVi: hard mode
 	if(m_HardMode.m_Active)
 	{
@@ -213,7 +216,7 @@ void CPlayer::Tick()
 }
 
 void CPlayer::PostTick()
-{
+{	
 	// update latency value
 	if(m_PlayerFlags&PLAYERFLAG_SCOREBOARD)
 	{
