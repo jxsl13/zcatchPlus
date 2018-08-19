@@ -376,6 +376,8 @@ CTeeHistorian::CTeeHistorian()
 	m_OldHistorianMode = (int*)malloc(sizeof(int));
 	m_PrimaryCacheSize = 0;
 	m_SecondaryCacheSize = 0;
+	m_QueryCachePrimary = (char*)malloc(sizeof(char));
+	m_QueryCacheSecondary = (char*)malloc(sizeof(char));
 	SetMode(MODE_NONE);
 	SetOldMode(MODE_NONE);
 	m_GameUuid = RandomUuid();

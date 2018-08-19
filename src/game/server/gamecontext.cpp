@@ -2788,7 +2788,7 @@ void CGameContext::ConList(IConsole::IResult *pResult, void *pUserData) {
 	{
 		char aBuf[128];
 		const char* tempNick;
-		str_format(aBuf, sizeof(aBuf), "================================= Banned Nicks(%ld) =================================", size);
+		str_format(aBuf, sizeof(aBuf), "============================== Banned Nicks(%ld) ==============================", size);
 		pSelf->m_pConsole->Print(IConsole::OUTPUT_LEVEL_STANDARD, "NickBans", aBuf);
 		for (int i = 0; i < size; ++i)
 		{
@@ -3274,10 +3274,17 @@ void CGameContext::CGameContext::RetrieveNicknameBanListFromFile() {
 		str_format(aBuf, sizeof(aBuf), "executing '%s'", g_Config.m_SvNickBanFile);
 		m_pConsole->Print(IConsole::OUTPUT_LEVEL_STANDARD, "BannedNicks", aBuf);
 
+		// only non whiespace nicks will be added.
 		lr.Init(File);
-
-		while ((pLine = lr.Get()))
-			AddToNicknameBanList(pLine);
+		std::string line;
+		while ((pLine = lr.Get())) {
+			line = std::string(pLine);
+			trim(line);
+			if (line.size() > 0)
+			{
+				AddToNicknameBanList(line.c_str());
+			}
+		}
 
 		io_close(File);
 	}
@@ -3296,11 +3303,9 @@ void CGameContext::InitNicknameBanList() {
 }
 
 void CGameContext::SaveNicknameBanListToFile() {
-	if(m_BannedNicks.size() <= 0){
-		return;
-	}
-	// exec the file
+
 	IOHANDLE File = m_pStorage->OpenFile(g_Config.m_SvNickBanFile, IOFLAG_WRITE, IStorage::TYPE_ALL);
+
 	char aBuf[256];
 	if (File)
 	{
@@ -3308,20 +3313,22 @@ void CGameContext::SaveNicknameBanListToFile() {
 		{
 			std::string tempString;
 			while (!m_BannedNicks.empty()) {
+				// get nick from collection
 				tempString = m_BannedNicks.back();
 				m_BannedNicks.pop_back();
+
 				str_format(aBuf, sizeof(aBuf), "%s", tempString.c_str());
 				io_write(File, aBuf, strlen(aBuf));
 				io_write_newline(File);
 			}
-			io_close(File);
+		} else {
+			//io_write_newline(File);
 		}
-		else
-		{
+		io_close(File);
+	} else {
 			str_format(aBuf, sizeof(aBuf), "failed to open '%s'", g_Config.m_SvNickBanFile);
 			m_pConsole->Print(IConsole::OUTPUT_LEVEL_STANDARD, "BannedNicks", aBuf);
 		}
-	}
 }
 
 void CGameContext::AddToNicknameBanList(int ID) {
