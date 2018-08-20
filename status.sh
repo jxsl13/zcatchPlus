@@ -2,12 +2,11 @@
 
 # print status
 echo "ls" > fifofile;
-# last 40 lines
-LINES=$(tail -40 logfile.log)
-#search for stuff in there
-RESULT= "$LINES" | grep -q "\[I\]"
+# search for "[I]" in the last 20 lines
+RESULT=$(tail -n 20 logfile.log | grep -q "\[I\]")
 
-# if stuff is found, do other stuff
-if $RESULT; then
-	echo "show_irregular_flags_all" > fifofile;
+#if result contains characters and not whitespace
+if [[ $RESULT = *[!\ ]* ]]; then
+        echo "show_irregular_flags_all" > fifofile;
 fi
+tail -34 logfile.log
