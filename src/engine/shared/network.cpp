@@ -173,6 +173,7 @@ int CNetBase::UnpackPacket(unsigned char *pBuffer, int Size, CNetPacketConstruct
 	// check the size
 	if(Size < NET_PACKETHEADERSIZE || Size > NET_MAX_PACKETSIZE)
 	{
+		if(g_Config.m_Debug)
 		dbg_msg("", "packet too small, %d", Size);
 		return -1;
 	}
@@ -197,6 +198,7 @@ int CNetBase::UnpackPacket(unsigned char *pBuffer, int Size, CNetPacketConstruct
 	{
 		if(Size < 6)
 		{
+			if(g_Config.m_Debug)
 			dbg_msg("", "connection less packet too small, %d", Size);
 			return -1;
 		}
@@ -210,7 +212,14 @@ int CNetBase::UnpackPacket(unsigned char *pBuffer, int Size, CNetPacketConstruct
 	else
 	{
 		if(pPacket->m_Flags&NET_PACKETFLAG_COMPRESSION)
+		{
+			// Don't allow compressed control packets.
+			if(pPacket->m_Flags&NET_PACKETFLAG_CONTROL)
+			{
+				return -1;
+			}
 			pPacket->m_DataSize = ms_Huffman.Decompress(&pBuffer[3], pPacket->m_DataSize, pPacket->m_aChunkData, sizeof(pPacket->m_aChunkData));
+		}
 		else
 			mem_copy(pPacket->m_aChunkData, &pBuffer[3], pPacket->m_DataSize);
 	}
