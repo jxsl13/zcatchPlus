@@ -3,7 +3,7 @@
 # print status
 echo "ls" > fifofile;
 # search for "[I]" in the last 20 lines
-RESULT=$(tail -n 20 logfile.log | grep -q "\[I\]")
+RESULT=$(tail -n 20 logfile.log | grep "\[I\]")
 
 #if result contains characters and not whitespace
 if [[ $RESULT = *[!\ ]* ]]; then

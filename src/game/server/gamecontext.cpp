@@ -3235,8 +3235,9 @@ void CGameContext::PrintIrregularFlags(int ClientID, bool currentFlags){
 		char aBuf[128];
 		if (v.size() <= 0)
 		{
-			str_format(aBuf, sizeof(aBuf), "Player '%s' has no %s flags.", Server()->ClientName(ClientID), currentFlags ? "current" : "irregular");
-			Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Server", aBuf);
+			// don't print, because it is quite spammy.
+			//str_format(aBuf, sizeof(aBuf), "Player '%s' has no %s flags.", Server()->ClientName(ClientID), currentFlags ? "current" : "irregular");
+			//Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Server", aBuf);
 			return;
 		}
 		str_format(aBuf, sizeof(aBuf), "Showing %s flags of player '%s'.", currentFlags ? "current" : "irregular ", Server()->ClientName(ClientID));
