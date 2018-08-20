@@ -127,6 +127,7 @@ public:
 	CCollision *Collision() { return &m_Collision; }
 	CTuningParams *Tuning() { return &m_Tuning; }
 	class CServerBan *GetBanServer(){ return Server()->GetBanServer();}
+
 	static void TeeHistorianWrite(const void *pData, int DataSize, void *pUser);
 
 	/*teehistrorian*/
