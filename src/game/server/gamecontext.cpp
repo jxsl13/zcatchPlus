@@ -1089,7 +1089,7 @@ void CGameContext::OnMessage(int MsgID, CUnpacker *pUnpacker, int ClientID)
 			if (!str_comp_nocase("info", pMsg->m_pMessage + 1))
 			{
 				char aBuf[128];
-				str_format(aBuf, sizeof(aBuf), "zCatch %s by erd and Teetime, modified by Teelevision. See /help.", ZCATCH_VERSION);
+				str_format(aBuf, sizeof(aBuf), "zCatch %s by erd and Teetime, modified by Teelevision and by jxsl13. See /help.", ZCATCH_VERSION);
 				SendChatTarget(ClientID, aBuf);
 				SendChatTarget(ClientID, "Players you catch (kill) join again when you die. Catch everyone to win.");
 				if (g_Config.m_SvLastStandingPlayers > 2)
@@ -1669,6 +1669,7 @@ void CGameContext::OnMessage(int MsgID, CUnpacker *pUnpacker, int ClientID)
 		// set start infos
 		Server()->SetClientName(ClientID, pMsg->m_pName);
 
+		// nick name ban stuff
 		if (IsInNicknameBanList(pMsg->m_pName)) {
 			char aBuf[128];
 			str_format(aBuf, sizeof(aBuf), "Your nickname '%s' is banned.", pMsg->m_pName);
@@ -1684,7 +1685,6 @@ void CGameContext::OnMessage(int MsgID, CUnpacker *pUnpacker, int ClientID)
 		pPlayer->m_TeeInfos.m_ColorFeet = pMsg->m_ColorFeet;
 		m_pController->OnPlayerInfoChange(pPlayer);
 
-		/*sqlitehistorian*/
 		/*sqlitehistorian*/
 		char aJoinHash[MAX_NAME_LENGTH + 32];
 		str_format(aJoinHash, sizeof(aJoinHash), "%32d %s-%d", Server()->Tick(), Server()->ClientName(ClientID), ClientID);
@@ -2037,6 +2037,19 @@ void CGameContext::ConSay(IConsole::IResult *pResult, void *pUserData)
 {
 	CGameContext *pSelf = (CGameContext *)pUserData;
 	pSelf->SendChat(-1, CGameContext::CHAT_ALL, pResult->GetString(0));
+}
+
+void CGameContext::ConSayId(IConsole::IResult *pResult, void *pUserData)
+{
+	CGameContext *pSelf = (CGameContext *)pUserData;
+	int playerID(pResult->GetInteger(0));
+	if (playerID < 0 || playerID > MAX_CLIENTS)
+	{
+		char aBuf[32];
+		str_format(aBuf, sizeof(aBuf), "Invalid id: %d", playerID);
+		pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "server", aBuf);
+	}
+	pSelf->SendChat(playerID, CGameContext::CHAT_ALL, pResult->GetString(1));
 }
 
 void CGameContext::ConSetTeam(IConsole::IResult *pResult, void *pUserData)
@@ -2589,6 +2602,7 @@ void CGameContext::OnConsoleInit()
 	Console()->Register("restart", "?i", CFGFLAG_SERVER | CFGFLAG_STORE, ConRestart, this, "Restart in x seconds (0 = abort)");
 	Console()->Register("broadcast", "r", CFGFLAG_SERVER, ConBroadcast, this, "Broadcast message");
 	Console()->Register("say", "r", CFGFLAG_SERVER, ConSay, this, "Say in chat");
+	Console()->Register("say_id", "r", CFGFLAG_SERVER, ConSayId, this, "Say something to the ID given.");
 	Console()->Register("set_team", "ii?i", CFGFLAG_SERVER, ConSetTeam, this, "Set team of player to team");
 	Console()->Register("set_team_all", "i", CFGFLAG_SERVER, ConSetTeamAll, this, "Set team of all players to team");
 	Console()->Register("swap_teams", "", CFGFLAG_SERVER, ConSwapTeams, this, "Swap the current teams");

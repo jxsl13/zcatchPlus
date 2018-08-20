@@ -70,6 +70,11 @@ void CChat::ConSay(IConsole::IResult *pResult, void *pUserData)
 	((CChat*)pUserData)->Say(0, pResult->GetString(0));
 }
 
+void CChat:.ConSayId(IConsole::IResult *pResult, void *pUserData)
+{
+	((CChat*)pUserData)
+}
+
 void CChat::ConSayTeam(IConsole::IResult *pResult, void *pUserData)
 {
 	((CChat*)pUserData)->Say(1, pResult->GetString(0));
@@ -94,6 +99,7 @@ void CChat::ConShowChat(IConsole::IResult *pResult, void *pUserData)
 void CChat::OnConsoleInit()
 {
 	Console()->Register("say", "r", CFGFLAG_CLIENT, ConSay, this, "Say in chat");
+	Console()->Register("say_id", "ir", CFGFLAG_CLIENT, ConSayId, this, "Say something to a specific player ID.");
 	Console()->Register("say_team", "r", CFGFLAG_CLIENT, ConSayTeam, this, "Say in team chat");
 	Console()->Register("chat", "s", CFGFLAG_CLIENT, ConChat, this, "Enable chat with all/team mode");
 	Console()->Register("+show_chat", "", CFGFLAG_CLIENT, ConShowChat, this, "Show chat");
