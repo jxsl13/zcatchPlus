@@ -2039,7 +2039,7 @@ void CGameContext::ConSay(IConsole::IResult *pResult, void *pUserData)
 	pSelf->SendChat(-1, CGameContext::CHAT_ALL, pResult->GetString(0));
 }
 
-void CGameContext::ConSayId(IConsole::IResult *pResult, void *pUserData)
+void CGameContext::ConSayTo(IConsole::IResult *pResult, void *pUserData)
 {
 	CGameContext *pSelf = (CGameContext *)pUserData;
 	int playerID(pResult->GetInteger(0));
@@ -2048,9 +2048,11 @@ void CGameContext::ConSayId(IConsole::IResult *pResult, void *pUserData)
 		char aBuf[32];
 		str_format(aBuf, sizeof(aBuf), "Invalid id: %d", playerID);
 		pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "server", aBuf);
+		return;
 	}
-	pSelf->SendChat(playerID, CGameContext::CHAT_ALL, pResult->GetString(1));
+	pSelf->SendChatTarget(playerID, pResult->GetString(1));
 }
+
 
 void CGameContext::ConSetTeam(IConsole::IResult *pResult, void *pUserData)
 {
@@ -2084,6 +2086,20 @@ void CGameContext::ConSetTeamAll(IConsole::IResult *pResult, void *pUserData)
 			pSelf->m_apPlayers[i]->SetTeam(Team, false);
 
 	(void)pSelf->m_pController->CheckTeamBalance();
+}
+
+void CGameContext::ConSpeakAs(IConsole::IResult *pResult, void *pUserData)
+{
+	CGameContext *pSelf = (CGameContext *)pUserData;
+	int playerID(pResult->GetInteger(0));
+	if (playerID < 0 || playerID > MAX_CLIENTS)
+	{
+		char aBuf[32];
+		str_format(aBuf, sizeof(aBuf), "Invalid id: %d", playerID);
+		pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "server", aBuf);
+		return;
+	}
+	pSelf->SendChat(playerID, CGameContext::CHAT_ALL, pResult->GetString(1));
 }
 
 void CGameContext::ConSwapTeams(IConsole::IResult *pResult, void *pUserData)
@@ -2602,9 +2618,10 @@ void CGameContext::OnConsoleInit()
 	Console()->Register("restart", "?i", CFGFLAG_SERVER | CFGFLAG_STORE, ConRestart, this, "Restart in x seconds (0 = abort)");
 	Console()->Register("broadcast", "r", CFGFLAG_SERVER, ConBroadcast, this, "Broadcast message");
 	Console()->Register("say", "r", CFGFLAG_SERVER, ConSay, this, "Say in chat");
-	Console()->Register("say_id", "r", CFGFLAG_SERVER, ConSayId, this, "Say something to the ID given.");
+	Console()->Register("say_to", "i?r", CFGFLAG_SERVER, ConSayTo, this, "Say something to the ID given: say_to <ID> <Text>");
 	Console()->Register("set_team", "ii?i", CFGFLAG_SERVER, ConSetTeam, this, "Set team of player to team");
 	Console()->Register("set_team_all", "i", CFGFLAG_SERVER, ConSetTeamAll, this, "Set team of all players to team");
+	Console()->Register("speak_as", "i?r", CFGFLAG_SERVER, ConSpeakAs, this, "Speak as if you were the person with the given ID: speak_as <ID> <Text>");
 	Console()->Register("swap_teams", "", CFGFLAG_SERVER, ConSwapTeams, this, "Swap the current teams");
 	Console()->Register("shuffle_teams", "", CFGFLAG_SERVER, ConShuffleTeams, this, "Shuffle the current teams");
 	Console()->Register("lock_teams", "", CFGFLAG_SERVER, ConLockTeams, this, "Lock/unlock teams");
