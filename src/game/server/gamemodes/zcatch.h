@@ -77,7 +77,7 @@ public:
 	 * @param VictimID set this to -1 to choose between everyone.
 	 * @param condition [description]
 	 */
-	void GiveRainbowToRandomPlayer(int VictimID, bool condition = true);
+	void GiveRainbowToRandomPlayer(int VictimID, bool condition = true, bool body = true, bool feet = true);
 
 };
 

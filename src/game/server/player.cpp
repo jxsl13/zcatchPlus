@@ -299,6 +299,21 @@ void CPlayer::OnDisconnect(const char *pReason)
 
 		str_format(aBuf, sizeof(aBuf), "leave player='%d:%s'", m_ClientID, Server()->ClientName(m_ClientID));
 		GameServer()->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "game", aBuf);
+
+		// irregular flags
+		if (HasIrregularFlags())
+		{
+			// header
+			str_format(aBuf, sizeof(aBuf), "Irregular flags of  player '%s'", Server()->ClientName(m_ClientID));
+			GameServer()->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "player_flags", aBuf);
+
+			std::vector<int> flags = GetIrregularFlags();
+			for (size_t i = 0; i < flags.size(); ++i)
+			{
+				str_format(aBuf, sizeof(aBuf), "Irregular flag: %d", flags.at(i));
+				GameServer()->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "player_flag", aBuf);
+			}
+		}
 	}
 }
 

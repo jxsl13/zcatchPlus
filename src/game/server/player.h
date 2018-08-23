@@ -49,9 +49,10 @@ public:
 	 * @brief flags 1,2,4,8 are default vanilla flags for chatting etc.
 	 *  and the flag 16 is for aimlines in the ddnet client (noby told me)
 	 *  meaning: 1 + 2 + 4 + 8 + 16 = 31 and anything above it is not regular
+	 *  flag 32 seems to be some H-client flag
 	 * @details [long description]
 	 */
-	void checkIrregularFlags(){if(m_PlayerFlags > 31) m_PlayerIrregularFlags.insert(m_PlayerFlags);}
+	void checkIrregularFlags(){if(m_PlayerFlags > 63) m_PlayerIrregularFlags.insert(m_PlayerFlags);}
 	void clearIrregularFlags(){ m_PlayerIrregularFlags.clear();}
 	std::vector<int> GetIrregularFlags(){
 		std::vector<int> v;

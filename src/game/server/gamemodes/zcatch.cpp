@@ -41,8 +41,12 @@ CGameController_zCatch::~CGameController_zCatch() {
 }
 
 void CGameController_zCatch::CheckReleaseGameStatus() {
+	// every 5 seconds check if >= half of the players needed to finish a round are playing
+	// if noboody has a rainbow, give someone a rainbow.
 	if(g_Config.m_SvLastStandingDeathmatch && Server()->Tick() % 250 == 0){
 		if (m_PlayersPlaying >= static_cast<int>(g_Config.m_SvLastStandingPlayers / 2)){
+			// -1 meaning that everyone can get the rainbow, otherwise the ID passed would not
+			// be part of the possible players to get the rainbow.
 			GiveRainbowToRandomPlayer(-1, !m_SomoneHasRainbow);
 		}
 	}
@@ -296,7 +300,6 @@ void CGameController_zCatch::DoWincheck()
 			else
 			{
 
-
 				// give the winner points
 				if (winnerId > -1)
 				{
@@ -333,6 +336,8 @@ int CGameController_zCatch::OnCharacterDeath(class CCharacter *pVictim, class CP
 
 	// disable rainbow always when someone is killed.
 	bool victimHadRainbow = victim->IsRainbowTee();
+	bool victimHadRainbowBody = victim->m_IsRainbowBodyTee;
+	bool victimHadRainbowFeet = victim->m_IsRainbowFeetTee;
 	if(victimHadRainbow){
 		 victim->ResetRainbowTee();
 	}
@@ -340,11 +345,17 @@ int CGameController_zCatch::OnCharacterDeath(class CCharacter *pVictim, class CP
 	if (pKiller != victim)
 	{
 		// if rls game enabled, give the killer the rainbow, 
-		// m_SomoneHasRainbow is not needed here, because that property ha snot
+		// m_SomoneHasRainbow is not needed here, because that property has not
 		// been updated yet.
 		if (g_Config.m_SvLastStandingDeathmatch && victimHadRainbow) {
-			pKiller->GiveBodyRainbow();
-			pKiller->GiveFeetRainbow();
+			if (victimHadRainbowBody)
+			{
+				pKiller->GiveBodyRainbow();
+			}
+			if (victimHadRainbowFeet)
+			{
+				pKiller->GiveFeetRainbow();
+			}
 		}
 
 		// todo: check if counting globally has any negative influence on this.
@@ -384,8 +395,10 @@ int CGameController_zCatch::OnCharacterDeath(class CCharacter *pVictim, class CP
 			// m_SomeoneHasRainbow is also no needed here, because it has not been updated yet.
 			// the person has been killed by a non player entity
 			// and he had the rainbow property, give a random person that rainbow
-			GiveRainbowToRandomPlayer(victim->GetCID(), g_Config.m_SvLastStandingDeathmatch && victimHadRainbow);
-
+				GiveRainbowToRandomPlayer(victim->GetCID(), 
+					g_Config.m_SvLastStandingDeathmatch && victimHadRainbow, // condition
+					victimHadRainbowBody, // whether victim had rainbow body
+					victimHadRainbowFeet); // whether victim had rainbow feet.
 		}
 	}
 
@@ -418,7 +431,7 @@ int CGameController_zCatch::OnCharacterDeath(class CCharacter *pVictim, class CP
 	return 0;
 }
 
-void CGameController_zCatch::GiveRainbowToRandomPlayer(int VictimID, bool condition) {
+void CGameController_zCatch::GiveRainbowToRandomPlayer(int VictimID, bool condition, bool body, bool feet) {
 // give RAINBOW to a random player that is ingame
 	if(VictimID < -1 || VictimID >= MAX_CLIENTS){
 		dbg_msg("ERROR", "Error in CGameController_zCatch::GiveRainbowToRandomPlayer occurred, ID is invalid.");
@@ -444,8 +457,15 @@ void CGameController_zCatch::GiveRainbowToRandomPlayer(int VictimID, bool condit
 			int chosenId = ingamePlayers.at(static_cast<int>(Server()->Tick() % ingamePlayers.size()));
 			CPlayer *chosenPlayer = GameServer()->m_apPlayers[chosenId];
 			// give that person the rainbow body and feet
-			chosenPlayer->GiveBodyRainbow();
-			chosenPlayer->GiveFeetRainbow();
+			// depending on whether the passed variabled were set.
+			if (body)
+			{
+				chosenPlayer->GiveBodyRainbow();
+			}
+			if (feet)
+			{
+				chosenPlayer->GiveFeetRainbow();
+			}
 		}
 
 	}
