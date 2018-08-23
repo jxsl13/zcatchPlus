@@ -37,7 +37,7 @@ class CGameController_zCatch: public IGameController
 
 	// jxsl13 added
 	void ToggleLastStandingDeathmatchAndRelease(int Players_Ingame, int caughtPlayers);
-	void CheckReleaseGameStatus();
+	void CheckGameConfigStatus();
 	static const char* GetGameModeTableName(int GameMode = 0);
 
 public:

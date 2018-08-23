@@ -40,17 +40,20 @@ CGameController_zCatch::~CGameController_zCatch() {
 
 }
 
-void CGameController_zCatch::CheckReleaseGameStatus() {
+void CGameController_zCatch::CheckGameConfigStatus() {
 	// every 5 seconds check if >= half of the players needed to finish a round are playing
 	// if noboody has a rainbow, give someone a rainbow.
-	if(g_Config.m_SvLastStandingDeathmatch && Server()->Tick() % 250 == 0){
+	if(g_Config.m_SvAllowRainbow && g_Config.m_SvLastStandingDeathmatch && Server()->Tick() % 250 == 0){
 		if (m_PlayersPlaying >= static_cast<int>(g_Config.m_SvLastStandingPlayers / 2)){
 			// -1 meaning that everyone can get the rainbow, otherwise the ID passed would not
 			// be part of the possible players to get the rainbow.
 			GiveRainbowToRandomPlayer(-1, !m_SomoneHasRainbow);
 		}
 	}
+	// we are not resetting any given rainbows othersise!
 
+
+	// checks rls game stuff, whether something changed...
 	if (m_OldSvReleaseGame != g_Config.m_SvLastStandingDeathmatch) {
 
 		// rls game was enabled
@@ -94,9 +97,9 @@ void CGameController_zCatch::CheckReleaseGameStatus() {
 			if(g_Config.m_SvAllowJoin != m_OldAllowJoin){
 				g_Config.m_SvAllowJoin = m_OldAllowJoin;
 			}
-
 		}
 	}
+
 }
 
 /* ranking system: create zcatch score table */
@@ -165,7 +168,7 @@ void CGameController_zCatch::OnInitRanking(sqlite3 *rankingDb) {
 void CGameController_zCatch::Tick()
 {
 	IGameController::Tick();
-	CheckReleaseGameStatus();
+	CheckGameConfigStatus();
 	GameServer()->CleanFutures();
 
 	if (m_OldGameMode != g_Config.m_SvMode && !GameServer()->m_World.m_Paused)
@@ -203,10 +206,15 @@ void CGameController_zCatch::DoWincheck()
 				// count players in spec, explicidly in spec and in spec because they were caught
 				if (GameServer()->m_apPlayers[i]->GetTeam() == TEAM_SPECTATORS){
 
-					// if player is in spec, remove his rainbow powers
-					if (GameServer()->m_apPlayers[i]->IsRainbowTee())
+					// if people ae playing the rainbow rls game and someone joins spec
+					// then remove his rainbow and give it to someone else.
+					// if ppl do not play the rainbow rls game, do nothing.
+					if (g_Config.m_SvAllowRainbow && GameServer()->m_apPlayers[i]->IsRainbowTee())
 					{
+						bool playerHadRainbowBody = GameServer()->m_apPlayers[i]->m_IsRainbowBodyTee;
+						bool playerHadRainbowFeet = GameServer()->m_apPlayers[i]->m_IsRainbowFeetTee;
 						GameServer()->m_apPlayers[i]->ResetRainbowTee();
+						GiveRainbowToRandomPlayer(i, true, playerHadRainbowBody, playerHadRainbowFeet);
 					}
 					Players_Spec++;
 				} else {
@@ -338,16 +346,18 @@ int CGameController_zCatch::OnCharacterDeath(class CCharacter *pVictim, class CP
 	bool victimHadRainbow = victim->IsRainbowTee();
 	bool victimHadRainbowBody = victim->m_IsRainbowBodyTee;
 	bool victimHadRainbowFeet = victim->m_IsRainbowFeetTee;
+
+	// rainbow is removed if the player is killed after the rls game end.
+	// do not change this, because it seems funny that players could end a round
+	// while having the rainbow after the rls game.
 	if(victimHadRainbow){
 		 victim->ResetRainbowTee();
 	}
 
 	if (pKiller != victim)
 	{
-		// if rls game enabled, give the killer the rainbow, 
-		// m_SomoneHasRainbow is not needed here, because that property has not
-		// been updated yet.
-		if (g_Config.m_SvLastStandingDeathmatch && victimHadRainbow) {
+		// only pass the rainbow property if still in rls game mode.
+		if (g_Config.m_SvAllowRainbow && g_Config.m_SvLastStandingDeathmatch && victimHadRainbow) {
 			if (victimHadRainbowBody)
 			{
 				pKiller->GiveBodyRainbow();
@@ -396,7 +406,7 @@ int CGameController_zCatch::OnCharacterDeath(class CCharacter *pVictim, class CP
 			// the person has been killed by a non player entity
 			// and he had the rainbow property, give a random person that rainbow
 				GiveRainbowToRandomPlayer(victim->GetCID(), 
-					g_Config.m_SvLastStandingDeathmatch && victimHadRainbow, // condition
+					g_Config.m_SvAllowRainbow && g_Config.m_SvLastStandingDeathmatch && victimHadRainbow, // condition
 					victimHadRainbowBody, // whether victim had rainbow body
 					victimHadRainbowFeet); // whether victim had rainbow feet.
 		}
