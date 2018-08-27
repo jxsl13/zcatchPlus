@@ -54,6 +54,11 @@ public:
 	 *  flag 32 seems to be some H-client flag
 	 */
 	static bool IsIrregularFlag(int Flags){ return Flags > 63;}
+
+	/**
+	 * @brief Checks if given client version matches one 
+	 * of the known irregular, most likely bot client versions.
+	 */
 	static bool IsIrregularClientVersion(int version){
 		return 	(version >= 15 && version < 100) ||
                 version == 405 ||
@@ -82,6 +87,12 @@ public:
 	 * @brief Checks if the player has some tracked irregular flags in his flags set.
 	 */
 	bool HasIrregularFlags(){return m_PlayerIrregularFlags.size() > 0;};
+
+	/**
+	 * @brief Checks if the player has an irregular client version,
+	 * meaning that the list of version codes sent to the server need 
+	 * to contain irregular version numbers.
+	 */
 	bool HasIrregularClientVersion(){
 		bool irregular = false;
 		std::vector<int> v = GetClientVersions();

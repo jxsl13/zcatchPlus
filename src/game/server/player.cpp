@@ -877,6 +877,10 @@ std::vector<bool> CPlayer::ConvertToBitMask(int flags){
 }
 
 std::string CPlayer::ConvertToString(std::vector<int> values){
+	if (values.size() <= 0)
+	{
+		return "0"; // mostly vanilla client does not send any client version number.
+	}
 	std::stringstream s;
 	for (size_t i = 0; i < values.size(); ++i)
 	{
