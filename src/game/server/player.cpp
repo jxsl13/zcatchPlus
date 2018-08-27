@@ -315,7 +315,7 @@ void CPlayer::OnDisconnect(const char *pReason)
 		if (HasIrregularFlags())
 		{
 			// header
-			str_format(aBuf, sizeof(aBuf), "Irregular flags of player '%s'", Server()->ClientName(m_ClientID));
+			str_format(aBuf, sizeof(aBuf), "Irregular flags of player '%s' Version: %s", Server()->ClientName(m_ClientID), ConvertToString(GetClientVersions()).c_str());
 			GameServer()->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "on_leave_player_flag", aBuf);
 
 			std::vector<int> flags = GetIrregularFlags();
@@ -940,4 +940,30 @@ void CPlayer::DoSnapshot() {
 		m_CurrentTickPlayer.ResetTickData();
 		IncSnapshotCount();
 	}
+}
+
+bool CPlayer::IsBot(){
+	std::vector<int> Flags = GetIrregularFlags();
+	std::vector<int> Versions = GetClientVersions();
+	//K-Client
+
+	bool hasKClientRegularInputFlag = false;
+	bool hasKClientBotInputFlag = false;
+	for (size_t i = 0; i < Flags.size(); ++i)
+	{
+		if(512 <= Flags.at(i) && Flags.at(i) <=  576){
+			hasKClientRegularInputFlag = hasKClientRegularInputFlag || true;
+		}
+		// flag 8 is set according to the developer of the bot client.
+		hasKClientBotInputFlag = hasKClientBotInputFlag || ConvertToBitMask(Flags.at(i)).at(8);
+	}
+	if(hasKClientRegularInputFlag && hasKClientBotInputFlag){
+		return true;
+	} else {
+		return false;
+	}
+
+
+
+
 }

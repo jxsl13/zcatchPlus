@@ -386,6 +386,7 @@ public:
 	bool IsInNicknameBanList(const char* Nickname);
 	bool IsInNicknameBanList(std::string Nickname);
 
+	void BanIf(bool Condition, int ID, int TimeMinutes = 60, std::string Reason = "");
 
 
 

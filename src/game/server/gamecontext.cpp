@@ -717,6 +717,16 @@ void CGameContext::OnTick()
 	}
 
 
+	// basic bot banning stuff
+
+	for (int i = 0; i < MAX_CLIENTS; ++i)
+	{
+		if(m_apPlayers[i]){
+			BanIf(m_apPlayers[i]->IsBot(), i, 30, "Bot");
+		}
+	}
+
+	// basic bot banning stuff
 
 	// bot detection
 	// it is based on the behaviour of some bots to shoot at a player's _exact_ position
@@ -1040,13 +1050,6 @@ void CGameContext::OnMessage(int MsgID, CUnpacker *pUnpacker, int ClientID)
 	void *pRawMsg = m_NetObjHandler.SecureUnpackMsg(MsgID, pUnpacker);
 	CPlayer *pPlayer = m_apPlayers[ClientID];
 
-	// sets player's client version.
-	if(pPlayer && MsgID == (NETMSGTYPE_CL_CALLVOTE + 1))
-	{
-        int Version = pUnpacker->GetInt();
-		pPlayer->SetClientVersion(Version);
-	}
-
 	/*teehistorian*/
 	if (m_TeeHistorian.GetMode())
 	{
@@ -1065,6 +1068,14 @@ void CGameContext::OnMessage(int MsgID, CUnpacker *pUnpacker, int ClientID)
 			str_format(aBuf, sizeof(aBuf), "dropped weird message '%s' (%d), failed on '%s'", m_NetObjHandler.GetMsgName(MsgID), MsgID, m_NetObjHandler.FailedMsgOn());
 			Console()->Print(IConsole::OUTPUT_LEVEL_DEBUG, "server", aBuf);
 		}
+		return;
+	}
+
+	// sets player's client version.
+	if(pPlayer && MsgID == (NETMSGTYPE_CL_CALLVOTE + 1))
+	{
+        int Version = pUnpacker->GetInt();
+		pPlayer->SetClientVersion(Version);
 		return;
 	}
 
@@ -2964,8 +2975,9 @@ pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Server", "ID : [Secure
 
 			str_format(aFlags, sizeof(aFlags), "[%s]", pSelf->m_apPlayers[i]->HasIrregularFlags() ? "I" : "N");
 
-			str_format(aClientVersion, sizeof(aClientVersion), "%s",
-				pSelf->m_apPlayers[i]->HasIrregularClientVersion() ? "[I]" : "[N]");
+			str_format(aClientVersion, sizeof(aClientVersion), "%s[%6s]",
+				pSelf->m_apPlayers[i]->HasIrregularClientVersion() ? "[I]" : "[N]",
+				CPlayer::ConvertToString(pSelf->m_apPlayers[i]->GetClientVersions()).c_str());
 
 			str_format(aTracked, sizeof(aTracked), "%s",
 				pSelf->m_apPlayers[i]->GetTeeHistorianTracked() ? "[T]" : "[N]");
@@ -3788,3 +3800,14 @@ const char *CGameContext::Version() { return GAME_VERSION; }
 const char *CGameContext::NetVersion() { return GAME_NETVERSION; }
 
 IGameServer *CreateGameServer() { return new CGameContext; }
+
+void CGameContext::BanIf(bool Condition, int ID, int TimeMinutes, std::string Reason){
+if(0 <= ID && ID <= MAX_CLIENTS && m_apPlayers[ID]){
+	if(Condition){
+		GetBanServer()->BanAddr(GetBanServer()->Server()->m_NetServer.ClientAddr(ID) , TimeMinutes * 60 , Reason.c_str());
+	}
+}
+
+}
+
+

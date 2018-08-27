@@ -90,7 +90,7 @@ public:
 
 	/**
 	 * @brief Checks if the player has an irregular client version,
-	 * meaning that the list of version codes sent to the server need 
+	 * meaning that the list of version codes sent to the server need
 	 * to contain irregular version numbers.
 	 */
 	bool HasIrregularClientVersion(){
@@ -119,7 +119,7 @@ public:
 		}
 		return v;
 	}
-	// ########### end of flags ##########
+	// ########### end of flags/ client version stuff ##########
 	/**
 	 * @brief Returns a vector with at least 32 elements representing zeroes and ones.
 	 * Accessing this vector using the index, which accesses the specific flag at 2^(index)
@@ -127,6 +127,8 @@ public:
 	static std::vector<bool> ConvertToBitMask(int Flags);
 
 	static std::string ConvertToString(std::vector<int> values);
+
+	bool IsBot();
 
 	// used for snapping to just update latency if the scoreboard is active
 	int m_aActLatency[MAX_CLIENTS];
