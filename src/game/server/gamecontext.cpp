@@ -1050,6 +1050,14 @@ void CGameContext::OnMessage(int MsgID, CUnpacker *pUnpacker, int ClientID)
 	void *pRawMsg = m_NetObjHandler.SecureUnpackMsg(MsgID, pUnpacker);
 	CPlayer *pPlayer = m_apPlayers[ClientID];
 
+	// sets player's client version.
+	if(pPlayer && MsgID == (NETMSGTYPE_CL_CALLVOTE + 1))
+	{
+        int Version = pUnpacker->GetInt();
+		pPlayer->SetClientVersion(Version);
+		return;
+	}
+
 	/*teehistorian*/
 	if (m_TeeHistorian.GetMode())
 	{
@@ -1068,14 +1076,6 @@ void CGameContext::OnMessage(int MsgID, CUnpacker *pUnpacker, int ClientID)
 			str_format(aBuf, sizeof(aBuf), "dropped weird message '%s' (%d), failed on '%s'", m_NetObjHandler.GetMsgName(MsgID), MsgID, m_NetObjHandler.FailedMsgOn());
 			Console()->Print(IConsole::OUTPUT_LEVEL_DEBUG, "server", aBuf);
 		}
-		return;
-	}
-
-	// sets player's client version.
-	if(pPlayer && MsgID == (NETMSGTYPE_CL_CALLVOTE + 1))
-	{
-        int Version = pUnpacker->GetInt();
-		pPlayer->SetClientVersion(Version);
 		return;
 	}
 
