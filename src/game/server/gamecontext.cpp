@@ -2948,7 +2948,7 @@ void CGameContext::ConList(IConsole::IResult *pResult, void *pUserData) {
 
 
 	pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Server", "================================= Player List =================================");
-pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Server", "ID : [SecureConnection][Flags][ClientVersion][Tracked][IP][AdminLevel][Name][Clan]);");
+pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Server", "ID : [SecureConnection][FlagsIrregular][VersionIrregular][Version][Tracked][IP][AdminLevel][Name][Clan]);");
 	CServer* pCServer = pSelf->GetBanServer()->Server();
 	for (int i = 0; i < MAX_CLIENTS; ++i)
 	{
