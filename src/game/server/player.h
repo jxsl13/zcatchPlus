@@ -9,6 +9,8 @@
 #include "botdetectionstructs.h"
 #include <vector> // std::vector
 #include <set>
+#include <bitset>
+
 
 // player object
 class CPlayer
@@ -94,39 +96,26 @@ public:
 	 * to contain irregular version numbers.
 	 */
 	bool HasIrregularClientVersion(){
-		bool irregular = false;
-		std::vector<int> v = GetClientVersions();
-		for (size_t i = 0; i < v.size(); ++i)
-		{
-			irregular = irregular || IsIrregularClientVersion(v.at(i));
-		}
-		return irregular;
+		return IsIrregularClientVersion(m_ClientVersion);
 	}
 
-	std::set<int> m_ClientVersion;
+	int m_ClientVersion{0};
 	void SetClientVersion(int version){
 		if(version > 0){
-			m_ClientVersion.insert(version);
+			m_ClientVersion = version;
 		}
 	}
-	std::vector<int> GetClientVersions(){
-	std::vector<int> v;
-		std::set<int>::iterator setIt = m_ClientVersion.begin();
-		for (size_t i = 0; i < m_ClientVersion.size(); ++i)
-		{
-			v.push_back(*setIt);
-			setIt++;
-		}
-		return v;
+	int GetClientVersion(){
+	return m_ClientVersion;
 	}
 	// ########### end of flags/ client version stuff ##########
 	/**
 	 * @brief Returns a vector with at least 32 elements representing zeroes and ones.
 	 * Accessing this vector using the index, which accesses the specific flag at 2^(index)
 	 */
-	static std::vector<bool> ConvertToBitMask(int Flags);
+	static std::bitset<32> ConvertToBitMask(int Flags);
 
-	static std::string ConvertToString(std::vector<int> values);
+	static std::string ConvertToString(int value);
 
 	bool IsBot();
 
@@ -346,6 +335,7 @@ public:
 
 	std::vector<TickPlayer> GetSecondSnapshotResult(){
 		std::vector<TickPlayer> v;
+
 		for (TickPlayer t : m_SnapshotTwo){
 			v.push_back(t);
 		}

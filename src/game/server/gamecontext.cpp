@@ -4,6 +4,7 @@
 #include <new>
 #include <iomanip>
 #include <sstream>
+#include <bitset>
 #include <base/math.h>
 #include <engine/shared/config.h>
 #include <engine/map.h>
@@ -717,13 +718,17 @@ void CGameContext::OnTick()
 	}
 
 
-	// basic bot banning stuff
-
-	for (int i = 0; i < MAX_CLIENTS; ++i)
-	{
-		if(m_apPlayers[i]){
-			BanIf(m_apPlayers[i]->IsBot(), i, 30, "Bot");
+	// check only every second.
+	// may cause performance issues otherwise.
+	// once every second.
+	if (Server()->Tick() % Server()->TickSpeed() == 0) {
+		for (int i = 0; i < MAX_CLIENTS; ++i)
+		{
+			if (m_apPlayers[i]) {
+				BanIf(m_apPlayers[i]->IsBot(), i, 30, "Bot");
+			}
 		}
+
 	}
 
 	// basic bot banning stuff
@@ -2977,7 +2982,7 @@ pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Server", "ID : [Secure
 
 			str_format(aClientVersion, sizeof(aClientVersion), "%s[%6s]",
 				pSelf->m_apPlayers[i]->HasIrregularClientVersion() ? "[I]" : "[N]",
-				CPlayer::ConvertToString(pSelf->m_apPlayers[i]->GetClientVersions()).c_str());
+				CPlayer::ConvertToString(pSelf->m_apPlayers[i]->GetClientVersion()).c_str());
 
 			str_format(aTracked, sizeof(aTracked), "%s",
 				pSelf->m_apPlayers[i]->GetTeeHistorianTracked() ? "[T]" : "[N]");
@@ -3577,18 +3582,18 @@ void CGameContext::PrintIrregularFlags(int ClientID, bool currentFlags){
 		str_format(aBuf, sizeof(aBuf), "Showing %s flags of player '%s'. Client version %s",
 			currentFlags ? "current" : "irregular ",
 			Server()->ClientName(ClientID),
-			CPlayer::ConvertToString(m_apPlayers[ClientID]->GetClientVersions()).c_str());
+			CPlayer::ConvertToString(m_apPlayers[ClientID]->GetClientVersion()).c_str());
 
 		Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Server", aBuf);
 
 		for (size_t i = 0; i < v.size(); ++i)
 		{
-			std::vector<bool> currentFlagMask = CPlayer::ConvertToBitMask(v.at(i));
+			std::bitset<32> currentFlagMask = CPlayer::ConvertToBitMask(v.at(i));
 			// show bit mask instead of integer
 			std::stringstream s;
 
 			for(size_t j = 0; j < currentFlagMask.size(); ++j){
-				s << currentFlagMask.at(j);
+				s << currentFlagMask.test(j);
 			}
 
 			// flips string in order to have the small bit at the right side.

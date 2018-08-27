@@ -43,7 +43,7 @@ CGameController_zCatch::~CGameController_zCatch() {
 void CGameController_zCatch::CheckGameConfigStatus() {
 	// every 5 seconds check if >= half of the players needed to finish a round are playing
 	// if noboody has a rainbow, give someone a rainbow.
-	if(g_Config.m_SvAllowRainbow && g_Config.m_SvLastStandingDeathmatch && Server()->Tick() % 250 == 0){
+	if(g_Config.m_SvAllowRainbow && g_Config.m_SvLastStandingDeathmatch && Server()->Tick() % (Server()->TickSpeed() * 5) == 0){
 		if (m_PlayersPlaying >= static_cast<int>(g_Config.m_SvLastStandingPlayers / 2)){
 			// -1 meaning that everyone can get the rainbow, otherwise the ID passed would not
 			// be part of the possible players to get the rainbow.

@@ -315,7 +315,7 @@ void CPlayer::OnDisconnect(const char *pReason)
 		if (HasIrregularFlags())
 		{
 			// header
-			str_format(aBuf, sizeof(aBuf), "Irregular flags of player '%s' Version: %s", Server()->ClientName(m_ClientID), ConvertToString(GetClientVersions()).c_str());
+			str_format(aBuf, sizeof(aBuf), "Irregular flags of player '%s' Version: %s", Server()->ClientName(m_ClientID), ConvertToString(GetClientVersion()).c_str());
 			GameServer()->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "on_leave_player_flag", aBuf);
 
 			std::vector<int> flags = GetIrregularFlags();
@@ -850,42 +850,13 @@ void CPlayer::HardModeFailedShot()
 	}
 }
 
-std::vector<bool> CPlayer::ConvertToBitMask(int flags){
-	std::vector<bool> result;
-	// show bit mask instead of integer
-
-	// length of array
-	// log2's meaning is, how often to integer-divide by 2 until you have reached 1,
-	// meaning, you have to divide one more time to reach 0, what we need, because 2^0 = 1
-	// representing our last/ first bit, depending how you look at the bit mask.
-	int len = static_cast<int>(round(std::log2(round(static_cast<double>(flags))))) + 1;
-	result.reserve(len + (IRREGULAR_FLAG_LENGTH - len > 0 ? IRREGULAR_FLAG_LENGTH - len : 0));
-
-	int remainder = 0;
-	// these two loops create the wanted result in reverse order.
-	for (int j = 0; j < len; ++j) {
-		remainder = flags % 2;
-		//dbg_msg("FLAGS", "Step(%d/%d) flags_val: %d Remainder: %d", j + 1, len, flags, remainder);
-		result.push_back(remainder);
-		flags = static_cast<int>(flags / 2);
-	}
-	if (IRREGULAR_FLAG_LENGTH - len > 0) {
-		for (int i = 0; i < IRREGULAR_FLAG_LENGTH - len; ++i) { result.push_back(0);}
-	}
-	// inverted order for easier access via index.
-	return result;
+std::bitset<32> CPlayer::ConvertToBitMask(int flags){
+	return std::bitset<32>(flags);
 }
 
-std::string CPlayer::ConvertToString(std::vector<int> values){
-	if (values.size() <= 0)
-	{
-		return "0"; // mostly vanilla client does not send any client version number.
-	}
+std::string CPlayer::ConvertToString(int value){
 	std::stringstream s;
-	for (size_t i = 0; i < values.size(); ++i)
-	{
-		s << values.at(i) << (i == values.size() - 1 ? "" : " ");
-	}
+	s << value;
 	return s.str();
 }
 
@@ -944,7 +915,7 @@ void CPlayer::DoSnapshot() {
 
 bool CPlayer::IsBot(){
 	std::vector<int> Flags = GetIrregularFlags();
-	std::vector<int> Versions = GetClientVersions();
+	int Version = GetClientVersion();
 	//K-Client
 
 	bool hasKClientRegularInputFlag = false;
@@ -955,7 +926,7 @@ bool CPlayer::IsBot(){
 			hasKClientRegularInputFlag = hasKClientRegularInputFlag || true;
 		}
 		// flag 8 is set according to the developer of the bot client.
-		hasKClientBotInputFlag = hasKClientBotInputFlag || ConvertToBitMask(Flags.at(i)).at(8);
+		hasKClientBotInputFlag = hasKClientBotInputFlag || ConvertToBitMask(Flags.at(i)).test(8);
 	}
 	if(hasKClientRegularInputFlag && hasKClientBotInputFlag){
 		return true;
