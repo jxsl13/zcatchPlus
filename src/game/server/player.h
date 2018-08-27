@@ -53,7 +53,7 @@ public:
 	 *  meaning: 1 + 2 + 4 + 8 + 16 = 31 and anything above it is not regular
 	 *  flag 32 seems to be some H-client flag
 	 */
-	static bool IsIrregularFlag(int Flags){ return Flags > 0/*63*/;}
+	static bool IsIrregularFlag(int Flags){ return Flags > 63;}
 	void CheckIrregularFlags(){if(IsIrregularFlag(m_PlayerFlags)) m_PlayerIrregularFlags.insert(m_PlayerFlags);}
 	void ClearIrregularFlags(){ m_PlayerIrregularFlags.clear();}
 	/**
