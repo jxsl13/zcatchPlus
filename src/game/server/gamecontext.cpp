@@ -3561,7 +3561,7 @@ void CGameContext::PrintIrregularFlags(int ClientID, bool currentFlags){
 			// show bit mask instead of integer
 			std::stringstream s;
 
-			for(int j = 0; j < currentFlagMask.size(); ++j){
+			for(size_t j = 0; j < currentFlagMask.size(); ++j){
 				s << currentFlagMask.at(j);
 			}
 
