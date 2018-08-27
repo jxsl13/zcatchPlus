@@ -315,14 +315,14 @@ void CPlayer::OnDisconnect(const char *pReason)
 		if (HasIrregularFlags())
 		{
 			// header
-			str_format(aBuf, sizeof(aBuf), "Irregular flags of  player '%s'", Server()->ClientName(m_ClientID));
-			GameServer()->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "player_flags", aBuf);
+			str_format(aBuf, sizeof(aBuf), "Irregular flags of player '%s'", Server()->ClientName(m_ClientID));
+			GameServer()->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "on_leave_player_flag", aBuf);
 
 			std::vector<int> flags = GetIrregularFlags();
 			for (size_t i = 0; i < flags.size(); ++i)
 			{
 				str_format(aBuf, sizeof(aBuf), "Irregular flag: %d", flags.at(i));
-				GameServer()->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "player_flag", aBuf);
+				GameServer()->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "on_leave_player_flag", aBuf);
 			}
 		}
 	}
@@ -850,6 +850,32 @@ void CPlayer::HardModeFailedShot()
 	}
 }
 
+std::vector<bool> CPlayer::ConvertToBitMask(int flags){
+	std::vector<bool> result;
+	// show bit mask instead of integer
+
+	// length of array
+	// log2's meaning is, how often to integer-divide by 2 until you have reached 1,
+	// meaning, you have to divide one more time to reach 0, what we need, because 2^0 = 1
+	// representing our last/ first bit, depending how you look at the bit mask.
+	int len = static_cast<int>(round(std::log2(round(static_cast<double>(flags))))) + 1;
+	result.reserve(len + (IRREGULAR_FLAG_LENGTH - len > 0 ? IRREGULAR_FLAG_LENGTH - len : 0));
+
+	int remainder = 0;
+	// these two loops create the wanted result in reverse order.
+	for (int j = 0; j < len; ++j) {
+		remainder = flags % 2;
+		//dbg_msg("FLAGS", "Step(%d/%d) flags_val: %d Remainder: %d", j + 1, len, flags, remainder);
+		result.push_back(remainder);
+		flags = static_cast<int>(flags / 2);
+	}
+	if (IRREGULAR_FLAG_LENGTH - len > 0) {
+		for (int i = 0; i < IRREGULAR_FLAG_LENGTH - len; ++i) { result.push_back(0);}
+	}
+	// inverted order for easier access via index.
+	return result;
+}
+
 void CPlayer::DoSnapshot() {
 	if (m_OldIsSnapshotActive != m_IsSnapshotActive) {
 		if (m_IsSnapshotActive) // snapshot was enabled
@@ -895,7 +921,7 @@ void CPlayer::DoSnapshot() {
 	} else if (m_IsSnapshotActive && GetCurrentSnapshotSize() >= GetSnapshotWantedLength()) {
 		// if the snapshot has the wanted lenth, everything and disable snapshoting.
 		char aBuf[48];
-		str_format(aBuf, sizeof(aBuf), "Snapshot done(%ld): ID=%d Name=%s",GetSnapshotWantedLength(), m_ClientID, Server()->ClientName(m_ClientID));
+		str_format(aBuf, sizeof(aBuf), "Snapshot done(%ld): ID=%d Name=%s", GetSnapshotWantedLength(), m_ClientID, Server()->ClientName(m_ClientID));
 		GameServer()->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "game", aBuf);
 		m_IsSnapshotActive = false;
 		m_CurrentTickPlayer.ResetTickData();

@@ -3557,21 +3557,20 @@ void CGameContext::PrintIrregularFlags(int ClientID, bool currentFlags){
 
 		for (size_t i = 0; i < v.size(); ++i)
 		{
+			std::vector<bool> currentFlagMask = CPlayer::ConvertToBitMask(v.at(i));
 			// show bit mask instead of integer
 			std::stringstream s;
-			int flags = v.at(i);
-			// fill front with zeros
-			int len = static_cast<int>(std::log2(static_cast<double>(flags)));
-			for (int i = 0; i < IRREGULAR_FLAG_LENGTH - len; ++i){ s << 0;}
-			// end of filling
-			int remainder = 0;
-			while(flags > 0){
-				remainder = flags % 2;
-				s << remainder;
-				flags = flags / 2;
+
+			for(int j = 0; j < currentFlagMask.size(); ++j){
+				s << currentFlagMask.at(j);
 			}
 
-			str_format(aBuf, sizeof(aBuf), "%s Value: %d", s.str().c_str(), v.at(i));
+			// flips string in order to have the small bit at the right side.
+			std::string result = s.str();
+			std::reverse(result.begin(), result.end());
+
+			// print flag mask as string with at least 32 bits
+			str_format(aBuf, sizeof(aBuf), "%s Value: %d", result.c_str(), v.at(i));
 			Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Server", aBuf);
 		}
 

@@ -48,13 +48,13 @@ public:
 	std::set<int> m_PlayerIrregularFlags;
 
 	/**
-	 * @brief flags 1,2,4,8 are default vanilla flags for chatting etc.
+	 * @brief Flags 1,2,4,8 are default vanilla flags for chatting etc.
 	 *  and the flag 16 is for aimlines in the ddnet client (noby told me)
 	 *  meaning: 1 + 2 + 4 + 8 + 16 = 31 and anything above it is not regular
 	 *  flag 32 seems to be some H-client flag
-	 * @details [long description]
 	 */
-	void CheckIrregularFlags(){if(m_PlayerFlags > 63) m_PlayerIrregularFlags.insert(m_PlayerFlags);}
+	static bool IsIrregularFlag(int Flags){ return Flags > 0/*63*/;}
+	void CheckIrregularFlags(){if(IsIrregularFlag(m_PlayerFlags)) m_PlayerIrregularFlags.insert(m_PlayerFlags);}
 	void ClearIrregularFlags(){ m_PlayerIrregularFlags.clear();}
 	/**
 	 * @brief Returns a vector created from the set of irregular flags.
@@ -73,9 +73,10 @@ public:
 	 * @brief Checks if the player has some tracked irregular flags in his flags set.
 	 */
 	bool HasIrregularFlags(){return m_PlayerIrregularFlags.size() > 0;};
-	
+
 	/**
 	 * @brief Returns a vector with at least 32 elements representing zeroes and ones.
+	 * Accessing this vector using the index, which accesses the specific flag at 2^(index)
 	 */
 	static std::vector<bool> ConvertToBitMask(int Flags);
 
