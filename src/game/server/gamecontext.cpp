@@ -2961,7 +2961,7 @@ pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Server", "ID : [Secure
 			char aClan[MAX_CLAN_LENGTH];
 			char aIP[NETADDR_MAXSTRSIZE];
 			char aTracked[4];
-			char aClientVersion[4];
+			char aClientVersion[24];
 			char aAdminLevel[4];
 			char aFlags[48];
 			char aSecureConnection[5];
