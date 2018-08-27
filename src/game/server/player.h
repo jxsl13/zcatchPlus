@@ -272,7 +272,7 @@ public:
 	}
 
 	void SetSnapshotWantedLength(int ticks){ticks > 0 ? m_SnapshotWantedLength = ticks : m_SnapshotWantedLength = SNAPSHOT_DEFAULT_LENGTH;}
-	int GetSnapshotWantedLength(){return m_SnapshotWantedLength;}
+	size_t GetSnapshotWantedLength(){return m_SnapshotWantedLength;}
 	int GetSnapsLeft(){return GetSnapshotWantedLength() - GetCurrentSnapshotSize();}
 	void EnableSnapshot(){m_IsSnapshotActive = true;}
 	bool IsSnapshotEnabled(){return m_IsSnapshotActive;}
@@ -333,7 +333,7 @@ private:
 	bool m_IsSnapshotActive{false};
 	bool m_OldIsSnapshotActive{false};
 	int m_SnapshotCount{1};
-	int m_SnapshotWantedLength{SNAPSHOT_DEFAULT_LENGTH};
+	size_t m_SnapshotWantedLength{SNAPSHOT_DEFAULT_LENGTH};
 
 
 	void IncSnapshotCount(){++m_SnapshotCount;}

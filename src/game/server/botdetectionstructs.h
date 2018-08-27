@@ -217,7 +217,7 @@ struct TickPlayer
 		std::vector<std::string> v = toStringVector();
 		std::stringstream s;
 		s << "\n";
-		for (int i = 0; i < v.size(); ++i)
+		for (size_t i = 0; i < v.size(); ++i)
 		{
 			s << v.at(i) << "\n";
 		}

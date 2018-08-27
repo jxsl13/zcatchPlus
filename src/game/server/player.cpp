@@ -895,7 +895,7 @@ void CPlayer::DoSnapshot() {
 	} else if (m_IsSnapshotActive && GetCurrentSnapshotSize() >= GetSnapshotWantedLength()) {
 		// if the snapshot has the wanted lenth, everything and disable snapshoting.
 		char aBuf[48];
-		str_format(aBuf, sizeof(aBuf), "Snapshot done(%d): ID=%d Name=%s",GetSnapshotWantedLength(), m_ClientID, Server()->ClientName(m_ClientID));
+		str_format(aBuf, sizeof(aBuf), "Snapshot done(%ld): ID=%d Name=%s",GetSnapshotWantedLength(), m_ClientID, Server()->ClientName(m_ClientID));
 		GameServer()->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "game", aBuf);
 		m_IsSnapshotActive = false;
 		m_CurrentTickPlayer.ResetTickData();
