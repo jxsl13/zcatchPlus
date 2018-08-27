@@ -64,11 +64,11 @@ void CTeeHistorian::CheckHistorianModeToggled() {
 		}
 	}
 
-	if (GetTrackedPlayersCountPrevousTick() == 0 && GetTrackedPlayersCount() > 0) {
+	if (GetTrackedPlayersCountPreviousTick() == 0 && GetTrackedPlayersCount() > 0) {
 		// previously nobody was tracked, not we got some people tracked
 		AddFuture(std::async(std::launch::async, &CTeeHistorian::EnableTracking, this), true);
 
-	} else if (GetTrackedPlayersCountPrevousTick() > 0 && GetTrackedPlayersCount() == 0)
+	} else if (GetTrackedPlayersCountPreviousTick() > 0 && GetTrackedPlayersCount() == 0)
 	{
 		// previously somebody was tracked, but now nobody is tracked anymore.
 		AddFuture(std::async(std::launch::async, &CTeeHistorian::DisableTracking, this), true);

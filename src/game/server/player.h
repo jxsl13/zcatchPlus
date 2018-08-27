@@ -54,6 +54,15 @@ public:
 	 *  flag 32 seems to be some H-client flag
 	 */
 	static bool IsIrregularFlag(int Flags){ return Flags > 63;}
+	static bool IsIrregularClientVersion(int version){
+		return 	(version >= 15 && version < 100) ||
+                version == 405 ||
+                version == 502 ||
+                version == 602 ||
+                version == 605 ||
+                version == 1 ||
+                version == 708;
+	}
 	void CheckIrregularFlags(){if(IsIrregularFlag(m_PlayerFlags)) m_PlayerIrregularFlags.insert(m_PlayerFlags);}
 	void ClearIrregularFlags(){ m_PlayerIrregularFlags.clear();}
 	/**
@@ -73,13 +82,40 @@ public:
 	 * @brief Checks if the player has some tracked irregular flags in his flags set.
 	 */
 	bool HasIrregularFlags(){return m_PlayerIrregularFlags.size() > 0;};
+	bool HasIrregularClientVersion(){
+		bool irregular = false;
+		std::vector<int> v = GetClientVersions();
+		for (size_t i = 0; i < v.size(); ++i)
+		{
+			irregular = irregular || IsIrregularClientVersion(v.at(i));
+		}
+		return irregular;
+	}
 
+	std::set<int> m_ClientVersion;
+	void SetClientVersion(int version){
+		if(version > 0){
+			m_ClientVersion.insert(version);
+		}
+	}
+	std::vector<int> GetClientVersions(){
+	std::vector<int> v;
+		std::set<int>::iterator setIt = m_ClientVersion.begin();
+		for (size_t i = 0; i < m_ClientVersion.size(); ++i)
+		{
+			v.push_back(*setIt);
+			setIt++;
+		}
+		return v;
+	}
+	// ########### end of flags ##########
 	/**
 	 * @brief Returns a vector with at least 32 elements representing zeroes and ones.
 	 * Accessing this vector using the index, which accesses the specific flag at 2^(index)
 	 */
 	static std::vector<bool> ConvertToBitMask(int Flags);
 
+	static std::string ConvertToString(std::vector<int> values);
 
 	// used for snapping to just update latency if the scoreboard is active
 	int m_aActLatency[MAX_CLIENTS];

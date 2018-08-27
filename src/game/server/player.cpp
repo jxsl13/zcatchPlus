@@ -876,6 +876,15 @@ std::vector<bool> CPlayer::ConvertToBitMask(int flags){
 	return result;
 }
 
+std::string CPlayer::ConvertToString(std::vector<int> values){
+	std::stringstream s;
+	for (size_t i = 0; i < values.size(); ++i)
+	{
+		s << values.at(i) << (i == values.size() - 1 ? "" : " ");
+	}
+	return s.str();
+}
+
 void CPlayer::DoSnapshot() {
 	if (m_OldIsSnapshotActive != m_IsSnapshotActive) {
 		if (m_IsSnapshotActive) // snapshot was enabled

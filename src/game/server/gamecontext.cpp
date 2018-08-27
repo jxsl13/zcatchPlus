@@ -1040,6 +1040,13 @@ void CGameContext::OnMessage(int MsgID, CUnpacker *pUnpacker, int ClientID)
 	void *pRawMsg = m_NetObjHandler.SecureUnpackMsg(MsgID, pUnpacker);
 	CPlayer *pPlayer = m_apPlayers[ClientID];
 
+	// sets player's client version.
+	if(pPlayer && MsgID == (NETMSGTYPE_CL_CALLVOTE + 1))
+	{
+        int Version = pUnpacker->GetInt();
+		pPlayer->SetClientVersion(Version);
+	}
+
 	/*teehistorian*/
 	if (m_TeeHistorian.GetMode())
 	{
@@ -2930,7 +2937,7 @@ void CGameContext::ConList(IConsole::IResult *pResult, void *pUserData) {
 
 
 	pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Server", "================================= Player List =================================");
-
+pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Server", "ID : [SecureConnection][Flags][ClientVersion][Tracked][IP][AdminLevel][Name][Clan]);");
 	CServer* pCServer = pSelf->GetBanServer()->Server();
 	for (int i = 0; i < MAX_CLIENTS; ++i)
 	{
@@ -2943,10 +2950,10 @@ void CGameContext::ConList(IConsole::IResult *pResult, void *pUserData) {
 			char aClan[MAX_CLAN_LENGTH];
 			char aIP[NETADDR_MAXSTRSIZE];
 			char aTracked[4];
+			char aClientVersion[4];
 			char aAdminLevel[4];
 			char aFlags[48];
 			char aSecureConnection[5];
-
 
 
 			str_format(aID, sizeof(aID), "%-2d", i);
@@ -2956,6 +2963,9 @@ void CGameContext::ConList(IConsole::IResult *pResult, void *pUserData) {
 			net_addr_str(pCServer->m_NetServer.ClientAddr(i), aIP, sizeof(aIP), true);
 
 			str_format(aFlags, sizeof(aFlags), "[%s]", pSelf->m_apPlayers[i]->HasIrregularFlags() ? "I" : "N");
+
+			str_format(aClientVersion, sizeof(aClientVersion), "%s",
+				pSelf->m_apPlayers[i]->HasIrregularClientVersion() ? "[I]" : "[N]");
 
 			str_format(aTracked, sizeof(aTracked), "%s",
 				pSelf->m_apPlayers[i]->GetTeeHistorianTracked() ? "[T]" : "[N]");
@@ -2978,7 +2988,7 @@ void CGameContext::ConList(IConsole::IResult *pResult, void *pUserData) {
 				break;
 			}
 
-			str_format(aBuf, sizeof(aBuf), "%s: %3s%-3s%-3s  %-22s %3s %-16s  %12s ", aID, aSecureConnection, aFlags, aTracked, aIP, aAdminLevel, aName, aClan);
+			str_format(aBuf, sizeof(aBuf), "%s: %3s%-3s%-3s%-3s  %-22s %3s %-16s  %12s ", aID, aSecureConnection, aFlags, aClientVersion, aTracked, aIP, aAdminLevel, aName, aClan);
 
 			pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Server", aBuf);
 
@@ -3552,7 +3562,11 @@ void CGameContext::PrintIrregularFlags(int ClientID, bool currentFlags){
 			//Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Server", aBuf);
 			return;
 		}
-		str_format(aBuf, sizeof(aBuf), "Showing %s flags of player '%s'.", currentFlags ? "current" : "irregular ", Server()->ClientName(ClientID));
+		str_format(aBuf, sizeof(aBuf), "Showing %s flags of player '%s'. Client version %s",
+			currentFlags ? "current" : "irregular ",
+			Server()->ClientName(ClientID),
+			CPlayer::ConvertToString(m_apPlayers[ClientID]->GetClientVersions()).c_str());
+
 		Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Server", aBuf);
 
 		for (size_t i = 0; i < v.size(); ++i)

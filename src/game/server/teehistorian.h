@@ -109,7 +109,7 @@ public:
 	void SetFirstTrackedPlayerId(int ID){m_FirstTrackedPlayerId = m_FirstTrackedPlayerId < 0 ? ID : m_FirstTrackedPlayerId;}
 	int GetFirstTrackedPlayerId(){return m_FirstTrackedPlayerId;}
 	void UpdateTrackedPlayersCountPreviousTick() {m_TrackedPlayersPreviousTick = m_TrackedPlayers;}
-	int GetTrackedPlayersCountPrevousTick() {return m_TrackedPlayersPreviousTick;}
+	int GetTrackedPlayersCountPreviousTick() {return m_TrackedPlayersPreviousTick;}
 
 	void DisableTracking();
 	void EnableTracking();
