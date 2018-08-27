@@ -349,6 +349,14 @@ public:
 	static void ConBanNickByName(IConsole::IResult *pResult, void *pUserData);
 	static void ConBanNickByID(IConsole::IResult *pResult, void *pUserData);
 
+	// snapshot stuff
+	static void ConSnapshotId(IConsole::IResult *pResult, void *pUserData);
+ 	static void ConPrintSnapshotId(IConsole::IResult *pResult, void *pUserData);
+ 	static void ConPrintSnapshotIdCore(IConsole::IResult *pResult, void *pUserData);
+ 	static void ConPrintSnapshotIdInput(IConsole::IResult *pResult, void *pUserData);
+ 	static void PrintSnapShot(CGameContext *pSelf, int playerID, int mode);
+ 	//TODO adding some analyzing functions based on snapshots
+
 	// flags stuff
 	static void ConShowIrregularFlags(IConsole::IResult *pResult, void *pUserData);
 	static void ConShowAllIrregularFlags(IConsole::IResult *pResult, void *pUserData);

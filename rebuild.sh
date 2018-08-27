@@ -10,7 +10,11 @@ back_to_base_directory (){
 
 build_server (){
 	back_to_base_directory
-	../bam/bam  -a server_release
+	if [[ $1 == "-d" ]]; then
+		../bam/bam -a server_debug    	
+	else
+		../bam/bam  -a server_release
+	fi
 }
 
 

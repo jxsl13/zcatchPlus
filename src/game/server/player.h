@@ -6,6 +6,7 @@
 // this include should perhaps be removed
 #include "entities/character.h"
 #include "gamecontext.h"
+#include "botdetectionstructs.h"
 #include <vector> // std::vector
 #include <set>
 
@@ -45,6 +46,7 @@ public:
 	// states if the client is chatting, accessing a menu etc.
 	int m_PlayerFlags;
 	std::set<int> m_PlayerIrregularFlags;
+
 	/**
 	 * @brief flags 1,2,4,8 are default vanilla flags for chatting etc.
 	 *  and the flag 16 is for aimlines in the ddnet client (noby told me)
@@ -52,8 +54,11 @@ public:
 	 *  flag 32 seems to be some H-client flag
 	 * @details [long description]
 	 */
-	void checkIrregularFlags(){if(m_PlayerFlags > 63) m_PlayerIrregularFlags.insert(m_PlayerFlags);}
-	void clearIrregularFlags(){ m_PlayerIrregularFlags.clear();}
+	void CheckIrregularFlags(){if(m_PlayerFlags > 63) m_PlayerIrregularFlags.insert(m_PlayerFlags);}
+	void ClearIrregularFlags(){ m_PlayerIrregularFlags.clear();}
+	/**
+	 * @brief Returns a vector created from the set of irregular flags.
+	 */
 	std::vector<int> GetIrregularFlags(){
 		std::vector<int> v;
 		std::set<int>::iterator setIt = m_PlayerIrregularFlags.begin();
@@ -63,7 +68,17 @@ public:
 			setIt++;
 		}
 		return v;}
+
+	/**
+	 * @brief Checks if the player has some tracked irregular flags in his flags set.
+	 */
 	bool HasIrregularFlags(){return m_PlayerIrregularFlags.size() > 0;};
+	
+	/**
+	 * @brief Returns a vector with at least 32 elements representing zeroes and ones.
+	 */
+	static std::vector<bool> ConvertToBitMask(int Flags);
+
 
 	// used for snapping to just update latency if the scoreboard is active
 	int m_aActLatency[MAX_CLIENTS];
@@ -242,16 +257,102 @@ public:
 	bool GetTeeHistorianTracked(){return m_TeeHistorianTracked;}
 	/*teehistorian player tracking*/
 
+	//########## snapshot stuff ##########
+#define SNAPSHOT_DEFAULT_LENGTH 10
+	int GetCurrentSnapshotNumber(){return m_SnapshotCount % 2;}
+	void AddAndResetCurrentTickPlayerToCurrentSnapshot(){
+		if(m_CurrentTickPlayer.equalInput(m_OldTickPlayer)){
+			return;
+		}
+		m_OldTickPlayer = m_CurrentTickPlayer;
+		GetCurrentSnapshotNumber() == 1 ?
+		m_SnapshotOne.insert(m_CurrentTickPlayer) :
+		m_SnapshotTwo.insert(m_CurrentTickPlayer);
+		m_CurrentTickPlayer.ResetTickData();
+	}
+
+	void SetSnapshotWantedLength(int ticks){ticks > 0 ? m_SnapshotWantedLength = ticks : m_SnapshotWantedLength = SNAPSHOT_DEFAULT_LENGTH;}
+	int GetSnapshotWantedLength(){return m_SnapshotWantedLength;}
+	int GetSnapsLeft(){return GetSnapshotWantedLength() - GetCurrentSnapshotSize();}
+	void EnableSnapshot(){m_IsSnapshotActive = true;}
+	bool IsSnapshotEnabled(){return m_IsSnapshotActive;}
+
+	bool IsSnapshotFull(){
+		return
+		m_SnapshotOne.size() > 0 &&
+		m_SnapshotTwo.size() > 0 &&
+		m_SnapshotOne.size() == m_SnapshotTwo.size() &&
+		m_SnapshotOne.size() == GetSnapshotWantedLength() &&
+		GetCurrentSnapshotNumber() == 1;}
+
+	std::vector<TickPlayer> GetFirstSnapshotResult(){
+		std::vector<TickPlayer> v;
+		for (TickPlayer t : m_SnapshotOne){
+			v.push_back(t);
+		}
+		std::sort(v.begin(), v.end());
+		return v;
+	}
+
+	std::vector<TickPlayer> GetSecondSnapshotResult(){
+		std::vector<TickPlayer> v;
+		for (TickPlayer t : m_SnapshotTwo){
+			v.push_back(t);
+		}
+		std::sort(v.begin(), v.end());
+		return v;
+	};
+	// ########## snapshot stuff end ##########
+
 private:
 	CCharacter *m_pCharacter;
 	CGameContext *m_pGameServer;
 
-	CGameContext *GameServer() const { return m_pGameServer; }
+	CGameContext *GameServer() const {return m_pGameServer; }
 	IServer *Server() const;
 
 	// rainbow stuff
 	int m_RainbowBodyStep{0};
 	int m_RainbowFeetStep{0};
+	// rainbow end
+
+	// ########## snapshot stuff ##########
+	/**
+	 * Basically this works like so: An admin takes a screenshot before
+	 * and one after some event and can then analyze the before and after events side by side.
+	 * 
+	 * Each time the player has a new mouse input, not movement, that player's whole character 
+	 * consisting of player core and player input is added to one of two snapshot sets.
+	 * If the snapshot set has enough elements, the snapshot procedure is halted.
+	 * After two snapshots with two full snapshot sets the admin is able to print the results side by side.
+	 * Further analysis of one individual snapshot could be added later on.
+	 * 
+	 */
+	std::set<TickPlayer> m_SnapshotOne;
+	std::set<TickPlayer> m_SnapshotTwo;
+	bool m_IsSnapshotActive{false};
+	bool m_OldIsSnapshotActive{false};
+	int m_SnapshotCount{1};
+	int m_SnapshotWantedLength{SNAPSHOT_DEFAULT_LENGTH};
+
+
+	void IncSnapshotCount(){++m_SnapshotCount;}
+	/**
+	 * @brief Used to switch between the two snapshot sets.
+	 */
+	int GetSnapshotCount(){return m_SnapshotCount;}
+	size_t GetCurrentSnapshotSize(){ return (GetCurrentSnapshotNumber() == 1 ? m_SnapshotOne.size() : m_SnapshotTwo.size()); }
+	void ResetSnapshots(){
+		m_SnapshotWantedLength = SNAPSHOT_DEFAULT_LENGTH;
+		m_SnapshotCount = 1;
+		m_SnapshotOne.clear();
+		m_SnapshotTwo.clear();}
+	void ResetCurrentSnapshot(){ GetCurrentSnapshotNumber() == 1 ? m_SnapshotOne.clear() : m_SnapshotTwo.clear();}
+	TickPlayer m_OldTickPlayer;
+	TickPlayer m_CurrentTickPlayer;
+	void DoSnapshot();
+
+	// ########## snapshot stuff end ##########
 
 	//
 	bool m_Spawning;

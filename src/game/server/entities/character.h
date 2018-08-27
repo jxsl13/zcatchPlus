@@ -88,7 +88,8 @@ public:
 	CCharacterCore GetCore() { return m_Core; };
 	CCharacterCore* Core() { return &m_Core; };
 	void SetCore(CCharacterCore Core) {m_Core = Core; };
-
+	CNetObj_PlayerInput GetInput(){ return m_Input; }
+	CNetObj_PlayerInput* Input(){return &m_Input; }
 private:
 	// player controlling this character
 	class CPlayer *m_pPlayer;

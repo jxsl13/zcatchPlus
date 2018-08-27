@@ -13,6 +13,7 @@
 #include <game/version.h>
 #include <game/collision.h>
 #include <game/gamecore.h>
+#include <game/server/player.h>
 /*#include "gamemodes/dm.h"
 #include "gamemodes/tdm.h"
 #include "gamemodes/ctf.h"
@@ -2640,7 +2641,10 @@ void CGameContext::OnConsoleInit()
 
 	Console()->Register("kill", "i", CFGFLAG_SERVER, ConKill, this, "Kill a player by id");
 	Console()->Register("bot_data", "", CFGFLAG_SERVER, ConPrintBotData, this, "Prints available bot data as server message.");
-
+	Console()->Register("snapshot", "ii", CFGFLAG_SERVER, ConSnapshotId, this, "Takes a Snapshot of given id for x inputs. If you don't know how many ticks to set, use 0: snapshot <id> <different inputs>.");
+	Console()->Register("snapshot_print", "i", CFGFLAG_SERVER, ConPrintSnapshotId, this, "First you need to capture two snapshots of a player in order to print them side by side. Usage: snapshot_print <ID>");
+	Console()->Register("snapshot_print_core", "i", CFGFLAG_SERVER, ConPrintSnapshotIdCore, this, "First you need to capture two snapshots of a player in order to print them side by side. Usage: snapshot_print_core <ID>");
+	Console()->Register("snapshot_print_input", "i", CFGFLAG_SERVER, ConPrintSnapshotIdInput, this, "First you need to capture two snapshots of a player in order to print them side by side. Usage: snapshot_print_input <ID>");
 	Console()->Chain("sv_motd", ConchainSpecialMotdupdate, this);
 
 	// jxsl13 was here. Console Commands
@@ -2670,6 +2674,44 @@ void CGameContext::OnConsoleInit()
 
 }
 
+void CGameContext::ConPrintSnapshotId(IConsole::IResult *pResult, void *pUserData){
+	CGameContext *pSelf = (CGameContext *)pUserData;
+	int playerID(pResult->GetInteger(0));
+	PrintSnapShot(pSelf, playerID, 0); // all
+}
+
+void CGameContext::ConPrintSnapshotIdCore(IConsole::IResult *pResult, void *pUserData){
+	CGameContext *pSelf = (CGameContext *)pUserData;
+	int playerID(pResult->GetInteger(0));
+	PrintSnapShot(pSelf, playerID, 1); // core
+}
+
+void CGameContext::ConPrintSnapshotIdInput(IConsole::IResult *pResult, void *pUserData){
+	CGameContext *pSelf = (CGameContext *)pUserData;
+	int playerID(pResult->GetInteger(0));
+	PrintSnapShot(pSelf, playerID, 2); // input
+}
+
+void CGameContext::ConSnapshotId(IConsole::IResult *pResult, void *pUserData){
+	CGameContext *pSelf = (CGameContext *)pUserData;
+	int playerID(pResult->GetInteger(0));
+	int snapshotLenth(pResult->GetInteger(1));
+	if (playerID >= 0 && playerID < MAX_CLIENTS && pSelf->m_apPlayers[playerID])
+	{
+		if(pSelf->m_apPlayers[playerID]->IsSnapshotEnabled()){
+			char aBuf[128];
+			str_format(aBuf, sizeof(aBuf), "There is already a snapshot being take, please wait until that is done(%d snaps left).", pSelf->m_apPlayers[playerID]->GetSnapsLeft());
+			pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Server", aBuf);
+		}
+		pSelf->m_apPlayers[playerID]->SetSnapshotWantedLength(snapshotLenth);
+		pSelf->m_apPlayers[playerID]->EnableSnapshot();
+	} else {
+		char aBuf[128];
+		str_format(aBuf, sizeof(aBuf), "Invalid id given. Try 'status', 'ls' or 'list'");
+		pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Server", aBuf);
+	}
+}
+
 void CGameContext::ConShowCurrentFlags(IConsole::IResult *pResult, void *pUserData){
 	CGameContext *pSelf = (CGameContext *)pUserData;
 	if(!pSelf || !pResult){
@@ -2678,6 +2720,7 @@ void CGameContext::ConShowCurrentFlags(IConsole::IResult *pResult, void *pUserDa
 	}
 
 	int playerID(pResult->GetInteger(0));
+	// id is checked in the print method
 	pSelf->PrintIrregularFlags(playerID, true);
 }
 
@@ -2692,6 +2735,7 @@ void CGameContext::ConShowAllIrregularFlags(IConsole::IResult *pResult, void *pU
 	for (int p = 0; p < MAX_CLIENTS; ++p)
 	{
 		if (pSelf->m_apPlayers[p]) {
+			// id is also checked in the print method
 			pSelf->PrintIrregularFlags(p, false);
 		}
 	}
@@ -3253,6 +3297,243 @@ bool CGameContext::IsClientAimBot(int ClientID)
 return m_apPlayers[ClientID] && m_apPlayers[ClientID]->m_IsAimBot;
 }
 */
+
+/**
+
+ * 
+ * @param mode 0 - all, 1 - core, 2 - input
+ */
+void CGameContext::PrintSnapShot(CGameContext *pSelf, int playerID, int mode){
+	CPlayer *player = pSelf->m_apPlayers[playerID];
+	int cellWidth = 5;
+
+	bool core = false;
+	bool input = false;
+	switch(mode){
+		case 1:
+			core = true;
+			break;
+		case 2:
+			input = true;
+			break;
+		default:
+			core = true;
+			input = true;
+	}
+
+	if (playerID >= 0 && playerID < MAX_CLIENTS && player)
+	{
+		// we need to be at screenshot 2, number = 0 to be able to print correct data here.
+
+		if (player->IsSnapshotFull()) {
+			std::vector<TickPlayer> snapOne = player->GetFirstSnapshotResult();
+			std::vector<TickPlayer> snapTwo = player->GetSecondSnapshotResult();
+
+			std::stringstream Tick;
+			std::stringstream Core_X;
+			std::stringstream Core_Y;
+			std::stringstream Core_VelX;
+			std::stringstream Core_VelY;
+			std::stringstream Core_Angle;
+			std::stringstream Core_Direction;
+			std::stringstream Core_Jumped;
+			std::stringstream Core_HookedPlayer;
+			std::stringstream Core_HookState;
+			std::stringstream Core_HookTick;
+			std::stringstream Core_HookX;
+			std::stringstream Core_HookY;
+			std::stringstream Core_HookDx;
+			std::stringstream Core_HookDy;
+			std::stringstream Input_Direction;
+			std::stringstream Input_TargetX;
+			std::stringstream Input_TargetY;
+			std::stringstream Input_Jump;
+			std::stringstream Input_Fire;
+			std::stringstream Input_Hook;
+			std::stringstream Input_PlayerFlags;
+			std::stringstream Input_WantedWeapon;
+			std::stringstream Input_NextWeapon;
+			std::stringstream Input_PrevWeapon;
+
+			Tick << std::left << std::setw(20) << "Tick" << std::right;
+			// set line header
+			if (core)
+			{
+			Core_X << std::left << std::setw(20) << "Core_X" << std::right;
+			Core_Y << std::left << std::setw(20) << "Core_Y" << std::right;
+			Core_VelX << std::left << std::setw(20) << "Core_VelX" << std::right;
+			Core_VelY << std::left << std::setw(20) << "Core_VelY" << std::right;
+			Core_Angle << std::left << std::setw(20) << "Core_Angle" << std::right;
+			Core_Direction << std::left << std::setw(20) << "Core_Direction" << std::right;
+			Core_Jumped << std::left << std::setw(20) << "Core_Jumped" << std::right;
+			Core_HookedPlayer << std::left << std::setw(20) << "Core_HookedPlayer" << std::right;
+			Core_HookState << std::left << std::setw(20) << "Core_HookState" << std::right;
+			Core_HookTick << std::left << std::setw(20) << "Core_HookTick" << std::right;
+			Core_HookX << std::left << std::setw(20) << "Core_HookX" << std::right;
+			Core_HookY << std::left << std::setw(20) << "Core_HookY" << std::right;
+			Core_HookDx << std::left << std::setw(20) << "Core_HookDx" << std::right;
+			Core_HookDy << std::left << std::setw(20) << "Core_HookDy" << std::right;
+			}
+
+			if (input)
+			{
+			Input_Direction << std::left << std::setw(20) << "Input_Direction" << std::right;
+			Input_TargetX << std::left << std::setw(20) << "Input_TargetX" << std::right;
+			Input_TargetY << std::left << std::setw(20) << "Input_TargetY" << std::right;
+			Input_Jump << std::left << std::setw(20) << "Input_Jump" << std::right;
+			Input_Fire << std::left << std::setw(20) << "Input_Fire" << std::right;
+			Input_Hook << std::left << std::setw(20) << "Input_Hook" << std::right;
+			Input_PlayerFlags << std::left << std::setw(20) << "Input_PlayerFlags" << std::right;
+			Input_WantedWeapon << std::left << std::setw(20) << "Input_WantedWeapon" << std::right;
+			Input_NextWeapon << std::left << std::setw(20) << "Input_NextWeapon" << std::right;
+			Input_PrevWeapon << std::left << std::setw(20) << "Input_PrevWeapon" << std::right;
+			}
+			for (size_t i = 0; i < snapOne.size(); ++i)
+			{
+				Tick << std::setw(cellWidth) << snapOne.at(i).m_Tick << " ";
+				if(core)
+				{
+				Core_X << std::setw(cellWidth) << snapOne.at(i).m_Core_X << " ";
+				Core_Y << std::setw(cellWidth) << snapOne.at(i).m_Core_Y << " ";
+				Core_VelX << std::setw(cellWidth) << snapOne.at(i).m_Core_VelX << " ";
+				Core_VelY << std::setw(cellWidth) << snapOne.at(i).m_Core_VelY << " ";
+				Core_Angle << std::setw(cellWidth) << snapOne.at(i).m_Core_Angle << " ";
+				Core_Direction << std::setw(cellWidth) << snapOne.at(i).m_Core_Direction << " ";
+				Core_Jumped << std::setw(cellWidth) << snapOne.at(i).m_Core_Jumped << " ";
+				Core_HookedPlayer << std::setw(cellWidth) << snapOne.at(i).m_Core_HookedPlayer << " ";
+				Core_HookState << std::setw(cellWidth) << snapOne.at(i).m_Core_HookState << " ";
+				Core_HookTick << std::setw(cellWidth) << snapOne.at(i).m_Core_HookTick << " ";
+				Core_HookX << std::setw(cellWidth) << snapOne.at(i).m_Core_HookX << " ";
+				Core_HookY << std::setw(cellWidth) << snapOne.at(i).m_Core_HookY << " ";
+				Core_HookDx << std::setw(cellWidth) << snapOne.at(i).m_Core_HookDx << " ";
+				Core_HookDy << std::setw(cellWidth) << snapOne.at(i).m_Core_HookDy << " ";
+				}
+
+				if(input){
+				Input_Direction << std::setw(cellWidth) << snapOne.at(i).m_Input_Direction << " ";
+				Input_TargetX << std::setw(cellWidth) << snapOne.at(i).m_Input_TargetX << " ";
+				Input_TargetY << std::setw(cellWidth) << snapOne.at(i).m_Input_TargetY << " ";
+				Input_Jump << std::setw(cellWidth) << snapOne.at(i).m_Input_Jump << " ";
+				Input_Fire << std::setw(cellWidth) << snapOne.at(i).m_Input_Fire << " ";
+				Input_Hook << std::setw(cellWidth) << snapOne.at(i).m_Input_Hook << " ";
+				Input_PlayerFlags << std::setw(cellWidth) << snapOne.at(i).m_Input_PlayerFlags << " ";
+				Input_WantedWeapon << std::setw(cellWidth) << snapOne.at(i).m_Input_WantedWeapon << " ";
+				Input_NextWeapon << std::setw(cellWidth) << snapOne.at(i).m_Input_NextWeapon << " ";
+				Input_PrevWeapon << std::setw(cellWidth) << snapOne.at(i).m_Input_PrevWeapon << " ";
+				}
+			}
+
+			Tick << " | ";
+			if(core)
+			{
+			Core_X << " | ";
+			Core_Y << " | ";
+			Core_VelX << " | ";
+			Core_VelY << " | ";
+			Core_Angle << " | ";
+			Core_Direction << " | ";
+			Core_Jumped << " | ";
+			Core_HookedPlayer << " | ";
+			Core_HookState << " | ";
+			Core_HookTick << " | ";
+			Core_HookX << " | ";
+			Core_HookY << " | ";
+			Core_HookDx << " | ";
+			Core_HookDy << " | ";
+			}
+			if(input)
+			{
+			Input_Direction << " | ";
+			Input_TargetX << " | ";
+			Input_TargetY << " | ";
+			Input_Jump << " | ";
+			Input_Fire << " | ";
+			Input_Hook << " | ";
+			Input_PlayerFlags << " | ";
+			Input_WantedWeapon << " | ";
+			Input_NextWeapon << " | ";
+			Input_PrevWeapon << " | ";
+			}
+			for (size_t i = 0; i < snapTwo.size(); ++i)
+			{
+				Tick << std::setw(cellWidth) << snapTwo.at(i).m_Tick << " ";
+				if(core)
+				{
+				Core_X << std::setw(cellWidth) << snapTwo.at(i).m_Core_X << " ";
+				Core_Y << std::setw(cellWidth) << snapTwo.at(i).m_Core_Y << " ";
+				Core_VelX << std::setw(cellWidth) << snapTwo.at(i).m_Core_VelX << " ";
+				Core_VelY << std::setw(cellWidth) << snapTwo.at(i).m_Core_VelY << " ";
+				Core_Angle << std::setw(cellWidth) << snapTwo.at(i).m_Core_Angle << " ";
+				Core_Direction << std::setw(cellWidth) << snapTwo.at(i).m_Core_Direction << " ";
+				Core_Jumped << std::setw(cellWidth) << snapTwo.at(i).m_Core_Jumped << " ";
+				Core_HookedPlayer << std::setw(cellWidth) << snapTwo.at(i).m_Core_HookedPlayer << " ";
+				Core_HookState << std::setw(cellWidth) << snapTwo.at(i).m_Core_HookState << " ";
+				Core_HookTick << std::setw(cellWidth) << snapTwo.at(i).m_Core_HookTick << " ";
+				Core_HookX << std::setw(cellWidth) << snapTwo.at(i).m_Core_HookX << " ";
+				Core_HookY << std::setw(cellWidth) << snapTwo.at(i).m_Core_HookY << " ";
+				Core_HookDx << std::setw(cellWidth) << snapTwo.at(i).m_Core_HookDx << " ";
+				Core_HookDy << std::setw(cellWidth) << snapTwo.at(i).m_Core_HookDy << " ";
+				}
+
+				if(input)
+				{
+				Input_Direction << std::setw(cellWidth) << snapTwo.at(i).m_Input_Direction << " ";
+				Input_TargetX << std::setw(cellWidth) << snapTwo.at(i).m_Input_TargetX << " ";
+				Input_TargetY << std::setw(cellWidth) << snapTwo.at(i).m_Input_TargetY << " ";
+				Input_Jump << std::setw(cellWidth) << snapTwo.at(i).m_Input_Jump << " ";
+				Input_Fire << std::setw(cellWidth) << snapTwo.at(i).m_Input_Fire << " ";
+				Input_Hook << std::setw(cellWidth) << snapTwo.at(i).m_Input_Hook << " ";
+				Input_PlayerFlags << std::setw(cellWidth) << snapTwo.at(i).m_Input_PlayerFlags << " ";
+				Input_WantedWeapon << std::setw(cellWidth) << snapTwo.at(i).m_Input_WantedWeapon << " ";
+				Input_NextWeapon << std::setw(cellWidth) << snapTwo.at(i).m_Input_NextWeapon << " ";
+				Input_PrevWeapon << std::setw(cellWidth) << snapTwo.at(i).m_Input_PrevWeapon << " ";
+				}
+			}
+
+			pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Snapshot", Tick.str().c_str());
+			if(core)
+			{
+			pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Snapshot", Core_Y.str().c_str());
+			pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Snapshot", Core_Y.str().c_str());
+			pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Snapshot", Core_VelX.str().c_str());
+			pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Snapshot", Core_VelY.str().c_str());
+			pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Snapshot", Core_Angle.str().c_str());
+			pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Snapshot", Core_Direction.str().c_str());
+			pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Snapshot", Core_Jumped.str().c_str());
+			pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Snapshot", Core_HookedPlayer.str().c_str());
+			pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Snapshot", Core_HookState.str().c_str());
+			pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Snapshot", Core_HookTick.str().c_str());
+			pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Snapshot", Core_HookX.str().c_str());
+			pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Snapshot", Core_HookY.str().c_str());
+			pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Snapshot", Core_HookDx.str().c_str());
+			pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Snapshot", Core_HookDy.str().c_str());
+			}
+
+			if(input)
+			{
+			pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Snapshot", Input_Direction.str().c_str());
+			pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Snapshot", Input_TargetX.str().c_str());
+			pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Snapshot", Input_TargetY.str().c_str());
+			pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Snapshot", Input_Jump.str().c_str());
+			pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Snapshot", Input_Fire.str().c_str());
+			pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Snapshot", Input_Hook.str().c_str());
+			pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Snapshot", Input_PlayerFlags.str().c_str());
+			pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Snapshot", Input_WantedWeapon.str().c_str());
+			pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Snapshot", Input_NextWeapon.str().c_str());
+			pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Snapshot", Input_PrevWeapon.str().c_str());
+			}
+
+		} else {
+			char aBuf[128];
+			str_format(aBuf, sizeof(aBuf), "Could not print snapshot, please try doing more snapshots before printing.");
+			pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Server", aBuf);
+		}
+	} else {
+		char aBuf[128];
+		str_format(aBuf, sizeof(aBuf), "Invalid id given. Try 'status', 'ls' or 'list'");
+		pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Server", aBuf);
+	}
+}
 
 void CGameContext::PrintIrregularFlags(int ClientID, bool currentFlags){
 	if(ClientID >= 0 && ClientID < MAX_CLIENTS && m_apPlayers[ClientID]){

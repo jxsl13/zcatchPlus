@@ -805,7 +805,7 @@ void CBotDetection::ResetID(int ClientID) {
 	m_MaxDistanceFromBody[ClientID] = -std::numeric_limits<double>::max();
 
 	m_aPlayersCurrentTick[ClientID].m_CoreAvailable = false;
-	m_aPlayersCurrentTick[ClientID].m_JoinHash = 0;
+	m_aPlayersCurrentTick[ClientID].m_JoinHash = -1;
 	m_aPlayersCurrentTick[ClientID].m_ClientID = -1;
 	m_aPlayersCurrentTick[ClientID].m_Core_Tick = -1;
 	m_aPlayersCurrentTick[ClientID].m_Core_X = -1;

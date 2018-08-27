@@ -237,8 +237,9 @@ void dbg_logger_debugger()
 }
 
 void dbg_logger_file(const char *filename)
-{
-	IOHANDLE logfile = io_open(filename, IOFLAG_WRITE);
+{	
+	// previously used flag was: IOFLAG_WRITE
+	IOHANDLE logfile = io_open(filename, IOFLAG_APPEND);
 	if (logfile)
 		dbg_logger(logger_file, logger_file_finish, aio_new(logfile));
 	else
