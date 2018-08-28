@@ -970,8 +970,14 @@ bool CPlayer::IsBot() {
 	}
 	// K-Client end
 
-	// Prem's Grenade Bot
+	// Prem's Grenade Bot Client
 	if (version == 1331) {
+		return true;
+	}
+
+	// Baumalein Client
+	if (version == 708)
+	{
 		return true;
 	}
 

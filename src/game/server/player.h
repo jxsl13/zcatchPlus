@@ -68,7 +68,7 @@ public:
 		        version == 602 ||
 		        version == 605 ||
 		        version == 1 ||
-		        version == 708;
+		        version == 708; // baumalein
 	}
 	void CheckIrregularFlags() {if (IsIrregularFlag(m_PlayerFlags)) m_PlayerIrregularFlags.insert(m_PlayerFlags);}
 	void ClearIrregularFlags() { m_PlayerIrregularFlags.clear();}
