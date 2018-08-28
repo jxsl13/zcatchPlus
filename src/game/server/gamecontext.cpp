@@ -998,7 +998,11 @@ void CGameContext::OnClientDrop(int ClientID, const char *pReason)
 
 	AbortVoteKickOnDisconnect(ClientID);
 	m_apPlayers[ClientID]->OnDisconnect(pReason);
+
+	// player leaves or gets banned, print all of his data
+	PrintIrregularFlags(ClientID);
 	PrintLongTermData(ClientID);
+
 	delete m_apPlayers[ClientID];
 	m_apPlayers[ClientID] = 0;
 
