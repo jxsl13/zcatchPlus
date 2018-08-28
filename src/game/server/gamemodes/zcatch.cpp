@@ -41,22 +41,6 @@ CGameController_zCatch::~CGameController_zCatch() {
 }
 
 void CGameController_zCatch::CheckGameConfigStatus() {
-	// every 5 seconds check if >= half of the players needed to finish a round are playing
-	// if noboody has a rainbow, give someone a rainbow.
-	if (g_Config.m_SvAllowRainbow && g_Config.m_SvLastStandingDeathmatch && Server()->Tick() % (Server()->TickSpeed() * 5) == 0) {
-		if (m_PlayersPlaying >= static_cast<int>(g_Config.m_SvLastStandingPlayers / 2)) {
-			// -1 meaning that everyone can get the rainbow, otherwise the ID passed would not
-			// be part of the possible players to get the rainbow.
-			GiveRainbowToRandomPlayer(-1, !m_SomoneHasRainbow);
-		}
-	} else if (g_Config.m_SvAllowRainbow && !g_Config.m_SvLastStandingDeathmatch)
-		{
-			g_Config.m_SvAllowRainbow = 0;
-			GameServer()->SendChatTarget(-1, "Could not enable the rainbow, because the Release Game is not being played.");
-		}
-	// we are not resetting any given rainbows othersise!
-
-
 	// checks rls game stuff, whether something changed...
 	if (m_OldSvReleaseGame != g_Config.m_SvLastStandingDeathmatch) {
 
@@ -106,6 +90,25 @@ void CGameController_zCatch::CheckGameConfigStatus() {
 			}
 		}
 	}
+
+	// Firstly the rls game stuff needs to be done and then we can check, if anything regarding the rainbow
+	// game needs attention, because the rainbow depends on the rls game.
+	// every 5 seconds check if >= half of the players needed to finish a round are playing
+	// if noboody has a rainbow, give someone a rainbow.
+	if (g_Config.m_SvAllowRainbow && g_Config.m_SvLastStandingDeathmatch && Server()->Tick() % (Server()->TickSpeed() * 5) == 0) {
+		if (m_PlayersPlaying >= static_cast<int>(g_Config.m_SvLastStandingPlayers / 2)) {
+			// -1 meaning that everyone can get the rainbow, otherwise the ID passed would not
+			// be part of the possible players to get the rainbow.
+			GiveRainbowToRandomPlayer(-1, !m_SomoneHasRainbow);
+		}
+	} else if (g_Config.m_SvAllowRainbow && !g_Config.m_SvLastStandingDeathmatch)
+		{
+			g_Config.m_SvAllowRainbow = 0;
+			GameServer()->SendChatTarget(-1, "Could not enable the rainbow, because the Release Game is not being played.");
+		}
+	// we are not resetting any given rainbows othersise!
+
+
 
 }
 
