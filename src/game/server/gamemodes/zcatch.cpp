@@ -97,6 +97,9 @@ void CGameController_zCatch::CheckGameConfigStatus() {
 			// rls game was disabled
 		} else if (g_Config.m_SvLastStandingDeathmatch == 0) {
 			m_OldSvReleaseGame = g_Config.m_SvLastStandingDeathmatch;
+			// also disable rls game in order to not show
+			// the message that it could not be enabled.
+			g_Config.m_SvAllowRainbow = 0;
 
 			if (g_Config.m_SvAllowJoin != m_OldAllowJoin) {
 				g_Config.m_SvAllowJoin = m_OldAllowJoin;
