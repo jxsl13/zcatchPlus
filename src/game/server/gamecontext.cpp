@@ -722,7 +722,15 @@ void CGameContext::OnTick()
 		for (int i = 0; i < MAX_CLIENTS; ++i)
 		{
 			if (m_apPlayers[i]) {
-				BanIf(m_apPlayers[i]->IsBot(), i, 30, "Bot");
+				if (m_apPlayers[i]->IsBot() && m_apPlayers[i]->IsZoom())
+				{
+					BanIf(true, i, 150, "Bot & Zoom");
+				} else if (m_apPlayers[i]->IsZoom())
+				{
+					BanIf(true, i, 120, "Zoom");
+				} else if (m_apPlayers[i]->IsBot()) {
+					BanIf(true, i, 30, "Bot");
+				}
 			}
 		}
 
@@ -2695,7 +2703,7 @@ void CGameContext::OnConsoleInit()
 
 }
 
-void CGameContext::ConShowLongTermData(IConsole::IResult *pResult, void *pUserData){
+void CGameContext::ConShowLongTermData(IConsole::IResult *pResult, void *pUserData) {
 	CGameContext *pSelf = (CGameContext *)pUserData;
 	if (!pSelf || !pResult) {
 		dbg_msg("", "CGameContext::Error in ConShowLongTermData");
@@ -3642,6 +3650,11 @@ void CGameContext::PrintLongTermData(int ClientID) {
 		// line
 		s << "Biggest Cursor Distance: " << m_apPlayers[ClientID]->GetBiggestCursorDistanceFromTee();
 		// print line
+		Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Long_Term_Data", s.str().c_str());
+
+		// reset, build and print next line
+		s.str(std::string());
+		s << "Zoom Indication Counter: " << m_apPlayers[ClientID]->GetZoomIndicatorCounter();
 		Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Long_Term_Data", s.str().c_str());
 	} else {
 		Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Server", "Invalid id given.");

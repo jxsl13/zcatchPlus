@@ -119,6 +119,7 @@ public:
 	static std::string ConvertToString(int value);
 
 	bool IsBot();
+	bool IsZoom();
 
 	// used for snapping to just update latency if the scoreboard is active
 	int m_aActLatency[MAX_CLIENTS];
@@ -348,6 +349,7 @@ public:
 
 	// ########## long term data ##########
 	double GetBiggestCursorDistanceFromTee() {return m_BiggestCursorDistanceFromTee;}
+	int GetZoomIndicatorCounter(){return m_ZoomIndicatorCounter;}
 	// ########## long term data end ##########
 
 private:
@@ -405,7 +407,8 @@ private:
 	void UpdateLongTermDataOnTick();
 	double m_BiggestCursorDistanceFromTee{0};
 
-
+	bool IsZoomIndicator(double distance){ return (distance >= 634.0 && HasIrregularFlags()) || distance >= 800.0;}
+	int m_ZoomIndicatorCounter{0};
 
 	// ########## helper functions ##########
 	static double Angle(int meX, int meY, int otherX, int otherY);

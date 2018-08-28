@@ -937,13 +937,16 @@ void CPlayer::DoSnapshot() {
 void CPlayer::UpdateLongTermDataOnTick() {
 
 	// cursor position from player.
-	double BiggestCursorDistanceFromTee = Distance(m_CurrentTickPlayer.m_Core_X,
+	double CurrentCursorDistanceFromTee = Distance(m_CurrentTickPlayer.m_Core_X,
 	                                      m_CurrentTickPlayer.m_Core_Y, m_CurrentTickPlayer.m_Core_X + m_CurrentTickPlayer.m_Input_TargetX,
 	                                      m_CurrentTickPlayer.m_Core_Y + m_CurrentTickPlayer.m_Input_TargetY);
-	if (BiggestCursorDistanceFromTee > m_BiggestCursorDistanceFromTee)
+	if(IsZoomIndicator(CurrentCursorDistanceFromTee)){
+		++m_ZoomIndicatorCounter;
+	}
+	if (CurrentCursorDistanceFromTee > m_BiggestCursorDistanceFromTee)
 	{
 		// update member.
-		m_BiggestCursorDistanceFromTee = BiggestCursorDistanceFromTee;
+		m_BiggestCursorDistanceFromTee = CurrentCursorDistanceFromTee;
 	}
 }
 
@@ -973,4 +976,9 @@ bool CPlayer::IsBot() {
 	}
 
 	return false;
+}
+
+
+bool CPlayer::IsZoom(){
+	return m_ZoomIndicatorCounter >= 5;
 }
