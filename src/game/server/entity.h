@@ -154,7 +154,7 @@ public:
 			Contains the current posititon of the entity.
 	*/
 	vec2 m_Pos;
-	
+
 	// nearby characters
 	bool m_AffectedCharactersInitialized;
 	bool m_AffectedCharacters[MAX_CLIENTS];

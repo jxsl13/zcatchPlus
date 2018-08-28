@@ -99,6 +99,24 @@ CPlayer::~CPlayer()
 	m_CurrentTickPlayer.ResetAllData();
 }
 
+
+double CPlayer::Angle(int meX, int meY, int otherX, int otherY) {
+
+	static const double TWOPI = 6.2831853071795865;
+	static const double RAD2DEG = 57.2957795130823209;
+	if (meX == otherX && meY == otherY)
+		return -1;
+
+	double theta = atan2(otherX - meX, otherY - meY);
+	if (theta < 0.0)
+		theta += TWOPI;
+	return RAD2DEG * theta;
+}
+
+double CPlayer::Distance(int meX, int meY, int otherX, int otherY) {
+	return sqrt(pow(meX - otherX , 2) + pow(meY - otherY, 2));
+}
+
 void CPlayer::Tick()
 {
 #ifdef CONF_DEBUG
@@ -197,9 +215,10 @@ void CPlayer::Tick()
 	m_CurrentTarget.y = m_LatestActivity.m_TargetY;
 	m_AimBotTargetSpeed = abs(distance(m_CurrentTarget, m_LastTarget));
 	*/
-
+	// filling needs to be done before Doing the snapshot.
+	FillCurrentTickPlayer();
 	DoSnapshot();
-
+	UpdateLongTermDataOnTick();
 	CheckIrregularFlags();
 
 	// zCatch/TeeVi: hard mode
@@ -850,14 +869,36 @@ void CPlayer::HardModeFailedShot()
 	}
 }
 
-std::bitset<32> CPlayer::ConvertToBitMask(int flags){
+std::bitset<32> CPlayer::ConvertToBitMask(int flags) {
 	return std::bitset<32>(flags);
 }
 
-std::string CPlayer::ConvertToString(int value){
+std::string CPlayer::ConvertToString(int value) {
 	std::stringstream s;
 	s << value;
 	return s.str();
+}
+
+void CPlayer::FillCurrentTickPlayer() {
+	if (GetCharacter())
+	{
+		// if core available & input available
+		if (GetCharacter()->Core() && GetCharacter()->Input()) {
+
+			m_CurrentTickPlayer.SetTick(Server()->Tick());
+			// fill core
+			CNetObj_CharacterCore Char;
+			GetCharacter()->GetCore().Write(&Char);
+			m_CurrentTickPlayer.FillCore(&Char);
+
+			// fill input
+			m_CurrentTickPlayer.FillInput(GetCharacter()->Input());
+
+		} else {
+			// core & input not available
+			return;
+		}
+	}
 }
 
 void CPlayer::DoSnapshot() {
@@ -877,31 +918,11 @@ void CPlayer::DoSnapshot() {
 	// possible problem: nearly impossible for tick & snap (mouse input) data to be available at the same time.
 	// as long as snapshot is active & haven't reached the needed amount of snapshots
 	if (m_IsSnapshotActive && GetCurrentSnapshotSize() < GetSnapshotWantedLength()) {
-		if (GetCharacter())
-		{
-			// if core available & input available
-			if (GetCharacter()->Core() && GetCharacter()->Input()) {
-
-				m_CurrentTickPlayer.SetTick(Server()->Tick());
-				// fill core
-				CNetObj_CharacterCore Char;
-				GetCharacter()->GetCore().Write(&Char);
-				m_CurrentTickPlayer.FillCore(&Char);
-
-				// fill input
-				m_CurrentTickPlayer.FillInput(GetCharacter()->Input());
-
-				// if core & input available, push data and then reset the buffer.
-				if (m_CurrentTickPlayer.IsFull()) {
-					// adds tick player and resets current tick player's tick data
-					AddAndResetCurrentTickPlayerToCurrentSnapshot();
-				}
-			} else {
-				// core & input not available
-				return;
-			}
+		// if core & input available, push data and then reset the buffer.
+		if (m_CurrentTickPlayer.IsFull()) {
+			// adds tick player and resets current tick player's tick data
+			AddAndResetCurrentTickPlayerToCurrentSnapshot();
 		}
-
 	} else if (m_IsSnapshotActive && GetCurrentSnapshotSize() >= GetSnapshotWantedLength()) {
 		// if the snapshot has the wanted lenth, everything and disable snapshoting.
 		char aBuf[48];
@@ -913,28 +934,43 @@ void CPlayer::DoSnapshot() {
 	}
 }
 
-bool CPlayer::IsBot(){
-	std::vector<int> Flags = GetIrregularFlags();
-	int Version = GetClientVersion();
-	//K-Client
+void CPlayer::UpdateLongTermDataOnTick() {
 
+	// cursor position from player.
+	double BiggestCursorDistanceFromTee = Distance(m_CurrentTickPlayer.m_Core_X,
+	                                      m_CurrentTickPlayer.m_Core_Y, m_CurrentTickPlayer.m_Core_X + m_CurrentTickPlayer.m_Input_TargetX,
+	                                      m_CurrentTickPlayer.m_Core_Y + m_CurrentTickPlayer.m_Input_TargetY);
+	if (BiggestCursorDistanceFromTee > m_BiggestCursorDistanceFromTee)
+	{
+		// update member.
+		m_BiggestCursorDistanceFromTee = BiggestCursorDistanceFromTee;
+	}
+}
+
+bool CPlayer::IsBot() {
+	std::vector<int> Flags = GetIrregularFlags();
+	int version = GetClientVersion();
+
+	//K-Client
 	bool hasKClientRegularInputFlag = false;
 	bool hasKClientBotInputFlag = false;
 	for (size_t i = 0; i < Flags.size(); ++i)
 	{
-		if(512 <= Flags.at(i) && Flags.at(i) <=  576){
+		if (512 <= Flags.at(i) && Flags.at(i) <=  576) {
 			hasKClientRegularInputFlag = hasKClientRegularInputFlag || true;
 		}
 		// flag 8 is set according to the developer of the bot client.
 		hasKClientBotInputFlag = hasKClientBotInputFlag || ConvertToBitMask(Flags.at(i)).test(8);
 	}
-	if(hasKClientRegularInputFlag && hasKClientBotInputFlag){
+	if (hasKClientRegularInputFlag && hasKClientBotInputFlag && version == 0) {
 		return true;
-	} else {
-		return false;
+	}
+	// K-Client end
+
+	// Prem's Grenade Bot
+	if (version == 1331) {
+		return true;
 	}
 
-
-
-
+	return false;
 }

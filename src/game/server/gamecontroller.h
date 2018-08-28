@@ -29,7 +29,7 @@ protected:
 		{
 			m_Got = false;
 			m_FriendlyTeam = -1;
-			m_Pos = vec2(100,100);
+			m_Pos = vec2(100, 100);
 		}
 
 		vec2 m_Pos;
@@ -145,7 +145,7 @@ public:
 	int ClampTeam(int Team);
 
 	virtual void PostReset();
-	
+
 	/* ranking system */
 	virtual void SaveRanking(CPlayer *player) {}
 	virtual void OnInitRanking(sqlite3 *rankingDb) {}

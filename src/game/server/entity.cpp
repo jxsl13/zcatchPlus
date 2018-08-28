@@ -36,7 +36,7 @@ int CEntity::NetworkClipped(int SnappingClient)
 	return NetworkClipped(SnappingClient, m_Pos);
 }
 
-/**	
+/**
 // jxsl13 was here.
 This function sends player information from the server to the client based on the distance of
 two entities. Based on the server config file, dyn cam clipping is either enabled or disabled.

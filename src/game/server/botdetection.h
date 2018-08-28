@@ -72,7 +72,7 @@ private:
 	double m_CursorAngle[MAX_CLIENTS];
 
 
-	double Angle(int x, int y, int x2, int y2);
+	static double Angle(int x, int y, int x2, int y2);
 	/**
 	 * Definition: Sight Areas:
 	 * __________ Max logical mouse distance is 405 with static cam __________

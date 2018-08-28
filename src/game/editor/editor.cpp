@@ -20,7 +20,6 @@
 #include <game/client/ui.h>
 #include <game/generated/client_data.h>
 
-#include "auto_map.h"
 #include "editor.h"
 
 int CEditor::ms_CheckerTexture;

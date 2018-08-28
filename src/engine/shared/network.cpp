@@ -5,7 +5,6 @@
 
 #include "config.h"
 #include "network.h"
-#include "huffman.h"
 
 void CNetRecvUnpacker::Clear()
 {

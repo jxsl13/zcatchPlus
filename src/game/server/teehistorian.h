@@ -100,14 +100,14 @@ public:
 		MODE_SQLITE = 2,
 	};
 
-	bool IsPlayerTrackingEnabled(){return GetTrackedPlayersCount() > 0;}
+	bool IsPlayerTrackingEnabled() {return GetTrackedPlayersCount() > 0;}
 	int GetTrackedPlayersCount() {return m_TrackedPlayers;}
 	void SetTrackedPlayersCount(int count) {m_TrackedPlayers = count;}
 	void IncTrackedPlayersCount() {m_TrackedPlayers++;}
 	void DecTrackedPlayersCount() {m_TrackedPlayers--;}
-	void ResetFirstTrackedPlayerId(){m_FirstTrackedPlayerId = -1;}
-	void SetFirstTrackedPlayerId(int ID){m_FirstTrackedPlayerId = m_FirstTrackedPlayerId < 0 ? ID : m_FirstTrackedPlayerId;}
-	int GetFirstTrackedPlayerId(){return m_FirstTrackedPlayerId;}
+	void ResetFirstTrackedPlayerId() {m_FirstTrackedPlayerId = -1;}
+	void SetFirstTrackedPlayerId(int ID) {m_FirstTrackedPlayerId = m_FirstTrackedPlayerId < 0 ? ID : m_FirstTrackedPlayerId;}
+	int GetFirstTrackedPlayerId() {return m_FirstTrackedPlayerId;}
 	void UpdateTrackedPlayersCountPreviousTick() {m_TrackedPlayersPreviousTick = m_TrackedPlayers;}
 	int GetTrackedPlayersCountPreviousTick() {return m_TrackedPlayersPreviousTick;}
 
@@ -304,7 +304,7 @@ private:
 	/*teehistorian player tracking*/
 	int m_TrackedPlayers;
 	int m_TrackedPlayersPreviousTick;
-	int m_FirstTrackedPlayerId{-1};
+	int m_FirstTrackedPlayerId{ -1};
 	/*teehistorian player tracking*/
 };
 

@@ -10,7 +10,6 @@
 #include "demo.h"
 #include "memheap.h"
 #include "network.h"
-#include "snapshot.h"
 
 static const unsigned char gs_aHeaderMarker[7] = {'T', 'W', 'D', 'E', 'M', 'O', 0};
 static const unsigned char gs_ActVersion = 4;

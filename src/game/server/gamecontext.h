@@ -12,7 +12,7 @@
 #include <game/voting.h>
 
 #include "eventhandler.h"
-#include "gamecontroller.h"
+//#include "gamecontroller.h"
 #include "gameworld.h"
 #include "player.h"
 
@@ -128,7 +128,7 @@ public:
 	IStorage *Storage() { return m_pStorage; }
 	CCollision *Collision() { return &m_Collision; }
 	CTuningParams *Tuning() { return &m_Tuning; }
-	class CServerBan *GetBanServer(){ return Server()->GetBanServer();}
+	class CServerBan *GetBanServer() { return Server()->GetBanServer();}
 
 	static void TeeHistorianWrite(const void *pData, int DataSize, void *pUser);
 
@@ -351,19 +351,20 @@ public:
 
 	// snapshot stuff
 	static void ConSnapshotId(IConsole::IResult *pResult, void *pUserData);
- 	static void ConPrintSnapshotId(IConsole::IResult *pResult, void *pUserData);
- 	static void ConPrintSnapshotIdCore(IConsole::IResult *pResult, void *pUserData);
- 	static void ConPrintSnapshotIdInput(IConsole::IResult *pResult, void *pUserData);
- 	static void PrintSnapShot(CGameContext *pSelf, int playerID, int mode);
- 	//TODO adding some analyzing functions based on snapshots
+	static void ConPrintSnapshotId(IConsole::IResult *pResult, void *pUserData);
+	static void ConPrintSnapshotIdCore(IConsole::IResult *pResult, void *pUserData);
+	static void ConPrintSnapshotIdInput(IConsole::IResult *pResult, void *pUserData);
+	static void PrintSnapShot(CGameContext *pSelf, int playerID, int mode);
+	//TODO adding some analyzing functions based on snapshots
 
 	// flags stuff
 	static void ConShowIrregularFlags(IConsole::IResult *pResult, void *pUserData);
-	static void ConShowAllIrregularFlags(IConsole::IResult *pResult, void *pUserData);
 	static void ConShowCurrentFlags(IConsole::IResult *pResult, void *pUserData);
+	bool PrintIrregularFlags(int ClientID, bool currentFlags = false);
 
-	void PrintIrregularFlags(int ClientID, bool currentFlags = false);
-
+	// long term data stuff
+	static void ConShowLongTermData(IConsole::IResult *pResult, void *pUserData);
+	void PrintLongTermData(int ClientID);
 
 	// fun stuff
 	static void ConGiveRainbow(IConsole::IResult *pResult, void *pUserData);
@@ -393,42 +394,42 @@ public:
 private:
 
 	// trim from start (in place)
-static inline void ltrim(std::string &s) {
-    s.erase(s.begin(), std::find_if(s.begin(), s.end(), [](int ch) {
-        return !std::isspace(ch);
-    }));
-}
+	static inline void ltrim(std::string &s) {
+		s.erase(s.begin(), std::find_if(s.begin(), s.end(), [](int ch) {
+			return !std::isspace(ch);
+		}));
+	}
 
 // trim from end (in place)
-static inline void rtrim(std::string &s) {
-    s.erase(std::find_if(s.rbegin(), s.rend(), [](int ch) {
-        return !std::isspace(ch);
-    }).base(), s.end());
-}
+	static inline void rtrim(std::string &s) {
+		s.erase(std::find_if(s.rbegin(), s.rend(), [](int ch) {
+			return !std::isspace(ch);
+		}).base(), s.end());
+	}
 
 // trim from both ends (in place)
-static inline void trim(std::string &s) {
-    ltrim(s);
-    rtrim(s);
-}
+	static inline void trim(std::string &s) {
+		ltrim(s);
+		rtrim(s);
+	}
 
 // trim from start (copying)
-static inline std::string ltrim_copy(std::string s) {
-    ltrim(s);
-    return s;
-}
+	static inline std::string ltrim_copy(std::string s) {
+		ltrim(s);
+		return s;
+	}
 
 // trim from end (copying)
-static inline std::string rtrim_copy(std::string s) {
-    rtrim(s);
-    return s;
-}
+	static inline std::string rtrim_copy(std::string s) {
+		rtrim(s);
+		return s;
+	}
 
 // trim from both ends (copying)
-static inline std::string trim_copy(std::string s) {
-    trim(s);
-    return s;
-}
+	static inline std::string trim_copy(std::string s) {
+		trim(s);
+		return s;
+	}
 
 
 };

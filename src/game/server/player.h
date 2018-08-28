@@ -55,27 +55,27 @@ public:
 	 *  meaning: 1 + 2 + 4 + 8 + 16 = 31 and anything above it is not regular
 	 *  flag 32 seems to be some H-client flag
 	 */
-	static bool IsIrregularFlag(int Flags){ return Flags > 63;}
+	static bool IsIrregularFlag(int Flags) { return Flags > 63;}
 
 	/**
-	 * @brief Checks if given client version matches one 
+	 * @brief Checks if given client version matches one
 	 * of the known irregular, most likely bot client versions.
 	 */
-	static bool IsIrregularClientVersion(int version){
+	static bool IsIrregularClientVersion(int version) {
 		return 	(version >= 15 && version < 100) ||
-                version == 405 ||
-                version == 502 ||
-                version == 602 ||
-                version == 605 ||
-                version == 1 ||
-                version == 708;
+		        version == 405 ||
+		        version == 502 ||
+		        version == 602 ||
+		        version == 605 ||
+		        version == 1 ||
+		        version == 708;
 	}
-	void CheckIrregularFlags(){if(IsIrregularFlag(m_PlayerFlags)) m_PlayerIrregularFlags.insert(m_PlayerFlags);}
-	void ClearIrregularFlags(){ m_PlayerIrregularFlags.clear();}
+	void CheckIrregularFlags() {if (IsIrregularFlag(m_PlayerFlags)) m_PlayerIrregularFlags.insert(m_PlayerFlags);}
+	void ClearIrregularFlags() { m_PlayerIrregularFlags.clear();}
 	/**
 	 * @brief Returns a vector created from the set of irregular flags.
 	 */
-	std::vector<int> GetIrregularFlags(){
+	std::vector<int> GetIrregularFlags() {
 		std::vector<int> v;
 		std::set<int>::iterator setIt = m_PlayerIrregularFlags.begin();
 		for (size_t i = 0; i < m_PlayerIrregularFlags.size(); ++i)
@@ -83,30 +83,31 @@ public:
 			v.push_back(*setIt);
 			setIt++;
 		}
-		return v;}
+		return v;
+	}
 
 	/**
 	 * @brief Checks if the player has some tracked irregular flags in his flags set.
 	 */
-	bool HasIrregularFlags(){return m_PlayerIrregularFlags.size() > 0;};
+	bool HasIrregularFlags() {return m_PlayerIrregularFlags.size() > 0;};
 
 	/**
 	 * @brief Checks if the player has an irregular client version,
 	 * meaning that the list of version codes sent to the server need
 	 * to contain irregular version numbers.
 	 */
-	bool HasIrregularClientVersion(){
+	bool HasIrregularClientVersion() {
 		return IsIrregularClientVersion(m_ClientVersion);
 	}
 
 	int m_ClientVersion{0};
-	void SetClientVersion(int version){
-		if(version > 0){
+	void SetClientVersion(int version) {
+		if (version > 0) {
 			m_ClientVersion = version;
 		}
 	}
-	int GetClientVersion(){
-	return m_ClientVersion;
+	int GetClientVersion() {
+		return m_ClientVersion;
 	}
 	// ########### end of flags/ client version stuff ##########
 	/**
@@ -150,10 +151,10 @@ public:
 	} m_TeeInfos;
 
 	// rainbow stuff
-	bool IsRainbowTee(){ return m_IsRainbowBodyTee || m_IsRainbowFeetTee;}
-	void ResetRainbowTee(){ m_IsRainbowBodyTee = false; m_IsRainbowFeetTee = false;}
-	void GiveBodyRainbow(){ m_IsRainbowBodyTee = true;}
-	void GiveFeetRainbow(){ m_IsRainbowFeetTee = true;}
+	bool IsRainbowTee() { return m_IsRainbowBodyTee || m_IsRainbowFeetTee;}
+	void ResetRainbowTee() { m_IsRainbowBodyTee = false; m_IsRainbowFeetTee = false;}
+	void GiveBodyRainbow() { m_IsRainbowBodyTee = true;}
+	void GiveFeetRainbow() { m_IsRainbowFeetTee = true;}
 	bool m_IsRainbowBodyTee{false};
 	bool m_IsRainbowFeetTee{false};
 	// rainbow end
@@ -292,15 +293,15 @@ public:
 	/*teehistorian player tracking*/
 	bool m_TeeHistorianTracked;
 
-	void SetTeeHistorianTracked(bool tracked){m_TeeHistorianTracked = tracked;}
-	bool GetTeeHistorianTracked(){return m_TeeHistorianTracked;}
+	void SetTeeHistorianTracked(bool tracked) {m_TeeHistorianTracked = tracked;}
+	bool GetTeeHistorianTracked() {return m_TeeHistorianTracked;}
 	/*teehistorian player tracking*/
 
 	//########## snapshot stuff ##########
 #define SNAPSHOT_DEFAULT_LENGTH 10
-	int GetCurrentSnapshotNumber(){return m_SnapshotCount % 2;}
-	void AddAndResetCurrentTickPlayerToCurrentSnapshot(){
-		if(m_CurrentTickPlayer.equalInput(m_OldTickPlayer)){
+	int GetCurrentSnapshotNumber() {return m_SnapshotCount % 2;}
+	void AddAndResetCurrentTickPlayerToCurrentSnapshot() {
+		if (m_CurrentTickPlayer.equalInput(m_OldTickPlayer)) {
 			return;
 		}
 		m_OldTickPlayer = m_CurrentTickPlayer;
@@ -310,39 +311,44 @@ public:
 		m_CurrentTickPlayer.ResetTickData();
 	}
 
-	void SetSnapshotWantedLength(int ticks){ticks > 0 ? m_SnapshotWantedLength = ticks : m_SnapshotWantedLength = SNAPSHOT_DEFAULT_LENGTH;}
-	size_t GetSnapshotWantedLength(){return m_SnapshotWantedLength;}
-	int GetSnapsLeft(){return GetSnapshotWantedLength() - GetCurrentSnapshotSize();}
-	void EnableSnapshot(){m_IsSnapshotActive = true;}
-	bool IsSnapshotEnabled(){return m_IsSnapshotActive;}
+	void SetSnapshotWantedLength(int ticks) {ticks > 0 ? m_SnapshotWantedLength = ticks : m_SnapshotWantedLength = SNAPSHOT_DEFAULT_LENGTH;}
+	size_t GetSnapshotWantedLength() {return m_SnapshotWantedLength;}
+	int GetSnapsLeft() {return GetSnapshotWantedLength() - GetCurrentSnapshotSize();}
+	void EnableSnapshot() {m_IsSnapshotActive = true;}
+	bool IsSnapshotEnabled() {return m_IsSnapshotActive;}
 
-	bool IsSnapshotFull(){
+	bool IsSnapshotFull() {
 		return
-		m_SnapshotOne.size() > 0 &&
-		m_SnapshotTwo.size() > 0 &&
-		m_SnapshotOne.size() == m_SnapshotTwo.size() &&
-		m_SnapshotOne.size() == GetSnapshotWantedLength() &&
-		GetCurrentSnapshotNumber() == 1;}
+		    m_SnapshotOne.size() > 0 &&
+		    m_SnapshotTwo.size() > 0 &&
+		    m_SnapshotOne.size() == m_SnapshotTwo.size() &&
+		    m_SnapshotOne.size() == GetSnapshotWantedLength() &&
+		    GetCurrentSnapshotNumber() == 1;
+	}
 
-	std::vector<TickPlayer> GetFirstSnapshotResult(){
+	std::vector<TickPlayer> GetFirstSnapshotResult() {
 		std::vector<TickPlayer> v;
-		for (TickPlayer t : m_SnapshotOne){
+		for (TickPlayer t : m_SnapshotOne) {
 			v.push_back(t);
 		}
 		std::sort(v.begin(), v.end());
 		return v;
 	}
 
-	std::vector<TickPlayer> GetSecondSnapshotResult(){
+	std::vector<TickPlayer> GetSecondSnapshotResult() {
 		std::vector<TickPlayer> v;
 
-		for (TickPlayer t : m_SnapshotTwo){
+		for (TickPlayer t : m_SnapshotTwo) {
 			v.push_back(t);
 		}
 		std::sort(v.begin(), v.end());
 		return v;
 	};
 	// ########## snapshot stuff end ##########
+
+	// ########## long term data ##########
+	double GetBiggestCursorDistanceFromTee() {return m_BiggestCursorDistanceFromTee;}
+	// ########## long term data end ##########
 
 private:
 	CCharacter *m_pCharacter;
@@ -360,13 +366,13 @@ private:
 	/**
 	 * Basically this works like so: An admin takes a screenshot before
 	 * and one after some event and can then analyze the before and after events side by side.
-	 * 
-	 * Each time the player has a new mouse input, not movement, that player's whole character 
+	 *
+	 * Each time the player has a new mouse input, not movement, that player's whole character
 	 * consisting of player core and player input is added to one of two snapshot sets.
 	 * If the snapshot set has enough elements, the snapshot procedure is halted.
 	 * After two snapshots with two full snapshot sets the admin is able to print the results side by side.
 	 * Further analysis of one individual snapshot could be added later on.
-	 * 
+	 *
 	 */
 	std::set<TickPlayer> m_SnapshotOne;
 	std::set<TickPlayer> m_SnapshotTwo;
@@ -376,23 +382,38 @@ private:
 	size_t m_SnapshotWantedLength{SNAPSHOT_DEFAULT_LENGTH};
 
 
-	void IncSnapshotCount(){++m_SnapshotCount;}
+	void IncSnapshotCount() {++m_SnapshotCount;}
 	/**
 	 * @brief Used to switch between the two snapshot sets.
 	 */
-	int GetSnapshotCount(){return m_SnapshotCount;}
-	size_t GetCurrentSnapshotSize(){ return (GetCurrentSnapshotNumber() == 1 ? m_SnapshotOne.size() : m_SnapshotTwo.size()); }
-	void ResetSnapshots(){
+	int GetSnapshotCount() {return m_SnapshotCount;}
+	size_t GetCurrentSnapshotSize() { return (GetCurrentSnapshotNumber() == 1 ? m_SnapshotOne.size() : m_SnapshotTwo.size()); }
+	void ResetSnapshots() {
 		m_SnapshotWantedLength = SNAPSHOT_DEFAULT_LENGTH;
 		m_SnapshotCount = 1;
 		m_SnapshotOne.clear();
-		m_SnapshotTwo.clear();}
-	void ResetCurrentSnapshot(){ GetCurrentSnapshotNumber() == 1 ? m_SnapshotOne.clear() : m_SnapshotTwo.clear();}
+		m_SnapshotTwo.clear();
+	}
+	void ResetCurrentSnapshot() { GetCurrentSnapshotNumber() == 1 ? m_SnapshotOne.clear() : m_SnapshotTwo.clear();}
 	TickPlayer m_OldTickPlayer;
 	TickPlayer m_CurrentTickPlayer;
+	void FillCurrentTickPlayer();
 	void DoSnapshot();
-
 	// ########## snapshot stuff end ##########
+
+	// ########## log term data ##########
+	void UpdateLongTermDataOnTick();
+	double m_BiggestCursorDistanceFromTee{0};
+
+
+
+	// ########## helper functions ##########
+	static double Angle(int meX, int meY, int otherX, int otherY);
+	static double Distance(int meX, int meY, int otherX, int otherY);
+	// ########## helper functions end ##########
+
+	// ########## log term data end ##########
+
 
 	//
 	bool m_Spawning;

@@ -13,7 +13,7 @@ struct TickPlayer
 	int m_JoinHash; // not used for hash / equality
 	int m_ClientID; // not used for hash / equality
 	int m_JoinTick{ -1}; // not used for hash / equality
-	int m_Tick{-1};
+	int m_Tick{ -1};
 
 	bool m_CoreAvailable; // not used for hash / equality
 	int m_Core_Tick; // not used for hash / equality
@@ -117,7 +117,7 @@ struct TickPlayer
 		m_Core_HookDy = PlayerCore->m_HookDy;
 	}
 
-	void SetTick(int tick){
+	void SetTick(int tick) {
 		m_Tick = tick;
 	}
 	void FillInput(CNetObj_PlayerInput *PlayerInput) {
@@ -252,7 +252,7 @@ struct TickPlayer
 		       m_Input_NextWeapon == other.m_Input_NextWeapon &&
 		       m_Input_PrevWeapon == other.m_Input_PrevWeapon;
 	}
-	bool equalInput(const TickPlayer &other){
+	bool equalInput(const TickPlayer &other) {
 		return m_Input_TargetX == other.m_Input_TargetX &&
 		       m_Input_TargetY == other.m_Input_TargetY &&
 		       m_Input_Jump == other.m_Input_Jump &&
@@ -263,7 +263,7 @@ struct TickPlayer
 		       m_Input_PrevWeapon == other.m_Input_PrevWeapon;
 	}
 
-	bool equalCore(const TickPlayer &other){
+	bool equalCore(const TickPlayer &other) {
 		return m_Core_X == other.m_Core_X &&
 		       m_Core_Y == other.m_Core_Y &&
 		       m_Core_VelX == other.m_Core_VelX &&
@@ -303,27 +303,27 @@ struct hash<TickPlayer>
 		// and bit shifting:
 		// TODO:: implement hashing - create a set with unique inputs!!!!!!!!!!!!!!!!!!!!!
 		long ret = (k.m_Core_X << 2)
-		       ^ (k.m_Core_Y << 3) * 3
-		       ^ (k.m_Core_VelX << 4) * 5
-		       ^ (k.m_Core_VelY << 5) * 7
-		       ^ (k.m_Core_Angle << 6) * 11
-		       ^ (k.m_Core_Direction << 5) * 13
-		       ^ (k.m_Core_Jumped << 7) * 17
-		       ^ (k.m_Core_HookedPlayer << 8) * 23
-		       ^ (k.m_Core_HookState << 9) * 29
-		       ^ (k.m_Core_HookX << 10) * 31
-		       ^ (k.m_Core_HookY << 11) * 37
-		       ^ (k.m_Core_HookDx << 12) * 41
-		       ^ (k.m_Core_HookDy << 13) * 43
-		       ^ (k.m_Input_Direction << 14) * 1879
-		       ^ (k.m_Input_TargetX << 15) * 47
-		       ^ (k.m_Input_TargetY << 16) * 53
-		       ^ (k.m_Input_Jump << 17) * 2593
-		       ^ (k.m_Input_Fire << 18) * 2999
-		       ^ (k.m_Input_Hook << 19) * 3989
-		       ^ (k.m_Input_WantedWeapon << 21) * 57
-		       ^ (k.m_Input_NextWeapon << 22) * 61
-		       ^ (k.m_Input_PrevWeapon << 23) * 67;
+		           ^ (k.m_Core_Y << 3) * 3
+		           ^ (k.m_Core_VelX << 4) * 5
+		           ^ (k.m_Core_VelY << 5) * 7
+		           ^ (k.m_Core_Angle << 6) * 11
+		           ^ (k.m_Core_Direction << 5) * 13
+		           ^ (k.m_Core_Jumped << 7) * 17
+		           ^ (k.m_Core_HookedPlayer << 8) * 23
+		           ^ (k.m_Core_HookState << 9) * 29
+		           ^ (k.m_Core_HookX << 10) * 31
+		           ^ (k.m_Core_HookY << 11) * 37
+		           ^ (k.m_Core_HookDx << 12) * 41
+		           ^ (k.m_Core_HookDy << 13) * 43
+		           ^ (k.m_Input_Direction << 14) * 1879
+		           ^ (k.m_Input_TargetX << 15) * 47
+		           ^ (k.m_Input_TargetY << 16) * 53
+		           ^ (k.m_Input_Jump << 17) * 2593
+		           ^ (k.m_Input_Fire << 18) * 2999
+		           ^ (k.m_Input_Hook << 19) * 3989
+		           ^ (k.m_Input_WantedWeapon << 21) * 57
+		           ^ (k.m_Input_NextWeapon << 22) * 61
+		           ^ (k.m_Input_PrevWeapon << 23) * 67;
 		return abs(ret);
 	}
 };

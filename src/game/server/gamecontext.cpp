@@ -20,7 +20,6 @@
 #include "gamemodes/ctf.h"
 #include "gamemodes/mod.h"*/
 #include "gamemodes/zcatch.h"
-#include "gamecontext.h"
 
 
 // needed for server.h include to access
@@ -36,8 +35,6 @@
 #include <engine/server/server.h>
 #include <algorithm>
 #include <cmath>
-#include <engine/shared/netban.h>
-#include <engine/server/server.h>
 
 
 
@@ -974,7 +971,7 @@ void CGameContext::OnClientConnected(int ClientID)
 	Server()->SendPackMsg(&Msg, MSGFLAG_VITAL, ClientID);
 
 	// access CServer through ban server
-	if(!GetBanServer()->Server()->m_NetServer.HasSecurityToken(ClientID)){
+	if (!GetBanServer()->Server()->m_NetServer.HasSecurityToken(ClientID)) {
 		SendChatTarget(ClientID, "Warning: You are not securely connected to this server.");
 		SendChatTarget(ClientID, "You may have a worse experience playing on this server.");
 		SendChatTarget(ClientID, "Please update your client to one that is protected against IP spoofing.");
@@ -993,6 +990,7 @@ void CGameContext::OnClientDrop(int ClientID, const char *pReason)
 
 	AbortVoteKickOnDisconnect(ClientID);
 	m_apPlayers[ClientID]->OnDisconnect(pReason);
+	PrintLongTermData(ClientID);
 	delete m_apPlayers[ClientID];
 	m_apPlayers[ClientID] = 0;
 
@@ -1056,9 +1054,9 @@ void CGameContext::OnMessage(int MsgID, CUnpacker *pUnpacker, int ClientID)
 	CPlayer *pPlayer = m_apPlayers[ClientID];
 
 	// sets player's client version.
-	if(pPlayer && MsgID == (NETMSGTYPE_CL_CALLVOTE + 1))
+	if (pPlayer && MsgID == (NETMSGTYPE_CL_CALLVOTE + 1))
 	{
-        int Version = pUnpacker->GetInt();
+		int Version = pUnpacker->GetInt();
 		pPlayer->SetClientVersion(Version);
 		return;
 	}
@@ -1113,7 +1111,7 @@ void CGameContext::OnMessage(int MsgID, CUnpacker *pUnpacker, int ClientID)
 			if (!str_comp_nocase("info", pMsg->m_pMessage + 1))
 			{
 				char aBuf[128];
-				str_format(aBuf, sizeof(aBuf), "zCatch %s by erd and Teetime, modified by Teelevision and by jxsl13. See /help.", ZCATCH_VERSION);
+				str_format(aBuf, sizeof(aBuf), "zCatch %s by erd and Teetime, modified by Teelevision and modified again by jxsl13. See /help.", ZCATCH_VERSION);
 				SendChatTarget(ClientID, aBuf);
 				SendChatTarget(ClientID, "Players you catch (kill) join again when you die. Catch everyone to win.");
 				if (g_Config.m_SvLastStandingPlayers > 2)
@@ -2686,9 +2684,9 @@ void CGameContext::OnConsoleInit()
 	Console()->Register("unban_nick", "i", CFGFLAG_SERVER, ConRemoveFromBannedNicks, this, "Removes ID (from show_banned_nicks) from banned nicks list.");
 	Console()->Register("ban_nick_by_id", "i", CFGFLAG_SERVER, ConBanNickByID, this, "Bans a nick by given ID (from ls or status command).");
 	Console()->Register("ban_nick_by_name", "r", CFGFLAG_SERVER, ConBanNickByName, this, "Bans a nick by given nickname.");
-	Console()->Register("show_irregular_flags_all", "", CFGFLAG_SERVER, ConShowAllIrregularFlags, this, "Shows all irregular flags of all players");
-	Console()->Register("show_irregular_flags", "i", CFGFLAG_SERVER, ConShowIrregularFlags, this, "Shows all irregular flags of given player id.");
-	Console()->Register("show_flags_current", "i", CFGFLAG_SERVER, ConShowCurrentFlags, this, "Shows irregular flags of given player id at the current moment.");
+	Console()->Register("show_irregular_flags", "i", CFGFLAG_SERVER, ConShowIrregularFlags, this, "Shows all irregular flags of given player id. show_irregular_flags <ID>, -1 for all players.");
+	Console()->Register("show_flags_current", "i", CFGFLAG_SERVER, ConShowCurrentFlags, this, "Shows irregular flags of given player id at the current moment. show_long_term_data <ID>, -1 for all.");
+	Console()->Register("show_long_term_data", "i", CFGFLAG_SERVER, ConShowLongTermData, this, "Shows the gathered data of the given <ID>.");
 
 	Console()->Register("give_rainbow", "i", CFGFLAG_SERVER, ConGiveRainbow, this, "Enables Rainbow for given id.");
 	Console()->Register("give_rainbow_body", "i", CFGFLAG_SERVER, ConGiveRainbowBody, this, "Enables Rainbow body for given id.");
@@ -2697,31 +2695,52 @@ void CGameContext::OnConsoleInit()
 
 }
 
-void CGameContext::ConPrintSnapshotId(IConsole::IResult *pResult, void *pUserData){
+void CGameContext::ConShowLongTermData(IConsole::IResult *pResult, void *pUserData){
+	CGameContext *pSelf = (CGameContext *)pUserData;
+	if (!pSelf || !pResult) {
+		dbg_msg("", "CGameContext::Error in ConShowLongTermData");
+		return;
+	}
+	int playerID(pResult->GetInteger(0));
+	if (playerID >= 0) {
+		pSelf->PrintLongTermData(playerID);
+	} else {
+		for (int i = 0; i < MAX_CLIENTS; ++i)
+		{
+			if (pSelf->m_apPlayers[i])
+			{
+				pSelf->PrintLongTermData(i);
+			}
+		}
+	}
+
+}
+
+void CGameContext::ConPrintSnapshotId(IConsole::IResult *pResult, void *pUserData) {
 	CGameContext *pSelf = (CGameContext *)pUserData;
 	int playerID(pResult->GetInteger(0));
 	PrintSnapShot(pSelf, playerID, 0); // all
 }
 
-void CGameContext::ConPrintSnapshotIdCore(IConsole::IResult *pResult, void *pUserData){
+void CGameContext::ConPrintSnapshotIdCore(IConsole::IResult *pResult, void *pUserData) {
 	CGameContext *pSelf = (CGameContext *)pUserData;
 	int playerID(pResult->GetInteger(0));
 	PrintSnapShot(pSelf, playerID, 1); // core
 }
 
-void CGameContext::ConPrintSnapshotIdInput(IConsole::IResult *pResult, void *pUserData){
+void CGameContext::ConPrintSnapshotIdInput(IConsole::IResult *pResult, void *pUserData) {
 	CGameContext *pSelf = (CGameContext *)pUserData;
 	int playerID(pResult->GetInteger(0));
 	PrintSnapShot(pSelf, playerID, 2); // input
 }
 
-void CGameContext::ConSnapshotId(IConsole::IResult *pResult, void *pUserData){
+void CGameContext::ConSnapshotId(IConsole::IResult *pResult, void *pUserData) {
 	CGameContext *pSelf = (CGameContext *)pUserData;
 	int playerID(pResult->GetInteger(0));
 	int snapshotLenth(pResult->GetInteger(1));
 	if (playerID >= 0 && playerID < MAX_CLIENTS && pSelf->m_apPlayers[playerID])
 	{
-		if(pSelf->m_apPlayers[playerID]->IsSnapshotEnabled()){
+		if (pSelf->m_apPlayers[playerID]->IsSnapshotEnabled()) {
 			char aBuf[128];
 			str_format(aBuf, sizeof(aBuf), "There is already a snapshot being take, please wait until that is done(%d snaps left).", pSelf->m_apPlayers[playerID]->GetSnapsLeft());
 			pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Server", aBuf);
@@ -2735,9 +2754,9 @@ void CGameContext::ConSnapshotId(IConsole::IResult *pResult, void *pUserData){
 	}
 }
 
-void CGameContext::ConShowCurrentFlags(IConsole::IResult *pResult, void *pUserData){
+void CGameContext::ConShowCurrentFlags(IConsole::IResult *pResult, void *pUserData) {
 	CGameContext *pSelf = (CGameContext *)pUserData;
-	if(!pSelf || !pResult){
+	if (!pSelf || !pResult) {
 		dbg_msg("", "CGameContext::Error in ConShowIrregularFlags");
 		return;
 	}
@@ -2748,43 +2767,42 @@ void CGameContext::ConShowCurrentFlags(IConsole::IResult *pResult, void *pUserDa
 }
 
 
-void CGameContext::ConShowAllIrregularFlags(IConsole::IResult *pResult, void *pUserData) {
+void CGameContext::ConShowIrregularFlags(IConsole::IResult *pResult, void *pUserData) {
 	CGameContext *pSelf = (CGameContext *)pUserData;
 	if (!pSelf || !pResult) {
 		dbg_msg("", "CGameContext::Error in ConShowIrregularFlags");
 		return;
 	}
 
-	for (int p = 0; p < MAX_CLIENTS; ++p)
+	int playerID(pResult->GetInteger(0));
+	if (playerID >= 0)
 	{
-		if (pSelf->m_apPlayers[p]) {
-			// id is also checked in the print method
-			pSelf->PrintIrregularFlags(p, false);
+		pSelf->PrintIrregularFlags(playerID, false);
+	} else {
+		bool somethingPrinted = false;
+		for (int p = 0; p < MAX_CLIENTS; ++p)
+		{
+			if (pSelf->m_apPlayers[p]) {
+				// id is also checked in the print method
+				somethingPrinted = somethingPrinted || pSelf->PrintIrregularFlags(p, false);
+			}
+		}
+		if (!somethingPrinted) {
+			pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Server", "No irregular flags found.");
 		}
 	}
 
 }
 
-void CGameContext::ConShowIrregularFlags(IConsole::IResult *pResult, void *pUserData){
+void CGameContext::ConGiveRainbowFeet(IConsole::IResult *pResult, void *pUserData) {
 	CGameContext *pSelf = (CGameContext *)pUserData;
-	if(!pSelf || !pResult){
-		dbg_msg("", "CGameContext::Error in ConShowIrregularFlags");
-		return;
-	}
-
-	int playerID(pResult->GetInteger(0));
-	pSelf->PrintIrregularFlags(playerID, false);
-}
-
-void CGameContext::ConGiveRainbowFeet(IConsole::IResult *pResult, void *pUserData){
-	CGameContext *pSelf = (CGameContext *)pUserData;
-	if(!pSelf || !pResult){
+	if (!pSelf || !pResult) {
 		dbg_msg("", "CGameContext::Error in ConGiveRainbow");
 		return;
 	}
 
 	int playerID(pResult->GetInteger(0));
-	if(playerID >= 0 && playerID < MAX_CLIENTS && pSelf->m_apPlayers[playerID]){
+	if (playerID >= 0 && playerID < MAX_CLIENTS && pSelf->m_apPlayers[playerID]) {
 		pSelf->m_apPlayers[playerID]->m_IsRainbowFeetTee = true;
 	} else {
 		char aBuf[128];
@@ -2794,15 +2812,15 @@ void CGameContext::ConGiveRainbowFeet(IConsole::IResult *pResult, void *pUserDat
 	}
 }
 
-void CGameContext::ConGiveRainbowBody(IConsole::IResult *pResult, void *pUserData){
+void CGameContext::ConGiveRainbowBody(IConsole::IResult *pResult, void *pUserData) {
 	CGameContext *pSelf = (CGameContext *)pUserData;
-	if(!pSelf || !pResult){
+	if (!pSelf || !pResult) {
 		dbg_msg("", "CGameContext::Error in ConGiveRainbow");
 		return;
 	}
 
 	int playerID(pResult->GetInteger(0));
-	if(playerID >= 0 && playerID < MAX_CLIENTS && pSelf->m_apPlayers[playerID]){
+	if (playerID >= 0 && playerID < MAX_CLIENTS && pSelf->m_apPlayers[playerID]) {
 		pSelf->m_apPlayers[playerID]->m_IsRainbowBodyTee = true;
 	} else {
 		char aBuf[128];
@@ -2812,15 +2830,15 @@ void CGameContext::ConGiveRainbowBody(IConsole::IResult *pResult, void *pUserDat
 	}
 }
 
-void CGameContext::ConGiveRainbow(IConsole::IResult *pResult, void *pUserData){
+void CGameContext::ConGiveRainbow(IConsole::IResult *pResult, void *pUserData) {
 	CGameContext *pSelf = (CGameContext *)pUserData;
-	if(!pSelf || !pResult){
+	if (!pSelf || !pResult) {
 		dbg_msg("", "CGameContext::Error in ConGiveRainbow");
 		return;
 	}
 
 	int playerID(pResult->GetInteger(0));
-	if(playerID >= 0 && playerID < MAX_CLIENTS && pSelf->m_apPlayers[playerID]){
+	if (playerID >= 0 && playerID < MAX_CLIENTS && pSelf->m_apPlayers[playerID]) {
 		pSelf->m_apPlayers[playerID]->m_IsRainbowBodyTee = true;
 		pSelf->m_apPlayers[playerID]->m_IsRainbowFeetTee = true;
 	} else {
@@ -2953,7 +2971,7 @@ void CGameContext::ConList(IConsole::IResult *pResult, void *pUserData) {
 
 
 	pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Server", "================================= Player List =================================");
-pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Server", "ID : [SecureConnection][FlagsIrregular][VersionIrregular][Version][Tracked][IP][AdminLevel][Name][Clan]);");
+	pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Server", "ID : [SecureConnection][FlagsIrregular][VersionIrregular][Version][Tracked][IP][AdminLevel][Name][Clan]);");
 	CServer* pCServer = pSelf->GetBanServer()->Server();
 	for (int i = 0; i < MAX_CLIENTS; ++i)
 	{
@@ -2981,14 +2999,14 @@ pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Server", "ID : [Secure
 			str_format(aFlags, sizeof(aFlags), "[%s]", pSelf->m_apPlayers[i]->HasIrregularFlags() ? "I" : "N");
 
 			str_format(aClientVersion, sizeof(aClientVersion), "%s[%6s]",
-				pSelf->m_apPlayers[i]->HasIrregularClientVersion() ? "[I]" : "[N]",
-				CPlayer::ConvertToString(pSelf->m_apPlayers[i]->GetClientVersion()).c_str());
+			           pSelf->m_apPlayers[i]->HasIrregularClientVersion() ? "[I]" : "[N]",
+			           CPlayer::ConvertToString(pSelf->m_apPlayers[i]->GetClientVersion()).c_str());
 
 			str_format(aTracked, sizeof(aTracked), "%s",
-				pSelf->m_apPlayers[i]->GetTeeHistorianTracked() ? "[T]" : "[N]");
+			           pSelf->m_apPlayers[i]->GetTeeHistorianTracked() ? "[T]" : "[N]");
 
 			str_format(aSecureConnection, sizeof(aSecureConnection), "%s",
-				pCServer->m_NetServer.HasSecurityToken(i) ? "[S]" : "[N]");
+			           pCServer->m_NetServer.HasSecurityToken(i) ? "[S]" : "[N]");
 
 			switch (pSelf->Server()->GetAuthLevel(i)) {
 			case CServer::AUTHED_ADMIN:
@@ -3032,12 +3050,12 @@ void CGameContext::ConSaveTeehistorian(IConsole::IResult *pResult, void *pUserDa
 	}
 }
 
-void CGameContext::ConTeehistorianUntrackAllPlayers(IConsole::IResult *pResult, void *pUserData){
+void CGameContext::ConTeehistorianUntrackAllPlayers(IConsole::IResult *pResult, void *pUserData) {
 	CGameContext *pSelf = (CGameContext *)pUserData;
 	int countPlayers = 0;
 	for (int i = 0; i < MAX_CLIENTS; ++i)
 	{
-		if(pSelf->m_apPlayers[i] && pSelf->m_apPlayers[i]->GetTeeHistorianTracked()){
+		if (pSelf->m_apPlayers[i] && pSelf->m_apPlayers[i]->GetTeeHistorianTracked()) {
 			pSelf->m_apPlayers[i]->SetTeeHistorianTracked(false);
 			countPlayers++;
 		}
@@ -3050,12 +3068,12 @@ void CGameContext::ConTeehistorianUntrackAllPlayers(IConsole::IResult *pResult, 
 
 	// Disable tracking if nobody is being tracked anymore and save teehistorian file.
 	if (pSelf->m_TeeHistorian.GetTrackedPlayersCount() == 0) {
-			ConSaveTeehistorian(pResult, pUserData);
+		ConSaveTeehistorian(pResult, pUserData);
 	}
 
 }
 
-void CGameContext::ConTeehistorianUntrackPlayer(IConsole::IResult *pResult, void *pUserData){
+void CGameContext::ConTeehistorianUntrackPlayer(IConsole::IResult *pResult, void *pUserData) {
 	CGameContext *pSelf = (CGameContext *)pUserData;
 	int trackedId(pResult->GetInteger(0));
 
@@ -3098,10 +3116,10 @@ void CGameContext::ConTeehistorianTrackPlayer(IConsole::IResult *pResult, void *
 	CGameContext *pSelf = (CGameContext *)pUserData;
 	int trackedId(pResult->GetInteger(0));
 
-	if(pSelf->m_TeeHistorian.IsPlayerTrackingEnabled()){
+	if (pSelf->m_TeeHistorian.IsPlayerTrackingEnabled()) {
 		char aBuf[128];
 		str_format(aBuf, sizeof(aBuf), "\'%s\' is already being tracked. You can track at most one player. ",
-			pSelf->Server()->ClientName(pSelf->m_TeeHistorian.GetFirstTrackedPlayerId()));
+		           pSelf->Server()->ClientName(pSelf->m_TeeHistorian.GetFirstTrackedPlayerId()));
 		pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "TeeHistorian", aBuf);
 		return;
 	}
@@ -3327,25 +3345,25 @@ return m_apPlayers[ClientID] && m_apPlayers[ClientID]->m_IsAimBot;
 
 /**
 
- * 
+ *
  * @param mode 0 - all, 1 - core, 2 - input
  */
-void CGameContext::PrintSnapShot(CGameContext *pSelf, int playerID, int mode){
+void CGameContext::PrintSnapShot(CGameContext *pSelf, int playerID, int mode) {
 	CPlayer *player = pSelf->m_apPlayers[playerID];
 	int cellWidth = 5;
 
 	bool core = false;
 	bool input = false;
-	switch(mode){
-		case 1:
-			core = true;
-			break;
-		case 2:
-			input = true;
-			break;
-		default:
-			core = true;
-			input = true;
+	switch (mode) {
+	case 1:
+		core = true;
+		break;
+	case 2:
+		input = true;
+		break;
+	default:
+		core = true;
+		input = true;
 	}
 
 	if (playerID >= 0 && playerID < MAX_CLIENTS && player)
@@ -3386,168 +3404,168 @@ void CGameContext::PrintSnapShot(CGameContext *pSelf, int playerID, int mode){
 			// set line header
 			if (core)
 			{
-			Core_X << std::left << std::setw(20) << "Core_X" << std::right;
-			Core_Y << std::left << std::setw(20) << "Core_Y" << std::right;
-			Core_VelX << std::left << std::setw(20) << "Core_VelX" << std::right;
-			Core_VelY << std::left << std::setw(20) << "Core_VelY" << std::right;
-			Core_Angle << std::left << std::setw(20) << "Core_Angle" << std::right;
-			Core_Direction << std::left << std::setw(20) << "Core_Direction" << std::right;
-			Core_Jumped << std::left << std::setw(20) << "Core_Jumped" << std::right;
-			Core_HookedPlayer << std::left << std::setw(20) << "Core_HookedPlayer" << std::right;
-			Core_HookState << std::left << std::setw(20) << "Core_HookState" << std::right;
-			Core_HookTick << std::left << std::setw(20) << "Core_HookTick" << std::right;
-			Core_HookX << std::left << std::setw(20) << "Core_HookX" << std::right;
-			Core_HookY << std::left << std::setw(20) << "Core_HookY" << std::right;
-			Core_HookDx << std::left << std::setw(20) << "Core_HookDx" << std::right;
-			Core_HookDy << std::left << std::setw(20) << "Core_HookDy" << std::right;
+				Core_X << std::left << std::setw(20) << "Core_X" << std::right;
+				Core_Y << std::left << std::setw(20) << "Core_Y" << std::right;
+				Core_VelX << std::left << std::setw(20) << "Core_VelX" << std::right;
+				Core_VelY << std::left << std::setw(20) << "Core_VelY" << std::right;
+				Core_Angle << std::left << std::setw(20) << "Core_Angle" << std::right;
+				Core_Direction << std::left << std::setw(20) << "Core_Direction" << std::right;
+				Core_Jumped << std::left << std::setw(20) << "Core_Jumped" << std::right;
+				Core_HookedPlayer << std::left << std::setw(20) << "Core_HookedPlayer" << std::right;
+				Core_HookState << std::left << std::setw(20) << "Core_HookState" << std::right;
+				Core_HookTick << std::left << std::setw(20) << "Core_HookTick" << std::right;
+				Core_HookX << std::left << std::setw(20) << "Core_HookX" << std::right;
+				Core_HookY << std::left << std::setw(20) << "Core_HookY" << std::right;
+				Core_HookDx << std::left << std::setw(20) << "Core_HookDx" << std::right;
+				Core_HookDy << std::left << std::setw(20) << "Core_HookDy" << std::right;
 			}
 
 			if (input)
 			{
-			Input_Direction << std::left << std::setw(20) << "Input_Direction" << std::right;
-			Input_TargetX << std::left << std::setw(20) << "Input_TargetX" << std::right;
-			Input_TargetY << std::left << std::setw(20) << "Input_TargetY" << std::right;
-			Input_Jump << std::left << std::setw(20) << "Input_Jump" << std::right;
-			Input_Fire << std::left << std::setw(20) << "Input_Fire" << std::right;
-			Input_Hook << std::left << std::setw(20) << "Input_Hook" << std::right;
-			Input_PlayerFlags << std::left << std::setw(20) << "Input_PlayerFlags" << std::right;
-			Input_WantedWeapon << std::left << std::setw(20) << "Input_WantedWeapon" << std::right;
-			Input_NextWeapon << std::left << std::setw(20) << "Input_NextWeapon" << std::right;
-			Input_PrevWeapon << std::left << std::setw(20) << "Input_PrevWeapon" << std::right;
+				Input_Direction << std::left << std::setw(20) << "Input_Direction" << std::right;
+				Input_TargetX << std::left << std::setw(20) << "Input_TargetX" << std::right;
+				Input_TargetY << std::left << std::setw(20) << "Input_TargetY" << std::right;
+				Input_Jump << std::left << std::setw(20) << "Input_Jump" << std::right;
+				Input_Fire << std::left << std::setw(20) << "Input_Fire" << std::right;
+				Input_Hook << std::left << std::setw(20) << "Input_Hook" << std::right;
+				Input_PlayerFlags << std::left << std::setw(20) << "Input_PlayerFlags" << std::right;
+				Input_WantedWeapon << std::left << std::setw(20) << "Input_WantedWeapon" << std::right;
+				Input_NextWeapon << std::left << std::setw(20) << "Input_NextWeapon" << std::right;
+				Input_PrevWeapon << std::left << std::setw(20) << "Input_PrevWeapon" << std::right;
 			}
 			for (size_t i = 0; i < snapOne.size(); ++i)
 			{
 				Tick << std::setw(cellWidth) << snapOne.at(i).m_Tick << " ";
-				if(core)
+				if (core)
 				{
-				Core_X << std::setw(cellWidth) << snapOne.at(i).m_Core_X << " ";
-				Core_Y << std::setw(cellWidth) << snapOne.at(i).m_Core_Y << " ";
-				Core_VelX << std::setw(cellWidth) << snapOne.at(i).m_Core_VelX << " ";
-				Core_VelY << std::setw(cellWidth) << snapOne.at(i).m_Core_VelY << " ";
-				Core_Angle << std::setw(cellWidth) << snapOne.at(i).m_Core_Angle << " ";
-				Core_Direction << std::setw(cellWidth) << snapOne.at(i).m_Core_Direction << " ";
-				Core_Jumped << std::setw(cellWidth) << snapOne.at(i).m_Core_Jumped << " ";
-				Core_HookedPlayer << std::setw(cellWidth) << snapOne.at(i).m_Core_HookedPlayer << " ";
-				Core_HookState << std::setw(cellWidth) << snapOne.at(i).m_Core_HookState << " ";
-				Core_HookTick << std::setw(cellWidth) << snapOne.at(i).m_Core_HookTick << " ";
-				Core_HookX << std::setw(cellWidth) << snapOne.at(i).m_Core_HookX << " ";
-				Core_HookY << std::setw(cellWidth) << snapOne.at(i).m_Core_HookY << " ";
-				Core_HookDx << std::setw(cellWidth) << snapOne.at(i).m_Core_HookDx << " ";
-				Core_HookDy << std::setw(cellWidth) << snapOne.at(i).m_Core_HookDy << " ";
+					Core_X << std::setw(cellWidth) << snapOne.at(i).m_Core_X << " ";
+					Core_Y << std::setw(cellWidth) << snapOne.at(i).m_Core_Y << " ";
+					Core_VelX << std::setw(cellWidth) << snapOne.at(i).m_Core_VelX << " ";
+					Core_VelY << std::setw(cellWidth) << snapOne.at(i).m_Core_VelY << " ";
+					Core_Angle << std::setw(cellWidth) << snapOne.at(i).m_Core_Angle << " ";
+					Core_Direction << std::setw(cellWidth) << snapOne.at(i).m_Core_Direction << " ";
+					Core_Jumped << std::setw(cellWidth) << snapOne.at(i).m_Core_Jumped << " ";
+					Core_HookedPlayer << std::setw(cellWidth) << snapOne.at(i).m_Core_HookedPlayer << " ";
+					Core_HookState << std::setw(cellWidth) << snapOne.at(i).m_Core_HookState << " ";
+					Core_HookTick << std::setw(cellWidth) << snapOne.at(i).m_Core_HookTick << " ";
+					Core_HookX << std::setw(cellWidth) << snapOne.at(i).m_Core_HookX << " ";
+					Core_HookY << std::setw(cellWidth) << snapOne.at(i).m_Core_HookY << " ";
+					Core_HookDx << std::setw(cellWidth) << snapOne.at(i).m_Core_HookDx << " ";
+					Core_HookDy << std::setw(cellWidth) << snapOne.at(i).m_Core_HookDy << " ";
 				}
 
-				if(input){
-				Input_Direction << std::setw(cellWidth) << snapOne.at(i).m_Input_Direction << " ";
-				Input_TargetX << std::setw(cellWidth) << snapOne.at(i).m_Input_TargetX << " ";
-				Input_TargetY << std::setw(cellWidth) << snapOne.at(i).m_Input_TargetY << " ";
-				Input_Jump << std::setw(cellWidth) << snapOne.at(i).m_Input_Jump << " ";
-				Input_Fire << std::setw(cellWidth) << snapOne.at(i).m_Input_Fire << " ";
-				Input_Hook << std::setw(cellWidth) << snapOne.at(i).m_Input_Hook << " ";
-				Input_PlayerFlags << std::setw(cellWidth) << snapOne.at(i).m_Input_PlayerFlags << " ";
-				Input_WantedWeapon << std::setw(cellWidth) << snapOne.at(i).m_Input_WantedWeapon << " ";
-				Input_NextWeapon << std::setw(cellWidth) << snapOne.at(i).m_Input_NextWeapon << " ";
-				Input_PrevWeapon << std::setw(cellWidth) << snapOne.at(i).m_Input_PrevWeapon << " ";
+				if (input) {
+					Input_Direction << std::setw(cellWidth) << snapOne.at(i).m_Input_Direction << " ";
+					Input_TargetX << std::setw(cellWidth) << snapOne.at(i).m_Input_TargetX << " ";
+					Input_TargetY << std::setw(cellWidth) << snapOne.at(i).m_Input_TargetY << " ";
+					Input_Jump << std::setw(cellWidth) << snapOne.at(i).m_Input_Jump << " ";
+					Input_Fire << std::setw(cellWidth) << snapOne.at(i).m_Input_Fire << " ";
+					Input_Hook << std::setw(cellWidth) << snapOne.at(i).m_Input_Hook << " ";
+					Input_PlayerFlags << std::setw(cellWidth) << snapOne.at(i).m_Input_PlayerFlags << " ";
+					Input_WantedWeapon << std::setw(cellWidth) << snapOne.at(i).m_Input_WantedWeapon << " ";
+					Input_NextWeapon << std::setw(cellWidth) << snapOne.at(i).m_Input_NextWeapon << " ";
+					Input_PrevWeapon << std::setw(cellWidth) << snapOne.at(i).m_Input_PrevWeapon << " ";
 				}
 			}
 
 			Tick << " | ";
-			if(core)
+			if (core)
 			{
-			Core_X << " | ";
-			Core_Y << " | ";
-			Core_VelX << " | ";
-			Core_VelY << " | ";
-			Core_Angle << " | ";
-			Core_Direction << " | ";
-			Core_Jumped << " | ";
-			Core_HookedPlayer << " | ";
-			Core_HookState << " | ";
-			Core_HookTick << " | ";
-			Core_HookX << " | ";
-			Core_HookY << " | ";
-			Core_HookDx << " | ";
-			Core_HookDy << " | ";
+				Core_X << " | ";
+				Core_Y << " | ";
+				Core_VelX << " | ";
+				Core_VelY << " | ";
+				Core_Angle << " | ";
+				Core_Direction << " | ";
+				Core_Jumped << " | ";
+				Core_HookedPlayer << " | ";
+				Core_HookState << " | ";
+				Core_HookTick << " | ";
+				Core_HookX << " | ";
+				Core_HookY << " | ";
+				Core_HookDx << " | ";
+				Core_HookDy << " | ";
 			}
-			if(input)
+			if (input)
 			{
-			Input_Direction << " | ";
-			Input_TargetX << " | ";
-			Input_TargetY << " | ";
-			Input_Jump << " | ";
-			Input_Fire << " | ";
-			Input_Hook << " | ";
-			Input_PlayerFlags << " | ";
-			Input_WantedWeapon << " | ";
-			Input_NextWeapon << " | ";
-			Input_PrevWeapon << " | ";
+				Input_Direction << " | ";
+				Input_TargetX << " | ";
+				Input_TargetY << " | ";
+				Input_Jump << " | ";
+				Input_Fire << " | ";
+				Input_Hook << " | ";
+				Input_PlayerFlags << " | ";
+				Input_WantedWeapon << " | ";
+				Input_NextWeapon << " | ";
+				Input_PrevWeapon << " | ";
 			}
 			for (size_t i = 0; i < snapTwo.size(); ++i)
 			{
 				Tick << std::setw(cellWidth) << snapTwo.at(i).m_Tick << " ";
-				if(core)
+				if (core)
 				{
-				Core_X << std::setw(cellWidth) << snapTwo.at(i).m_Core_X << " ";
-				Core_Y << std::setw(cellWidth) << snapTwo.at(i).m_Core_Y << " ";
-				Core_VelX << std::setw(cellWidth) << snapTwo.at(i).m_Core_VelX << " ";
-				Core_VelY << std::setw(cellWidth) << snapTwo.at(i).m_Core_VelY << " ";
-				Core_Angle << std::setw(cellWidth) << snapTwo.at(i).m_Core_Angle << " ";
-				Core_Direction << std::setw(cellWidth) << snapTwo.at(i).m_Core_Direction << " ";
-				Core_Jumped << std::setw(cellWidth) << snapTwo.at(i).m_Core_Jumped << " ";
-				Core_HookedPlayer << std::setw(cellWidth) << snapTwo.at(i).m_Core_HookedPlayer << " ";
-				Core_HookState << std::setw(cellWidth) << snapTwo.at(i).m_Core_HookState << " ";
-				Core_HookTick << std::setw(cellWidth) << snapTwo.at(i).m_Core_HookTick << " ";
-				Core_HookX << std::setw(cellWidth) << snapTwo.at(i).m_Core_HookX << " ";
-				Core_HookY << std::setw(cellWidth) << snapTwo.at(i).m_Core_HookY << " ";
-				Core_HookDx << std::setw(cellWidth) << snapTwo.at(i).m_Core_HookDx << " ";
-				Core_HookDy << std::setw(cellWidth) << snapTwo.at(i).m_Core_HookDy << " ";
+					Core_X << std::setw(cellWidth) << snapTwo.at(i).m_Core_X << " ";
+					Core_Y << std::setw(cellWidth) << snapTwo.at(i).m_Core_Y << " ";
+					Core_VelX << std::setw(cellWidth) << snapTwo.at(i).m_Core_VelX << " ";
+					Core_VelY << std::setw(cellWidth) << snapTwo.at(i).m_Core_VelY << " ";
+					Core_Angle << std::setw(cellWidth) << snapTwo.at(i).m_Core_Angle << " ";
+					Core_Direction << std::setw(cellWidth) << snapTwo.at(i).m_Core_Direction << " ";
+					Core_Jumped << std::setw(cellWidth) << snapTwo.at(i).m_Core_Jumped << " ";
+					Core_HookedPlayer << std::setw(cellWidth) << snapTwo.at(i).m_Core_HookedPlayer << " ";
+					Core_HookState << std::setw(cellWidth) << snapTwo.at(i).m_Core_HookState << " ";
+					Core_HookTick << std::setw(cellWidth) << snapTwo.at(i).m_Core_HookTick << " ";
+					Core_HookX << std::setw(cellWidth) << snapTwo.at(i).m_Core_HookX << " ";
+					Core_HookY << std::setw(cellWidth) << snapTwo.at(i).m_Core_HookY << " ";
+					Core_HookDx << std::setw(cellWidth) << snapTwo.at(i).m_Core_HookDx << " ";
+					Core_HookDy << std::setw(cellWidth) << snapTwo.at(i).m_Core_HookDy << " ";
 				}
 
-				if(input)
+				if (input)
 				{
-				Input_Direction << std::setw(cellWidth) << snapTwo.at(i).m_Input_Direction << " ";
-				Input_TargetX << std::setw(cellWidth) << snapTwo.at(i).m_Input_TargetX << " ";
-				Input_TargetY << std::setw(cellWidth) << snapTwo.at(i).m_Input_TargetY << " ";
-				Input_Jump << std::setw(cellWidth) << snapTwo.at(i).m_Input_Jump << " ";
-				Input_Fire << std::setw(cellWidth) << snapTwo.at(i).m_Input_Fire << " ";
-				Input_Hook << std::setw(cellWidth) << snapTwo.at(i).m_Input_Hook << " ";
-				Input_PlayerFlags << std::setw(cellWidth) << snapTwo.at(i).m_Input_PlayerFlags << " ";
-				Input_WantedWeapon << std::setw(cellWidth) << snapTwo.at(i).m_Input_WantedWeapon << " ";
-				Input_NextWeapon << std::setw(cellWidth) << snapTwo.at(i).m_Input_NextWeapon << " ";
-				Input_PrevWeapon << std::setw(cellWidth) << snapTwo.at(i).m_Input_PrevWeapon << " ";
+					Input_Direction << std::setw(cellWidth) << snapTwo.at(i).m_Input_Direction << " ";
+					Input_TargetX << std::setw(cellWidth) << snapTwo.at(i).m_Input_TargetX << " ";
+					Input_TargetY << std::setw(cellWidth) << snapTwo.at(i).m_Input_TargetY << " ";
+					Input_Jump << std::setw(cellWidth) << snapTwo.at(i).m_Input_Jump << " ";
+					Input_Fire << std::setw(cellWidth) << snapTwo.at(i).m_Input_Fire << " ";
+					Input_Hook << std::setw(cellWidth) << snapTwo.at(i).m_Input_Hook << " ";
+					Input_PlayerFlags << std::setw(cellWidth) << snapTwo.at(i).m_Input_PlayerFlags << " ";
+					Input_WantedWeapon << std::setw(cellWidth) << snapTwo.at(i).m_Input_WantedWeapon << " ";
+					Input_NextWeapon << std::setw(cellWidth) << snapTwo.at(i).m_Input_NextWeapon << " ";
+					Input_PrevWeapon << std::setw(cellWidth) << snapTwo.at(i).m_Input_PrevWeapon << " ";
 				}
 			}
 
 			pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Snapshot", Tick.str().c_str());
-			if(core)
+			if (core)
 			{
-			pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Snapshot", Core_Y.str().c_str());
-			pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Snapshot", Core_Y.str().c_str());
-			pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Snapshot", Core_VelX.str().c_str());
-			pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Snapshot", Core_VelY.str().c_str());
-			pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Snapshot", Core_Angle.str().c_str());
-			pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Snapshot", Core_Direction.str().c_str());
-			pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Snapshot", Core_Jumped.str().c_str());
-			pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Snapshot", Core_HookedPlayer.str().c_str());
-			pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Snapshot", Core_HookState.str().c_str());
-			pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Snapshot", Core_HookTick.str().c_str());
-			pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Snapshot", Core_HookX.str().c_str());
-			pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Snapshot", Core_HookY.str().c_str());
-			pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Snapshot", Core_HookDx.str().c_str());
-			pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Snapshot", Core_HookDy.str().c_str());
+				pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Snapshot", Core_Y.str().c_str());
+				pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Snapshot", Core_Y.str().c_str());
+				pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Snapshot", Core_VelX.str().c_str());
+				pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Snapshot", Core_VelY.str().c_str());
+				pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Snapshot", Core_Angle.str().c_str());
+				pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Snapshot", Core_Direction.str().c_str());
+				pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Snapshot", Core_Jumped.str().c_str());
+				pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Snapshot", Core_HookedPlayer.str().c_str());
+				pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Snapshot", Core_HookState.str().c_str());
+				pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Snapshot", Core_HookTick.str().c_str());
+				pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Snapshot", Core_HookX.str().c_str());
+				pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Snapshot", Core_HookY.str().c_str());
+				pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Snapshot", Core_HookDx.str().c_str());
+				pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Snapshot", Core_HookDy.str().c_str());
 			}
 
-			if(input)
+			if (input)
 			{
-			pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Snapshot", Input_Direction.str().c_str());
-			pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Snapshot", Input_TargetX.str().c_str());
-			pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Snapshot", Input_TargetY.str().c_str());
-			pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Snapshot", Input_Jump.str().c_str());
-			pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Snapshot", Input_Fire.str().c_str());
-			pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Snapshot", Input_Hook.str().c_str());
-			pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Snapshot", Input_PlayerFlags.str().c_str());
-			pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Snapshot", Input_WantedWeapon.str().c_str());
-			pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Snapshot", Input_NextWeapon.str().c_str());
-			pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Snapshot", Input_PrevWeapon.str().c_str());
+				pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Snapshot", Input_Direction.str().c_str());
+				pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Snapshot", Input_TargetX.str().c_str());
+				pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Snapshot", Input_TargetY.str().c_str());
+				pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Snapshot", Input_Jump.str().c_str());
+				pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Snapshot", Input_Fire.str().c_str());
+				pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Snapshot", Input_Hook.str().c_str());
+				pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Snapshot", Input_PlayerFlags.str().c_str());
+				pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Snapshot", Input_WantedWeapon.str().c_str());
+				pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Snapshot", Input_NextWeapon.str().c_str());
+				pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Snapshot", Input_PrevWeapon.str().c_str());
 			}
 
 		} else {
@@ -3562,13 +3580,13 @@ void CGameContext::PrintSnapShot(CGameContext *pSelf, int playerID, int mode){
 	}
 }
 
-void CGameContext::PrintIrregularFlags(int ClientID, bool currentFlags){
-	if(ClientID >= 0 && ClientID < MAX_CLIENTS && m_apPlayers[ClientID]){
+bool CGameContext::PrintIrregularFlags(int ClientID, bool currentFlags) {
+	if (ClientID >= 0 && ClientID < MAX_CLIENTS && m_apPlayers[ClientID]) {
 		std::vector<int> v;
-		if(!currentFlags){
+		if (!currentFlags) {
 			v = m_apPlayers[ClientID]->GetIrregularFlags();
 		} else {
-			v ={m_apPlayers[ClientID]->m_PlayerFlags};
+			v = {m_apPlayers[ClientID]->m_PlayerFlags};
 		}
 
 		char aBuf[128];
@@ -3577,12 +3595,12 @@ void CGameContext::PrintIrregularFlags(int ClientID, bool currentFlags){
 			// don't print, because it is quite spammy.
 			//str_format(aBuf, sizeof(aBuf), "Player '%s' has no %s flags.", Server()->ClientName(ClientID), currentFlags ? "current" : "irregular");
 			//Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Server", aBuf);
-			return;
+			return false;
 		}
 		str_format(aBuf, sizeof(aBuf), "Showing %s flags of player '%s'. Client version %s",
-			currentFlags ? "current" : "irregular ",
-			Server()->ClientName(ClientID),
-			CPlayer::ConvertToString(m_apPlayers[ClientID]->GetClientVersion()).c_str());
+		           currentFlags ? "current" : "irregular ",
+		           Server()->ClientName(ClientID),
+		           CPlayer::ConvertToString(m_apPlayers[ClientID]->GetClientVersion()).c_str());
 
 		Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Server", aBuf);
 
@@ -3592,7 +3610,7 @@ void CGameContext::PrintIrregularFlags(int ClientID, bool currentFlags){
 			// show bit mask instead of integer
 			std::stringstream s;
 
-			for(size_t j = 0; j < currentFlagMask.size(); ++j){
+			for (size_t j = 0; j < currentFlagMask.size(); ++j) {
 				s << currentFlagMask.test(j);
 			}
 
@@ -3604,13 +3622,32 @@ void CGameContext::PrintIrregularFlags(int ClientID, bool currentFlags){
 			str_format(aBuf, sizeof(aBuf), "%s Value: %d", result.c_str(), v.at(i));
 			Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Server", aBuf);
 		}
+		return true;
 
 	} else {
 		char aBuf[128];
 		str_format(aBuf, sizeof(aBuf), "Invalid id given.");
 		Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Server", aBuf);
+		return false;
 	}
 }
+
+void CGameContext::PrintLongTermData(int ClientID) {
+	if (ClientID >= 0 && ClientID < MAX_CLIENTS && m_apPlayers[ClientID]) {
+		char aBuf[64];
+		std::stringstream s;
+		// header
+		str_format(aBuf, sizeof(aBuf), "Showing long term data of player '%s'.", Server()->ClientName(ClientID));
+		Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Long_Term_Data", aBuf);
+		// line
+		s << "Biggest Cursor Distance: " << m_apPlayers[ClientID]->GetBiggestCursorDistanceFromTee();
+		// print line
+		Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Long_Term_Data", s.str().c_str());
+	} else {
+		Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Server", "Invalid id given.");
+	}
+}
+
 
 void CGameContext::CGameContext::RetrieveNicknameBanListFromFile() {
 	// exec the file
@@ -3677,9 +3714,9 @@ void CGameContext::SaveNicknameBanListToFile() {
 		}
 		io_close(File);
 	} else {
-			str_format(aBuf, sizeof(aBuf), "failed to open '%s'", g_Config.m_SvNickBanFile);
-			m_pConsole->Print(IConsole::OUTPUT_LEVEL_STANDARD, "BannedNicks", aBuf);
-		}
+		str_format(aBuf, sizeof(aBuf), "failed to open '%s'", g_Config.m_SvNickBanFile);
+		m_pConsole->Print(IConsole::OUTPUT_LEVEL_STANDARD, "BannedNicks", aBuf);
+	}
 }
 
 void CGameContext::AddToNicknameBanList(int ID) {
@@ -3806,12 +3843,12 @@ const char *CGameContext::NetVersion() { return GAME_NETVERSION; }
 
 IGameServer *CreateGameServer() { return new CGameContext; }
 
-void CGameContext::BanIf(bool Condition, int ID, int TimeMinutes, std::string Reason){
-if(0 <= ID && ID <= MAX_CLIENTS && m_apPlayers[ID]){
-	if(Condition){
-		GetBanServer()->BanAddr(GetBanServer()->Server()->m_NetServer.ClientAddr(ID) , TimeMinutes * 60 , Reason.c_str());
+void CGameContext::BanIf(bool Condition, int ID, int TimeMinutes, std::string Reason) {
+	if (0 <= ID && ID <= MAX_CLIENTS && m_apPlayers[ID]) {
+		if (Condition) {
+			GetBanServer()->BanAddr(GetBanServer()->Server()->m_NetServer.ClientAddr(ID) , TimeMinutes * 60 , Reason.c_str());
+		}
 	}
-}
 
 }
 

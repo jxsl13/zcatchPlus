@@ -9,7 +9,6 @@
 #include <versionsrv/mapversions.h>
 
 #include "datafile.h"
-#include "memheap.h"
 #include "mapchecker.h"
 
 CMapChecker::CMapChecker()

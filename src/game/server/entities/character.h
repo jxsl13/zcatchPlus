@@ -9,6 +9,13 @@
 
 #include <game/gamecore.h>
 
+//input count
+struct CInputCount
+{
+	int m_Presses;
+	int m_Releases;
+};
+
 enum
 {
 	WEAPON_GAME = -3, // team switching etc

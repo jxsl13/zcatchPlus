@@ -21,7 +21,7 @@ class CGameController_zCatch: public IGameController
 	int m_PlayersPlaying{0};
 	int m_PlayersNotCaught{0};
 	int m_PlayersCaughtSpectating{0};
-	int m_PlayerIdWithMostCaughtPlayers{-1};
+	int m_PlayerIdWithMostCaughtPlayers{ -1};
 	int m_PlayerMostCaughtPlayers{0};
 
 
@@ -73,7 +73,7 @@ public:
 	/**
 	 * @brief gives rainbow to a person that is not the victim
 	 * @details [long description]
-	 * 
+	 *
 	 * @param VictimID set this to -1 to choose between everyone.
 	 * @param condition [description]
 	 */

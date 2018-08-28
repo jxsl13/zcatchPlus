@@ -13,7 +13,7 @@
 #include <future>
 
 // Global stuff
-int m_OldGameMode;
+static int m_OldGameMode;
 
 CGameController_zCatch::CGameController_zCatch(class CGameContext *pGameServer) :
 	IGameController(pGameServer)
@@ -43,11 +43,15 @@ CGameController_zCatch::~CGameController_zCatch() {
 void CGameController_zCatch::CheckGameConfigStatus() {
 	// every 5 seconds check if >= half of the players needed to finish a round are playing
 	// if noboody has a rainbow, give someone a rainbow.
-	if(g_Config.m_SvAllowRainbow && g_Config.m_SvLastStandingDeathmatch && Server()->Tick() % (Server()->TickSpeed() * 5) == 0){
-		if (m_PlayersPlaying >= static_cast<int>(g_Config.m_SvLastStandingPlayers / 2)){
+	if (g_Config.m_SvAllowRainbow && g_Config.m_SvLastStandingDeathmatch && Server()->Tick() % (Server()->TickSpeed() * 5) == 0) {
+		if (m_PlayersPlaying >= static_cast<int>(g_Config.m_SvLastStandingPlayers / 2)) {
 			// -1 meaning that everyone can get the rainbow, otherwise the ID passed would not
 			// be part of the possible players to get the rainbow.
 			GiveRainbowToRandomPlayer(-1, !m_SomoneHasRainbow);
+		} else if (!g_Config.m_SvLastStandingDeathmatch)
+		{
+			g_Config.m_SvAllowRainbow = 0;
+			GameServer()->SendChatTarget(-1, "Could not enable the rainbow, because the Release Game is not being played.");
 		}
 	}
 	// we are not resetting any given rainbows othersise!
@@ -61,14 +65,14 @@ void CGameController_zCatch::CheckGameConfigStatus() {
 
 			// if this condition is not met,
 			// reset everything back to before the rls game
-			if(static_cast<double>(m_PlayerMostCaughtPlayers) > m_PlayersPlaying * 0.45)
+			if (static_cast<double>(m_PlayerMostCaughtPlayers) > m_PlayersPlaying * 0.45)
 			{
 				char aBuf[64];
 				str_format(aBuf, 64, "Could not enable the Release Game");
 				GameServer()->SendChatTarget(-1, aBuf);
 
 				str_format(aBuf, 64, "%s is dominating with %d caught players!",
-					GameServer()->Server()->ClientName(m_PlayerIdWithMostCaughtPlayers), m_PlayerMostCaughtPlayers);
+				           GameServer()->Server()->ClientName(m_PlayerIdWithMostCaughtPlayers), m_PlayerMostCaughtPlayers);
 				GameServer()->SendChatTarget(-1, aBuf);
 
 				// reset global rls game config.
@@ -90,11 +94,11 @@ void CGameController_zCatch::CheckGameConfigStatus() {
 				}
 			}
 
-		// rls game was disabled
+			// rls game was disabled
 		} else if (g_Config.m_SvLastStandingDeathmatch == 0) {
 			m_OldSvReleaseGame = g_Config.m_SvLastStandingDeathmatch;
 
-			if(g_Config.m_SvAllowJoin != m_OldAllowJoin){
+			if (g_Config.m_SvAllowJoin != m_OldAllowJoin) {
 				g_Config.m_SvAllowJoin = m_OldAllowJoin;
 			}
 		}
@@ -180,7 +184,7 @@ void CGameController_zCatch::Tick()
 
 // Also checks if last standing player deathmatch is played before player treshhold is reached
 void CGameController_zCatch::DoWincheck()
-{	
+{
 	// if game is running
 	if (m_GameOverTick == -1)
 	{
@@ -204,7 +208,7 @@ void CGameController_zCatch::DoWincheck()
 				Players++;
 
 				// count players in spec, explicidly in spec and in spec because they were caught
-				if (GameServer()->m_apPlayers[i]->GetTeam() == TEAM_SPECTATORS){
+				if (GameServer()->m_apPlayers[i]->GetTeam() == TEAM_SPECTATORS) {
 
 					// if people ae playing the rainbow rls game and someone joins spec
 					// then remove his rainbow and give it to someone else.
@@ -223,8 +227,8 @@ void CGameController_zCatch::DoWincheck()
 					winner = GameServer()->m_apPlayers[i];
 
 					// update dominating player if he has at least one enemy caught
-					if(GameServer()->m_apPlayers[i]->m_zCatchNumVictims > 0
-						&& GameServer()->m_apPlayers[i]->m_zCatchNumVictims > currentlyMaxCaughtPlayers)
+					if (GameServer()->m_apPlayers[i]->m_zCatchNumVictims > 0
+					        && GameServer()->m_apPlayers[i]->m_zCatchNumVictims > currentlyMaxCaughtPlayers)
 					{
 						currentlyMaxCaughtPlayers = GameServer()->m_apPlayers[i]->m_zCatchNumVictims;
 						playerIdWithMostCaughtPlayers = i;
@@ -232,7 +236,7 @@ void CGameController_zCatch::DoWincheck()
 
 
 					// rainbow stuff
-					if(GameServer()->m_apPlayers[i]->IsRainbowTee()){
+					if (GameServer()->m_apPlayers[i]->IsRainbowTee()) {
 						rainbowCount++;
 					}
 
@@ -350,8 +354,8 @@ int CGameController_zCatch::OnCharacterDeath(class CCharacter *pVictim, class CP
 	// rainbow is removed if the player is killed after the rls game end.
 	// do not change this, because it seems funny that players could end a round
 	// while having the rainbow after the rls game.
-	if(victimHadRainbow){
-		 victim->ResetRainbowTee();
+	if (victimHadRainbow) {
+		victim->ResetRainbowTee();
 	}
 
 	if (pKiller != victim)
@@ -405,10 +409,10 @@ int CGameController_zCatch::OnCharacterDeath(class CCharacter *pVictim, class CP
 			// m_SomeoneHasRainbow is also no needed here, because it has not been updated yet.
 			// the person has been killed by a non player entity
 			// and he had the rainbow property, give a random person that rainbow
-				GiveRainbowToRandomPlayer(victim->GetCID(), 
-					g_Config.m_SvAllowRainbow && g_Config.m_SvLastStandingDeathmatch && victimHadRainbow, // condition
-					victimHadRainbowBody, // whether victim had rainbow body
-					victimHadRainbowFeet); // whether victim had rainbow feet.
+			GiveRainbowToRandomPlayer(victim->GetCID(),
+			                          g_Config.m_SvAllowRainbow && g_Config.m_SvLastStandingDeathmatch && victimHadRainbow, // condition
+			                          victimHadRainbowBody, // whether victim had rainbow body
+			                          victimHadRainbowFeet); // whether victim had rainbow feet.
 		}
 	}
 
@@ -443,7 +447,7 @@ int CGameController_zCatch::OnCharacterDeath(class CCharacter *pVictim, class CP
 
 void CGameController_zCatch::GiveRainbowToRandomPlayer(int VictimID, bool condition, bool body, bool feet) {
 // give RAINBOW to a random player that is ingame
-	if(VictimID < -1 || VictimID >= MAX_CLIENTS){
+	if (VictimID < -1 || VictimID >= MAX_CLIENTS) {
 		dbg_msg("ERROR", "Error in CGameController_zCatch::GiveRainbowToRandomPlayer occurred, ID is invalid.");
 		return;
 	}
@@ -453,7 +457,7 @@ void CGameController_zCatch::GiveRainbowToRandomPlayer(int VictimID, bool condit
 
 		for (int i = 0; i < MAX_CLIENTS; i++)
 		{
-			if(VictimID == i){
+			if (VictimID == i) {
 				continue;
 			}
 			if (GameServer()->m_apPlayers[i] && GameServer()->m_apPlayers[i]->GetTeam() != TEAM_SPECTATORS)
@@ -483,7 +487,7 @@ void CGameController_zCatch::GiveRainbowToRandomPlayer(int VictimID, bool condit
 
 void CGameController_zCatch::OnPlayerInfoChange(class CPlayer *pP)
 {
-	if(!g_Config.m_SvColorIndicator){
+	if (!g_Config.m_SvColorIndicator) {
 		return;
 	}
 
@@ -963,7 +967,7 @@ void CGameController_zCatch::OnChatCommandTop(CPlayer *pPlayer, const char *cate
 	else if (!str_comp_nocase("time", category))
 	{
 		column = "timePlayed";
-	} else if(!str_comp_nocase("kd", category)){
+	} else if (!str_comp_nocase("kd", category)) {
 		column = "kd";
 		isCalculatedViewData = true;
 	}
@@ -972,12 +976,12 @@ void CGameController_zCatch::OnChatCommandTop(CPlayer *pPlayer, const char *cate
 		GameServer()->SendChatTarget(pPlayer->GetCID(), "Usage: /top [score|wins|kills|wallshotkills|deaths|shots|spree|time|kd]");
 		return;
 	}
-	if(!isCalculatedViewData){
+	if (!isCalculatedViewData) {
 		GameServer()->AddFuture(std::async(std::launch::async, &CGameController_zCatch::ChatCommandTopFetchDataAndPrint, GameServer(), pPlayer->GetCID(), column));
 	} else {
 		GameServer()->AddFuture(std::async(std::launch::async, &CGameController_zCatch::ChatCommandTopFetchDataFromViewAndPrint, GameServer(), pPlayer->GetCID(), column));
 	}
-	
+
 }
 
 /* get the top players */
@@ -1010,7 +1014,7 @@ void CGameController_zCatch::ChatCommandTopFetchDataAndPrint(CGameContext* GameS
 				const unsigned char* name = sqlite3_column_text(pStmt, 0);
 				int value = sqlite3_column_int(pStmt, 1);
 				// don't show in top if no score available.
-				if(value == 0){
+				if (value == 0) {
 					continue;
 				}
 				char aBuf[64], bBuf[32];
@@ -1082,7 +1086,7 @@ void CGameController_zCatch::ChatCommandTopFetchDataFromViewAndPrint(CGameContex
 				const unsigned char* name = sqlite3_column_text(pStmt, 0);
 				int value = sqlite3_column_int(pStmt, 1);
 				// don't show in top if no score available.
-				if(value == 0){
+				if (value == 0) {
 					continue;
 				}
 				char aBuf[64], bBuf[32];
@@ -1227,7 +1231,7 @@ void CGameController_zCatch::ChatCommandRankFetchDataAndPrint(CGameContext* Game
 				} else {
 					str_format(aBuf, sizeof(aBuf), "'%s' has no rank", name);
 				}
-				
+
 				GameServer->SendChatTarget(clientId, aBuf);
 			}
 
@@ -1272,7 +1276,7 @@ void CGameController_zCatch::ChatCommandRankFetchDataAndPrint(CGameContext* Game
 void CGameController_zCatch::FormatRankingColumn(const char* column, char buf[32], int value)
 {
 	size_t size = 32;
-	if (!str_comp_nocase("score", column)){
+	if (!str_comp_nocase("score", column)) {
 		str_format(buf, size, "%.2f", value / 100.0);
 	}
 	else if (!str_comp_nocase("timePlayed", column))
@@ -1294,18 +1298,18 @@ void CGameController_zCatch::FormatRankingColumn(const char* column, char buf[32
 void CGameController_zCatch::ToggleLastStandingDeathmatchAndRelease(int Players_Ingame, int caughtPlayers) {
 
 	// if rls game is enabled
-	if(g_Config.m_SvLastStandingDeathmatch){
-		// 
-		if(Players_Ingame >= g_Config.m_SvLastStandingPlayers && m_OldPlayersIngame < g_Config.m_SvLastStandingPlayers){
+	if (g_Config.m_SvLastStandingDeathmatch) {
+		//
+		if (Players_Ingame >= g_Config.m_SvLastStandingPlayers && m_OldPlayersIngame < g_Config.m_SvLastStandingPlayers) {
 			GameServer()->SendBroadcast("Enough players to end the round. Let the fun begin!", -1);
 			GameServer()->SendChatTarget(-1, "Release Game was disabled.");
-			// disable release game 
+			// disable release game
 			g_Config.m_SvLastStandingDeathmatch = 0;
 		}
-	} 
+	}
 	m_OldPlayersIngame = Players_Ingame;
 
-	
+
 }
 
 

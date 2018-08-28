@@ -75,10 +75,10 @@ void CTeeHistorian::CheckHistorianModeToggled() {
 	}
 
 	// Reset all changes to tracking if tracking is enabled.
-	if(GetTrackedPlayersCount() > 0){
+	if (GetTrackedPlayersCount() > 0) {
 		// get mode based on global config
 		RetrieveMode(false);
-		if(GetMode() != MODE_TEE_HISTORIAN){
+		if (GetMode() != MODE_TEE_HISTORIAN) {
 			ForceGlobalMode(MODE_TEE_HISTORIAN);
 		}
 	}
@@ -169,11 +169,11 @@ void CTeeHistorian::OnInit(IStorage *pStorage, IServer *pServer, IGameController
 		} else if (GetMode() == MODE_TEE_HISTORIAN) {
 
 			if (IsPlayerTrackingEnabled())
-				{
-					str_format(aFilename, sizeof(aFilename), "teehistorian/%s-ID-%02d.teehistorian", aGameUuid, GetFirstTrackedPlayerId());
-				} else {
-					str_format(aFilename, sizeof(aFilename), "teehistorian/%s.teehistorian", aGameUuid);
-				}
+			{
+				str_format(aFilename, sizeof(aFilename), "teehistorian/%s-ID-%02d.teehistorian", aGameUuid, GetFirstTrackedPlayerId());
+			} else {
+				str_format(aFilename, sizeof(aFilename), "teehistorian/%s.teehistorian", aGameUuid);
+			}
 
 			IOHANDLE File = m_pStorage->OpenFile(aFilename, IOFLAG_WRITE, IStorage::TYPE_SAVE);
 			if (!File)
