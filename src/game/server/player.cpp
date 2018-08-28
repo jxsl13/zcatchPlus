@@ -980,5 +980,5 @@ bool CPlayer::IsBot() {
 
 
 bool CPlayer::IsZoom(){
-	return m_ZoomIndicatorCounter >= 5;
+	return m_ZoomIndicatorCounter >= 13;
 }
