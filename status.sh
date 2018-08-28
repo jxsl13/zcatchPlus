@@ -8,7 +8,7 @@ RESULT=$(tail -n 20 logfile.log | grep "\[I\]")
 
 #if result contains characters and not whitespace
 if [[ $RESULT = *[!\ ]* ]]; then
-        echo "show_irregular_flags_all" > fifofile
+        echo "show_irregular_flags -1" > fifofile
         sleep .01
 fi
-tail -34 logfile.log
+tail -48 logfile.log

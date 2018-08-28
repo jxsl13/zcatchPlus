@@ -2,7 +2,7 @@
 
 exec 3<> fifofile
 
-if [[ -p fifofile ]]; then 
+if [[ -p fifofile ]]; then
 echo "say Server Restart due to Update" > fifofile
 sleep 1
 
@@ -22,10 +22,12 @@ echo "say 1" > fifofile
 sleep 1
 
 echo "shutdown" > fifofile
+sleep 0.1
 fi
 
-if [ $(which byobu) ]; then 
+if [ $(which byobu) ]; then
 byobu kill-session -t "zcatch"
+sleep 0.2
 byobu new-session -d -s "zcatch" "./start.sh"
 else
 echo "Byobu does not exist - please install byobu"
