@@ -48,12 +48,12 @@ void CGameController_zCatch::CheckGameConfigStatus() {
 			// -1 meaning that everyone can get the rainbow, otherwise the ID passed would not
 			// be part of the possible players to get the rainbow.
 			GiveRainbowToRandomPlayer(-1, !m_SomoneHasRainbow);
-		} else if (!g_Config.m_SvLastStandingDeathmatch)
+		}
+	} else if (g_Config.m_SvAllowRainbow && !g_Config.m_SvLastStandingDeathmatch)
 		{
 			g_Config.m_SvAllowRainbow = 0;
 			GameServer()->SendChatTarget(-1, "Could not enable the rainbow, because the Release Game is not being played.");
 		}
-	}
 	// we are not resetting any given rainbows othersise!
 
 
