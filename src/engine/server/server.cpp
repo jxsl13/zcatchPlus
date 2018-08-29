@@ -863,7 +863,6 @@ int CServer::DelClientCallback(int ClientID, const char *pReason, void *pUser)
 	/*teehistorian*/
 	pThis->GameServer()->OnClientEngineDrop(ClientID, pReason);
 	/*sqlitehistorian*/
-	pThis->m_aClients[ClientID].m_JoinHash = 0;
 
 	// notify the mod about the drop
 	if (pThis->m_aClients[ClientID].m_State >= CClient::STATE_READY)

@@ -985,6 +985,38 @@ bool CPlayer::IsBot() {
 }
 
 
+
+bool CPlayer::IsZoomIndicator(double distance){
+	std::vector<int> Flags = GetIrregularFlags();
+	int version = GetClientVersion();
+	// K-Client
+	bool IsKClient = false;
+	for (size_t i = 0; i < Flags.size(); ++i)
+	{
+		// K-Client flags
+		if (512 <= Flags.at(i) && Flags.at(i) <=  576) {
+			IsKClient = IsKClient || true;
+		}
+
+	}
+	// Then truely K-Client
+	IsKClient = IsKClient && version == 0;
+
+	if(IsKClient && distance >= 1000.1){ // 1000 is the default dyn cam distance of K-Client
+		// K-Client with zoom stuff.
+		return true;
+	} else if(distance >= 700.0 && version == 0){
+		// Either normal vanilla or also botless K-Client
+		// Vanilla client with most likely zoom stuff
+		return true;
+	}
+
+
+	return false;
+}
+
+
+
 bool CPlayer::IsZoom(){
 	return m_ZoomIndicatorCounter >= 13;
 }
