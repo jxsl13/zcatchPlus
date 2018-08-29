@@ -407,7 +407,7 @@ private:
 	void UpdateLongTermDataOnTick();
 	double m_BiggestCursorDistanceFromTee{0};
 
-	bool IsZoomIndicator(double distance){ return (distance >= 633.35 && HasIrregularFlags()) || distance >= 640.0;}
+	bool IsZoomIndicator(double distance);
 	int m_ZoomIndicatorCounter{0};
 
 	// ########## helper functions ##########
