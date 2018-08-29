@@ -879,7 +879,7 @@ std::string CPlayer::ConvertToString(int value) {
 	return s.str();
 }
 
-std::string ConvertToString(std::vector<double> vector){
+std::string CPlayer::ConvertToString(std::vector<double> vector){
 	std::stringstream s;
 	s << "[ ";
 	for (size_t i = 0; i < vector.size(); ++i)
