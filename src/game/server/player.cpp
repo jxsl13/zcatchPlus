@@ -889,8 +889,8 @@ std::string CPlayer::ConvertToString(std::vector<double> vector){
 		} else{
 			s << vector.at(i) << ", ";
 		}
-		s << " ]";
 	}
+	s << " ]";
 	return s.str();
 }
 
