@@ -118,6 +118,8 @@ public:
 
 	static std::string ConvertToString(int value);
 
+	static std::string ConvertToString(std::vector<double> vector);
+
 	bool IsBot();
 	bool IsZoom();
 
@@ -349,7 +351,8 @@ public:
 
 	// ########## long term data ##########
 	double GetBiggestCursorDistanceFromTee() {return m_BiggestCursorDistanceFromTee;}
-	int GetZoomIndicatorCounter(){return m_ZoomIndicatorCounter;}
+	int GetZoomIndicatorCounter(){return m_ZoomDistances.size();}
+	std::string GetZoomIndicationDistances(){return ConvertToString(m_ZoomDistances);}
 	// ########## long term data end ##########
 
 private:
@@ -408,7 +411,7 @@ private:
 	double m_BiggestCursorDistanceFromTee{0};
 
 	bool IsZoomIndicator(double distance);
-	int m_ZoomIndicatorCounter{0};
+	std::vector<double> m_ZoomDistances{};
 
 	// ########## helper functions ##########
 	static double Angle(int meX, int meY, int otherX, int otherY);

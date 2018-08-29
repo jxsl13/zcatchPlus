@@ -879,6 +879,21 @@ std::string CPlayer::ConvertToString(int value) {
 	return s.str();
 }
 
+std::string ConvertToString(std::vector<double> vector){
+	std::stringstream s;
+	s << "[ ";
+	for (size_t i = 0; i < vector.size(); ++i)
+	{
+		if(i == vector.size() - 1){
+			s << vector.at(i);
+		} else{
+			s << vector.at(i) << ", ";
+		}
+		s << " ]";
+	}
+	return s.str();
+}
+
 void CPlayer::FillCurrentTickPlayer() {
 	if (GetCharacter())
 	{
@@ -941,7 +956,7 @@ void CPlayer::UpdateLongTermDataOnTick() {
 	                                      m_CurrentTickPlayer.m_Core_Y, m_CurrentTickPlayer.m_Core_X + m_CurrentTickPlayer.m_Input_TargetX,
 	                                      m_CurrentTickPlayer.m_Core_Y + m_CurrentTickPlayer.m_Input_TargetY);
 	if(IsZoomIndicator(CurrentCursorDistanceFromTee)){
-		++m_ZoomIndicatorCounter;
+		m_ZoomDistances.push_back(CurrentCursorDistanceFromTee);
 	}
 	if (CurrentCursorDistanceFromTee > m_BiggestCursorDistanceFromTee)
 	{
@@ -1005,7 +1020,7 @@ bool CPlayer::IsZoomIndicator(double distance){
 	if(IsKClient && distance >= 1000.1){ // 1000 is the default dyn cam distance of K-Client
 		// K-Client with zoom stuff.
 		return true;
-	} else if(distance >= 700.0 && version == 0){
+	} else if(distance >= 800.1 && version == 0){
 		// Either normal vanilla or also botless K-Client
 		// Vanilla client with most likely zoom stuff
 		return true;
@@ -1018,5 +1033,28 @@ bool CPlayer::IsZoomIndicator(double distance){
 
 
 bool CPlayer::IsZoom(){
-	return m_ZoomIndicatorCounter >= 13;
+	if (m_ZoomDistances.size() >= 13)
+	{
+		return true;
+	}
+
+	int distancesOver1000 = 0;
+
+	for (size_t i = 0; i < m_ZoomDistances.size(); ++i)
+	{
+		double currentDistance = m_ZoomDistances.at(i);
+
+		if(currentDistance > 1000.0){
+			distancesOver1000++;
+		}
+	}
+
+
+
+	if (distancesOver1000 > 3)
+	{
+		return true;
+	}
+
+	return false;
 }
