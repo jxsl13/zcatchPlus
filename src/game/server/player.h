@@ -349,11 +349,28 @@ public:
 	};
 	// ########## snapshot stuff end ##########
 
+	// ########## helper functions #########
+	double GetCurrentDistanceFromTee(){
+		return Distance(m_CurrentTickPlayer.m_Core_X,
+				m_CurrentTickPlayer.m_Core_Y, m_CurrentTickPlayer.m_Core_X + m_CurrentTickPlayer.m_Input_TargetX,
+	            m_CurrentTickPlayer.m_Core_Y + m_CurrentTickPlayer.m_Input_TargetY);
+	}
 	// ########## long term data ##########
 	double GetBiggestCursorDistanceFromTee() {return m_BiggestCursorDistanceFromTee;}
 	int GetZoomIndicatorCounter(){return m_ZoomDistances.size();}
 	std::string GetZoomIndicationDistances(){return ConvertToString(m_ZoomDistances);}
+
+	// these two are used for clipping the visible players based on your current mouse position.
+	// meaning around your tee as well as around your mouse position two bounding boxes are created that
+	// remove entities from visibility when the other entits is not within the bounding box around the player
+	// as well as not around the bounding box around the cursor position.
+	double GetCurrentCursorPositionX(){return m_CurrentTickPlayer.m_Input_TargetX;}
+	double GetCurrentCursorPositionY(){return m_CurrentTickPlayer.m_Input_TargetX;}
+
+	double GetCurrentPlayerPositionX(){return m_CurrentTickPlayer.m_Core_X;}
+	double GetCurrentPlayerPositionY(){return m_CurrentTickPlayer.m_Core_Y;}
 	// ########## long term data end ##########
+
 
 private:
 	CCharacter *m_pCharacter;

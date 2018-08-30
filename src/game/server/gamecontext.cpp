@@ -2699,11 +2699,32 @@ void CGameContext::OnConsoleInit()
 	Console()->Register("show_irregular_flags", "i", CFGFLAG_SERVER, ConShowIrregularFlags, this, "Shows all irregular flags of given player id. show_irregular_flags <ID>, -1 for all players.");
 	Console()->Register("show_flags_current", "i", CFGFLAG_SERVER, ConShowCurrentFlags, this, "Shows irregular flags of given player id at the current moment. show_long_term_data <ID>, -1 for all.");
 	Console()->Register("show_long_term_data", "i", CFGFLAG_SERVER, ConShowLongTermData, this, "Shows the gathered data of the given <ID>.");
-
+	Console()->Register("show_current_data", "i", CFGFLAG_SERVER, ConShowCurrentData, this, "Shows currently calculated of the given <ID>.");
 	Console()->Register("give_rainbow", "i", CFGFLAG_SERVER, ConGiveRainbow, this, "Enables Rainbow for given id.");
 	Console()->Register("give_rainbow_body", "i", CFGFLAG_SERVER, ConGiveRainbowBody, this, "Enables Rainbow body for given id.");
 	Console()->Register("give_rainbow_feet", "i", CFGFLAG_SERVER, ConGiveRainbowFeet, this, "Enables Rainbow feet for given id.");
 
+
+}
+
+void CGameContext::ConShowCurrentData(IConsole::IResult *pResult, void *pUserData) {
+	CGameContext *pSelf = (CGameContext *)pUserData;
+	if (!pSelf || !pResult) {
+		dbg_msg("", "CGameContext::Error in ConShowLongTermData");
+		return;
+	}
+	int playerID(pResult->GetInteger(0));
+	if (playerID >= 0) {
+		pSelf->PrintCurrentData(playerID);
+	} else {
+		for (int i = 0; i < MAX_CLIENTS; ++i)
+		{
+			if (pSelf->m_apPlayers[i])
+			{
+				pSelf->PrintCurrentData(i);
+			}
+		}
+	}
 
 }
 
@@ -3665,6 +3686,28 @@ void CGameContext::PrintLongTermData(int ClientID) {
 		Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Long_Term_Data", m_apPlayers[ClientID]->GetZoomIndicationDistances().c_str());
 
 
+	} else {
+		Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Server", "Invalid id given.");
+	}
+}
+
+
+void CGameContext::PrintCurrentData(int ClientID) {
+	if (ClientID >= 0 && ClientID < MAX_CLIENTS && m_apPlayers[ClientID]) {
+		char aBuf[64];
+		std::stringstream s;
+		// header
+		str_format(aBuf, sizeof(aBuf), "Showing current data of player '%s'.", Server()->ClientName(ClientID));
+		Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Current_Data", aBuf);
+		// line
+		s << "Cursor Distance from Player: " << m_apPlayers[ClientID]->GetCurrentDistanceFromTee();
+		// print line
+		Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Current_Data", s.str().c_str());
+		s.str(std::string());
+
+		s << "Current ViewPos: x: " << m_apPlayers[ClientID]->m_ViewPos.x << " y: " <<  m_apPlayers[ClientID]->m_ViewPos.y;
+		Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Current_Data", s.str().c_str());
+		// reset, build and print next line
 	} else {
 		Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Server", "Invalid id given.");
 	}

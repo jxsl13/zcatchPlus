@@ -364,7 +364,9 @@ public:
 
 	// long term data stuff
 	static void ConShowLongTermData(IConsole::IResult *pResult, void *pUserData);
+	static void ConShowCurrentData(IConsole::IResult *pResult, void *pUserData);
 	void PrintLongTermData(int ClientID);
+	void PrintCurrentData(int ClientID);
 
 	// fun stuff
 	static void ConGiveRainbow(IConsole::IResult *pResult, void *pUserData);

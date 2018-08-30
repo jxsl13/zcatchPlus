@@ -952,9 +952,7 @@ void CPlayer::DoSnapshot() {
 void CPlayer::UpdateLongTermDataOnTick() {
 
 	// cursor position from player.
-	double CurrentCursorDistanceFromTee = Distance(m_CurrentTickPlayer.m_Core_X,
-	                                      m_CurrentTickPlayer.m_Core_Y, m_CurrentTickPlayer.m_Core_X + m_CurrentTickPlayer.m_Input_TargetX,
-	                                      m_CurrentTickPlayer.m_Core_Y + m_CurrentTickPlayer.m_Input_TargetY);
+	double CurrentCursorDistanceFromTee = GetCurrentDistanceFromTee();
 	if(IsZoomIndicator(CurrentCursorDistanceFromTee)){
 		m_ZoomDistances.push_back(CurrentCursorDistanceFromTee);
 	}
