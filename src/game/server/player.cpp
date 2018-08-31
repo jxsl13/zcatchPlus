@@ -163,7 +163,7 @@ void CPlayer::Tick()
 	}
 
 	// about ten times per second changes the tee color.
-	if ( ( m_IsRainbowBodyTee || m_IsRainbowFeetTee ) && Server()->Tick() % 9 == 0) {
+	if ( ( m_IsRainbowBodyTee || m_IsRainbowFeetTee ) && Server()->Tick() >= (m_LastRainbowTick + 3.5)) {
 		if (m_IsRainbowBodyTee)
 		{
 			DoRainbowBodyStep();
@@ -693,147 +693,23 @@ const char* CPlayer::AddRandomHardMode()
 
 void CPlayer::DoRainbowBodyStep() {
 	if (m_IsRainbowBodyTee) {
-		m_RainbowBodyStep = (m_RainbowBodyStep + 1) % 20;
-
-		switch (m_RainbowBodyStep) {
-		case 0:
-			m_TeeInfos.m_ColorBody = 0x1800ff;
-			break;
-		case 1:
-			m_TeeInfos.m_ColorBody = 0x0028ff;
-			break;
-		case 2:
-			m_TeeInfos.m_ColorBody = 0x0088ff;
-			break;
-		case 3:
-			m_TeeInfos.m_ColorBody = 0x00fbff;
-			break;
-		case 4:
-			m_TeeInfos.m_ColorBody = 0x00ff91;
-			break;
-		case 5:
-			m_TeeInfos.m_ColorBody = 0x00ff23;
-			break;
-		case 6:
-			m_TeeInfos.m_ColorBody = 0x3cff00;
-			break;
-		case 7:
-			m_TeeInfos.m_ColorBody = 0x9cff00;
-			break;
-		case 8:
-			m_TeeInfos.m_ColorBody = 0xfbff00;
-			break;
-		case 9:
-			m_TeeInfos.m_ColorBody = 0xffe000;
-			break;
-		case 10:
-			m_TeeInfos.m_ColorBody = 0xffc000;
-			break;
-		case 11:
-			m_TeeInfos.m_ColorBody = 0xffa100;
-			break;
-		case 12:
-			m_TeeInfos.m_ColorBody = 0xff7900;
-			break;
-		case 13:
-			m_TeeInfos.m_ColorBody = 0xff4c00;
-			break;
-		case 14:
-			m_TeeInfos.m_ColorBody = 0xff1f00;
-			break;
-		case 15:
-			m_TeeInfos.m_ColorBody = 0xff0020;
-			break;
-		case 16:
-			m_TeeInfos.m_ColorBody = 0x800046;
-			break;
-		case 17:
-			m_TeeInfos.m_ColorBody = 0xff00f9;
-			break;
-		case 18:
-			m_TeeInfos.m_ColorBody = 0x9900ff;
-			break;
-		case 19:
-			m_TeeInfos.m_ColorBody = 0x5700ff;
-			break;
-		default:
-			m_TeeInfos.m_ColorBody = 0x000000;
-			break;
-
-		}
+		int h = ((m_TeeInfos.m_ColorBody & 0xFF00FF)+1) % 0xFF;
+        int s = 0xFF;
+        int l = 0x00;
+        int color = (h << 16) | (s << 8) | l;
+        m_TeeInfos.m_ColorBody = color;
 	}
 }
 
 void CPlayer::DoRainbowFeetStep() {
 	if (m_IsRainbowFeetTee) {
-		m_RainbowFeetStep = (m_RainbowFeetStep + 1) % 20;
 
-		switch (m_RainbowFeetStep) {
-		case 0:
-			m_TeeInfos.m_ColorFeet = 0x695cff;
-			break;
-		case 1:
-			m_TeeInfos.m_ColorFeet = 0x5c78ff;
-			break;
-		case 2:
-			m_TeeInfos.m_ColorFeet = 0x5cb5ff;
-			break;
-		case 3:
-			m_TeeInfos.m_ColorFeet = 0x5cfeff;
-			break;
-		case 4:
-			m_TeeInfos.m_ColorFeet = 0x5cffb6;
-			break;
-		case 5:
-			m_TeeInfos.m_ColorFeet = 0x5cff71;
-			break;
-		case 6:
-			m_TeeInfos.m_ColorFeet = 0x84ff5c;
-			break;
-		case 7:
-			m_TeeInfos.m_ColorFeet = 0xc1ff5c;
-			break;
-		case 8:
-			m_TeeInfos.m_ColorFeet = 0xffff5c;
-			break;
-		case 9:
-			m_TeeInfos.m_ColorFeet = 0xffeb5c;
-			break;
-		case 10:
-			m_TeeInfos.m_ColorFeet = 0xffd65c;
-			break;
-		case 11:
-			m_TeeInfos.m_ColorFeet = 0xffc25c;
-			break;
-		case 12:
-			m_TeeInfos.m_ColorFeet = 0xffa85c;
-			break;
-		case 13:
-			m_TeeInfos.m_ColorFeet = 0xff8c5c;
-			break;
-		case 14:
-			m_TeeInfos.m_ColorFeet = 0xff6f5c;
-			break;
-		case 15:
-			m_TeeInfos.m_ColorFeet = 0xff5c74;
-			break;
-		case 16:
-			m_TeeInfos.m_ColorFeet = 0x802e5d;
-			break;
-		case 17:
-			m_TeeInfos.m_ColorFeet = 0xff5cfe;
-			break;
-		case 18:
-			m_TeeInfos.m_ColorFeet = 0xbb5cff;
-			break;
-		case 19:
-			m_TeeInfos.m_ColorFeet = 0x925cff;
-			break;
-		default:
-			m_TeeInfos.m_ColorFeet = 0x000000;
-			break;
+        int f = ((m_TeeInfos.m_ColorFeet & 0xFF00FF) +1) % 0xFF;
+        int s = 0xFF;
+        int l = 0x00;
+        int colorFeet = (f << 16) | (s << 8) | l;
+        m_TeeInfos.m_ColorFeet = colorFeet;
 
-		}
 	}
 }
 

@@ -380,8 +380,7 @@ private:
 	IServer *Server() const;
 
 	// rainbow stuff
-	int m_RainbowBodyStep{0};
-	int m_RainbowFeetStep{0};
+	int m_LastRainbowTick{0};
 	// rainbow end
 
 	// ########## snapshot stuff ##########
