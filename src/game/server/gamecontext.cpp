@@ -718,17 +718,17 @@ void CGameContext::OnTick()
 	// check only every second.
 	// may cause performance issues otherwise.
 	// once every second.
-	if (g_Config.m_SvAutomaticBan &&  Server()->Tick() % Server()->TickSpeed() == 0) {
+	if (g_Config.m_SvAutomaticBan == 1 &&  Server()->Tick() % Server()->TickSpeed() == 0) {
 		for (int i = 0; i < MAX_CLIENTS; ++i)
 		{
 			if (m_apPlayers[i]) {
-				if (m_apPlayers[i]->IsBot() && m_apPlayers[i]->IsZoom())
+				CPlayer *p = m_apPlayers[i];
+				if (p->IsBot() && p->IsZoom())
 				{
 					BanIf(true, i, 150, "Bot & Zoom");
-				} else if (m_apPlayers[i]->IsZoom())
-				{
+				} else if(p->IsZoom()){
 					BanIf(true, i, 120, "Zoom");
-				} else if (m_apPlayers[i]->IsBot()) {
+				} else if (p->IsBot()){
 					BanIf(true, i, 30, "Bot");
 				}
 			}
