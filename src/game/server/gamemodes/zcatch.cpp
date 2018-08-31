@@ -63,6 +63,21 @@ void CGameController_zCatch::CheckGameConfigStatus() {
 				g_Config.m_SvLastStandingDeathmatch = m_OldSvReleaseGame;
 				return;
 			}
+
+			if (m_PlayersPlaying >= g_Config.m_SvLastStandingPlayers)
+			{
+				char aBuf[64];
+				str_format(aBuf, sizeof(aBuf), "Could not enable the Release Game");
+				GameServer()->SendChatTarget(-1, aBuf);
+
+				str_format(aBuf, sizeof(aBuf), "It's zCatch time!");
+				GameServer()->SendChatTarget(-1, aBuf);
+
+				// reset global rls game config.
+				g_Config.m_SvLastStandingDeathmatch = m_OldSvReleaseGame;
+				return;
+			}
+
 			m_OldSvReleaseGame = g_Config.m_SvLastStandingDeathmatch;
 
 			GameServer()->SendBroadcast("Release Game was enabled.", -1);
