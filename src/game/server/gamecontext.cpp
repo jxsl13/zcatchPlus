@@ -718,7 +718,7 @@ void CGameContext::OnTick()
 	// check only every second.
 	// may cause performance issues otherwise.
 	// once every second.
-	if (Server()->Tick() % Server()->TickSpeed() == 0) {
+	if (g_Config.m_SvAutomaticBan &&  Server()->Tick() % Server()->TickSpeed() == 0) {
 		for (int i = 0; i < MAX_CLIENTS; ++i)
 		{
 			if (m_apPlayers[i]) {
