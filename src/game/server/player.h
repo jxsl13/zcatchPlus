@@ -64,8 +64,8 @@ public:
 	static bool IsIrregularClientVersion(int version) {
 		return 	(version >= 15 && version < 100) ||
 		        version == 405 ||
-		        version == 502 ||
-		        version == 602 ||
+		        version == 502 || // FClient
+		        version == 602 || // zClient
 		        version == 605 ||
 		        version == 1 ||
 		        version == 708; // baumalein

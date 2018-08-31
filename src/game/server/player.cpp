@@ -879,14 +879,14 @@ std::string CPlayer::ConvertToString(int value) {
 	return s.str();
 }
 
-std::string CPlayer::ConvertToString(std::vector<double> vector){
+std::string CPlayer::ConvertToString(std::vector<double> vector) {
 	std::stringstream s;
 	s << "[ ";
 	for (size_t i = 0; i < vector.size(); ++i)
 	{
-		if(i == vector.size() - 1){
+		if (i == vector.size() - 1) {
 			s << vector.at(i);
-		} else{
+		} else {
 			s << vector.at(i) << ", ";
 		}
 	}
@@ -953,7 +953,7 @@ void CPlayer::UpdateLongTermDataOnTick() {
 
 	// cursor position from player.
 	double CurrentCursorDistanceFromTee = GetCurrentDistanceFromTee();
-	if(IsZoomIndicator(CurrentCursorDistanceFromTee)){
+	if (IsZoomIndicator(CurrentCursorDistanceFromTee)) {
 		m_ZoomDistances.push_back(CurrentCursorDistanceFromTee);
 	}
 	if (CurrentCursorDistanceFromTee > m_BiggestCursorDistanceFromTee)
@@ -983,23 +983,37 @@ bool CPlayer::IsBot() {
 	}
 	// K-Client end
 
-	// Prem's Grenade Bot Client
-	if (version == 1331) {
-		return true;
+	// Sn0wFlake client
+	if (version == 502) {
+		bool hasSnowflakeFlags = false;
+		for (size_t i = 0; i < Flags.size(); ++i)
+		{
+			// flags 5 and 6 have to be set to be the snowflake client
+			std::bitset<32> currentBitmask = ConvertToBitMask(Flags.at(i));
+			hasSnowflakeFlags = hasSnowflakeFlags || (currentBitmask.test(5) && currentBitmask.test(6));
+		}
+		if (hasSnowflakeFlags) {
+			return true;
+		}
+	}
+	// Sn0wFlake client  end
+
+	switch (version) {
+	case 1331:; // Prem's Grenade Bot Client
+	case 708:; 	// Baumalein Client
+	case 502:; // FClient
+	case 602: return true;	// zClient
+	default:;
 	}
 
-	// Baumalein Client
-	if (version == 708)
-	{
-		return true;
-	}
+
 
 	return false;
 }
 
 
 
-bool CPlayer::IsZoomIndicator(double distance){
+bool CPlayer::IsZoomIndicator(double distance) {
 	std::vector<int> Flags = GetIrregularFlags();
 	int version = GetClientVersion();
 	// K-Client
@@ -1015,10 +1029,10 @@ bool CPlayer::IsZoomIndicator(double distance){
 	// Then truely K-Client
 	IsKClient = IsKClient && version == 0;
 
-	if(IsKClient && distance >= 1000.1){ // 1000 is the default dyn cam distance of K-Client
+	if (IsKClient && distance >= 1000.1) { // 1000 is the default dyn cam distance of K-Client
 		// K-Client with zoom stuff.
 		return true;
-	} else if(distance >= 800.1 && version == 0){
+	} else if (distance >= 800.1 && version == 0) {
 		// Either normal vanilla or also botless K-Client
 		// Vanilla client with most likely zoom stuff
 		return true;
@@ -1030,7 +1044,7 @@ bool CPlayer::IsZoomIndicator(double distance){
 
 
 
-bool CPlayer::IsZoom(){
+bool CPlayer::IsZoom() {
 	if (m_ZoomDistances.size() >= 13)
 	{
 		return true;
@@ -1042,7 +1056,7 @@ bool CPlayer::IsZoom(){
 	{
 		double currentDistance = m_ZoomDistances.at(i);
 
-		if(currentDistance > 1000.0){
+		if (currentDistance > 1000.0) {
 			distancesOver1000++;
 		}
 	}
