@@ -15,29 +15,32 @@ clean_previous_build (){
 }
 
 start_server_debugging (){
-	back_to_base_directory
+        back_to_base_directory
 
-	if [[ "$OSTYPE" == "linux-gnu" ]]; then
+        if [[ "$OSTYPE" == "linux-gnu" ]]; then
         # ...
         ulimit -c unlimited
-        LD_PRELOAD=~/debug/afl/libdislocator/libdislocator.so ./zcatch_srv_d
+        ./zcatch_srv_d
 
-
-	elif [[ "$OSTYPE" == "darwin"* ]]; then
+        elif [[ "$OSTYPE" == "darwin"* ]]; then
         # Mac OSX
-        gdb ./zcatch_srv_x86_d --command 'gdb_commands.txt'
+        echo "To change the dump location to the current folder, please enter your sudo password."
+        echo "If you do not want to change the path, please take note that the core dump tiles will be saved in /cores"
+        sudo sysctl -w kern.corefile=core.%P
+        ulimit -c unlimited
+        ./zcatch_srv_x86_d
 
-	#elif [[ "$OSTYPE" == "cygwin" ]]; then
+        #elif [[ "$OSTYPE" == "cygwin" ]]; then
         # POSIX compatibility layer and Linux environment emulation for Windows
-	#elif [[ "$OSTYPE" == "msys" ]]; then
+        #elif [[ "$OSTYPE" == "msys" ]]; then
         # Lightweight shell and GNU utilities compiled for Windows (part of MinGW)
-	#elif [[ "$OSTYPE" == "win32" ]]; then
+        #elif [[ "$OSTYPE" == "win32" ]]; then
         # I'm not sure this can happen.
-	#elif [[ "$OSTYPE" == "freebsd"* ]]; then
+        #elif [[ "$OSTYPE" == "freebsd"* ]]; then
         # ...
-	else
-		echo "Not supported operating system."
-	fi
+        else
+                echo "Not supported operating system."
+        fi
 }
 
 back_to_base_directory (){

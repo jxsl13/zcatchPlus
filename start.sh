@@ -20,12 +20,15 @@ start_server_debugging (){
         if [[ "$OSTYPE" == "linux-gnu" ]]; then
         # ...
         ulimit -c unlimited
-        LD_PRELOAD=~/debug/afl/libdislocator/libdislocator.so ./zcatch_srv_d
-        #gdb ./zcatch_srv_d --command 'gdb_commands.txt'
+        ./zcatch_srv_d
 
         elif [[ "$OSTYPE" == "darwin"* ]]; then
         # Mac OSX
-        gdb ./zcatch_srv_x86_d --command 'gdb_commands.txt'
+        echo "To change the dump location to the current folder, please enter your sudo password."
+        echo "If you do not want to change the path, please take note that the core dump tiles will be saved in /cores"
+        sudo sysctl -w kern.corefile=core.%P
+        ulimit -c unlimited
+        ./zcatch_srv_x86_d
 
         #elif [[ "$OSTYPE" == "cygwin" ]]; then
         # POSIX compatibility layer and Linux environment emulation for Windows
@@ -39,6 +42,7 @@ start_server_debugging (){
                 echo "Not supported operating system."
         fi
 }
+
 back_to_base_directory (){
         cd $BASE_DIR
 }
