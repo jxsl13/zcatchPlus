@@ -3682,9 +3682,12 @@ void CGameContext::PrintLongTermData(int ClientID) {
 		s << "Zoom Indication Counter: " << m_apPlayers[ClientID]->GetZoomIndicatorCounter();
 		Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Long_Term_Data", s.str().c_str());
 
-		s.str(std::string());
 		Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Long_Term_Data", m_apPlayers[ClientID]->GetZoomIndicationDistances().c_str());
+		s.str(std::string());
 
+		s << "Longest Distance per Tick based on three inputs: " << m_apPlayers[ClientID]->GetLongestDistancePerTickOfThreeConsequtiveMousePositions();
+		Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Long_Term_Data", s.str().c_str());
+		s.str(std::string());
 
 	} else {
 		Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Server", "Invalid id given.");

@@ -10,6 +10,8 @@
 #include <vector> // std::vector
 #include <set>
 #include <bitset>
+#include <deque>
+
 
 
 // player object
@@ -369,6 +371,8 @@ public:
 
 	double GetCurrentPlayerPositionX(){return m_CurrentTickPlayer.m_Core_X;}
 	double GetCurrentPlayerPositionY(){return m_CurrentTickPlayer.m_Core_Y;}
+
+	double GetLongestDistancePerTickOfThreeConsequtiveMousePositions(){ return m_LongestDistancePerTickOfThreeConsequtiveMousePositions;}
 	// ########## long term data end ##########
 
 
@@ -426,8 +430,40 @@ private:
 	void UpdateLongTermDataOnTick();
 	double m_BiggestCursorDistanceFromTee{0};
 
+	struct PointAtTick
+	{
+		int tick;
+		double x;
+		double y;
+	};
+	std::deque<PointAtTick> m_LastThreeMousePositions{};
+	double m_LongestDistanceTravelledBetweenLastTheePositions{0};
+	double m_LongestDistancePerTickOfThreeConsequtiveMousePositions{-1.0};
+	// fill the deque
+	void UpdateLastThreeMousePositionsOnTick(){
+		if (!m_CurrentTickPlayer.IsFull())
+		{
+			return;
+		}
+		PointAtTick p;
+		p.x = m_CurrentTickPlayer.m_Input_TargetX;
+		p.y = m_CurrentTickPlayer.m_Input_TargetY;
+		p.tick = m_CurrentTickPlayer.m_Tick;
+		// below 3, just pushback
+		if(m_LastThreeMousePositions.size() <= 3){
+			m_LastThreeMousePositions.push_back(p);
+		} else {
+			// == 4, remove front and push back p to keep this at 3 
+			m_LastThreeMousePositions.pop_front();
+			m_LastThreeMousePositions.push_back(p);
+		}
+	}
+	// calculate speed
+	void CalculateMouseSpeedBasedOnLastThreeMousePositionsOnTick();
+
 	bool IsZoomIndicator(double distance);
 	std::vector<double> m_ZoomDistances{};
+
 
 	// ########## helper functions ##########
 	static double Angle(int meX, int meY, int otherX, int otherY);
