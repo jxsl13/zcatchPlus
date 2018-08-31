@@ -315,8 +315,6 @@ void CPlayer::OnDisconnect(const char *pReason)
 	// save ranking stats
 	GameServer()->m_pController->SaveRanking(this);
 
-	KillCharacter();
-
 	if (Server()->ClientIngame(m_ClientID))
 	{
 		char aBuf[512];
@@ -345,6 +343,9 @@ void CPlayer::OnDisconnect(const char *pReason)
 			}
 		}
 	}
+
+	KillCharacter();
+
 }
 
 void CPlayer::OnPredictedInput(CNetObj_PlayerInput *NewInput)
