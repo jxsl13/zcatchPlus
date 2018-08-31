@@ -1,10 +1,11 @@
 #!/bin/bash
 # updates source and restarts the server with the updated build
 BASE_DIR=$(pwd)
+CORES="1"
 
 build_server (){
 	back_to_base_directory
-	../bam/bam server_release
+	../bam/bam -j $CORES server_release
 }
 
 clean_previous_build (){
@@ -102,11 +103,40 @@ restore_server_config(){
     fi
 }
 
+retrieve_cores(){
+    if [[ "$OSTYPE" == "linux-gnu" ]]; then
+        # ...
+        CORES=$(grep -c ^processor /proc/cpuinfo)
+        if [[ $CORES == "" ]]; then
+            CORES="1"
+        fi
+
+    elif [[ "$OSTYPE" == "darwin"* ]]; then
+        # Mac OSX
+        CORES=$(sysctl -n hw.ncpu)
+        if [[ CORES == "" ]]; then
+            CORES="1"
+        fi
+
+    #elif [[ "$OSTYPE" == "cygwin" ]]; then
+        # POSIX compatibility layer and Linux environment emulation for Windows
+    #elif [[ "$OSTYPE" == "msys" ]]; then
+        # Lightweight shell and GNU utilities compiled for Windows (part of MinGW)
+    #elif [[ "$OSTYPE" == "win32" ]]; then
+        # I'm not sure this can happen.
+    #elif [[ "$OSTYPE" == "freebsd"* ]]; then
+        # ...
+    else
+        echo "Not supported operating system."
+    fi
+}
+
 backup_server_config
 update_source
 restore_server_config
 
 check_build_bam
+retrieve_cores
 clean_previous_build
 build_server
 start_server

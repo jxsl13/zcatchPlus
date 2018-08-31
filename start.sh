@@ -1,10 +1,12 @@
 #!/bin/bash
 
 BASE_DIR=$(pwd)
+CORES="1"
+
 
 build_debug_server (){
         back_to_base_directory
-        ../bam/bam -a server_debug
+        ../bam/bam -j $CORES -a server_debug
 }
 
 clean_previous_build (){
@@ -17,7 +19,9 @@ start_server_debugging (){
 
         if [[ "$OSTYPE" == "linux-gnu" ]]; then
         # ...
-        gdb ./zcatch_srv_d --command 'gdb_commands.txt'
+        ulimit -c unlimited
+        LD_PRELOAD=~/debug/afl/libdislocator/libdislocator.so ./zcatch_srv_d
+        #gdb ./zcatch_srv_d --command 'gdb_commands.txt'
 
         elif [[ "$OSTYPE" == "darwin"* ]]; then
         # Mac OSX
@@ -72,6 +76,34 @@ check_build_bam (){
 fi
 }
 
+retrieve_cores(){
+    if [[ "$OSTYPE" == "linux-gnu" ]]; then
+        # ...
+        CORES=$(grep -c ^processor /proc/cpuinfo)
+        if [[ $CORES == "" ]]; then
+            CORES="1"
+        fi
+
+    elif [[ "$OSTYPE" == "darwin"* ]]; then
+        # Mac OSX
+        CORES=$(sysctl -n hw.ncpu)
+        if [[ CORES == "" ]]; then
+            CORES="1"
+        fi
+
+    #elif [[ "$OSTYPE" == "cygwin" ]]; then
+        # POSIX compatibility layer and Linux environment emulation for Windows
+    #elif [[ "$OSTYPE" == "msys" ]]; then
+        # Lightweight shell and GNU utilities compiled for Windows (part of MinGW)
+    #elif [[ "$OSTYPE" == "win32" ]]; then
+        # I'm not sure this can happen.
+    #elif [[ "$OSTYPE" == "freebsd"* ]]; then
+        # ...
+    else
+        echo "Not supported operating system."
+    fi
+}
+
 
 check_build_bam
 
@@ -79,5 +111,6 @@ if [[ $1 == "-c" ]]; then
     clean_previous_build
 fi
 
+retrieve_cores
 build_debug_server
 start_server_debugging
