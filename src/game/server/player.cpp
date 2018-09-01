@@ -799,12 +799,15 @@ void CPlayer::CalculateBasedOnLastThreeMousePositionsOnTick(){
 			m_NearlyIdenticalFirstAndLastPositionCounter++;
 
 			// if current distance travelled is bigger and first and third posision are closer together, update the vector.
-			if (distance > CalculateDistance(m_ThreeConsequtiveMousePositionsWithNearlyIdenticalFirstAndLastPosition)
-			&& distanceBetweenFirstAndThridPosition <
-			Distance(m_ThreeConsequtiveMousePositionsWithNearlyIdenticalFirstAndLastPosition.at(0).x,
+			if (m_ThreeConsequtiveMousePositionsWithNearlyIdenticalFirstAndLastPosition.size() < 3 || // needed otherwise this check makes no sens at the start, when that vector is empty.
+			(
+			    distance > CalculateDistance(m_ThreeConsequtiveMousePositionsWithNearlyIdenticalFirstAndLastPosition)
+			    && distanceBetweenFirstAndThridPosition <
+			    Distance(m_ThreeConsequtiveMousePositionsWithNearlyIdenticalFirstAndLastPosition.at(0).x,
 			m_ThreeConsequtiveMousePositionsWithNearlyIdenticalFirstAndLastPosition.at(0).y,
 			m_ThreeConsequtiveMousePositionsWithNearlyIdenticalFirstAndLastPosition.at(2).x,
 			m_ThreeConsequtiveMousePositionsWithNearlyIdenticalFirstAndLastPosition.at(2).y))
+			   )
 			{
 				// update the vector containing the positions
 				m_ThreeConsequtiveMousePositionsWithNearlyIdenticalFirstAndLastPosition.clear();
