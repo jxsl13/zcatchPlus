@@ -365,6 +365,8 @@ public:
 	// long term data stuff
 	static void ConShowLongTermData(IConsole::IResult *pResult, void *pUserData);
 	static void ConShowCurrentData(IConsole::IResult *pResult, void *pUserData);
+
+	void PrintStringStreamToConsoleAndReset(std::stringstream &s, const char* ConsoleLabel);
 	void PrintLongTermData(int ClientID);
 	void PrintCurrentData(int ClientID);
 

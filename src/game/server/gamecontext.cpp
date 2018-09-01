@@ -3665,37 +3665,60 @@ bool CGameContext::PrintIrregularFlags(int ClientID, bool currentFlags) {
 	}
 }
 
+void CGameContext::PrintStringStreamToConsoleAndReset(std::stringstream &s, const char* ConsoleLabel){
+	Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, ConsoleLabel, s.str().c_str());
+	s.str(std::string());
+}
+
 void CGameContext::PrintLongTermData(int ClientID) {
 	if (ClientID >= 0 && ClientID < MAX_CLIENTS && m_apPlayers[ClientID]) {
 		char aBuf[64];
 		std::stringstream s;
+		int headerColumnWidth = 64;
+		int singleNumberColumnWidth = 10;
+
 		// header
 		str_format(aBuf, sizeof(aBuf), "Showing long term data of player '%s'.", Server()->ClientName(ClientID));
 		Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Long_Term_Data", aBuf);
-		// line
-		s << "Biggest Cursor Distance: " << m_apPlayers[ClientID]->GetBiggestCursorDistanceFromTee();
-		// print line
-		Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Long_Term_Data", s.str().c_str());
 
-		// reset, build and print next line
-		s.str(std::string());
-		s << "Zoom Indication Counter: " << m_apPlayers[ClientID]->GetZoomIndicatorCounter();
-		Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Long_Term_Data", s.str().c_str());
+		s << std::setw(headerColumnWidth) << std::left << "Biggest Cursor Distance: " << std::setw(singleNumberColumnWidth) << std::right << m_apPlayers[ClientID]->GetBiggestCursorDistanceFromTee();
+		PrintStringStreamToConsoleAndReset(s, "Long_Term_Data");
 
-		Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Long_Term_Data", m_apPlayers[ClientID]->GetZoomIndicationDistances().c_str());
-		s.str(std::string());
+		s << std::setw(headerColumnWidth) << std::left << "Zoom Indication Counter: " << std::setw(singleNumberColumnWidth) << std::right << m_apPlayers[ClientID]->GetZoomIndicatorCounter();
+		PrintStringStreamToConsoleAndReset(s, "Long_Term_Data");
 
-		s << "Longest Distance per Tick based on three inputs: " << m_apPlayers[ClientID]->GetLongestDistancePerTickOfThreeConsequtiveMousePositions();
-		Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Long_Term_Data", s.str().c_str());
-		s.str(std::string());
-		Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Long_Term_Data", CPlayer::ConvertToString(m_apPlayers[ClientID]->GetThreeConsequtiveMousePositionsWithLongestDistance()).c_str());
+		s << std::setw(headerColumnWidth) << std::left << "Zoom distances: ";
+		PrintStringStreamToConsoleAndReset(s, "Long_Term_Data");
 
+		s << m_apPlayers[ClientID]->GetZoomIndicationDistances();
+		PrintStringStreamToConsoleAndReset(s, "Long_Term_Data");
 
-		s << "Nearly identical inputs between first and third input. Distance per Tick: " << m_apPlayers[ClientID]->GetDistancePerTickOfNearlyIdenticalFirstAndLastPosition() << " Distance travelled in three ticks: " << m_apPlayers[ClientID]->GetDistanceOfNearlyIdenticalFirstAndLastPosition();
-		Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Long_Term_Data", s.str().c_str());
-		s.str(std::string());
-		Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Long_Term_Data", CPlayer::ConvertToString(m_apPlayers[ClientID]->GetThreeConsequtiveMousePositionsWithNearlyIdenticalFirstAndLastPosition()).c_str());
+		s << std::setw(headerColumnWidth) << std::left << "Longest Distance/Tick of three inputs: " << std::setw(singleNumberColumnWidth) << std::right << m_apPlayers[ClientID]->GetLongestDistancePerTickOfThreeConsequtiveMousePositions();
+		PrintStringStreamToConsoleAndReset(s, "Long_Term_Data");
 
+		s << std::setw(headerColumnWidth) << std::left << "Inputs of longest Distance/Tick:";
+		PrintStringStreamToConsoleAndReset(s, "Long_Term_Data");
+
+		s << CPlayer::ConvertToString(m_apPlayers[ClientID]->GetThreeConsequtiveMousePositionsWithLongestDistance());
+		PrintStringStreamToConsoleAndReset(s, "Long_Term_Data");
+
+		s << "Nearly identical 1st & 3rd input: ";
+		PrintStringStreamToConsoleAndReset(s, "Long_Term_Data");
+
+		s << std::setw(headerColumnWidth) << std::left << "Distance/Tick: " << std::setw(singleNumberColumnWidth) << std::right << m_apPlayers[ClientID]->GetDistancePerTickOfNearlyIdenticalFirstAndLastPosition();
+		PrintStringStreamToConsoleAndReset(s, "Long_Term_Data");
+
+		s << std::setw(headerColumnWidth) << std::left << "Distance travelled: " << std::setw(singleNumberColumnWidth) << std::right << m_apPlayers[ClientID]->GetDistanceOfNearlyIdenticalFirstAndLastPosition();
+		PrintStringStreamToConsoleAndReset(s, "Long_Term_Data");
+
+		s << std::setw(headerColumnWidth) << std::left << "Fast Aim Indication Counter: " << std::setw(singleNumberColumnWidth) << std::right << m_apPlayers[ClientID]->GetNearlyIdenticalFirstAndLastPositionCounter();
+		PrintStringStreamToConsoleAndReset(s, "Long_Term_Data");
+
+		s << std::setw(headerColumnWidth) << std::left << "Most striking inputs:";
+		PrintStringStreamToConsoleAndReset(s, "Long_Term_Data");
+
+		s << CPlayer::ConvertToString(m_apPlayers[ClientID]->GetThreeConsequtiveMousePositionsWithNearlyIdenticalFirstAndLastPosition());
+		PrintStringStreamToConsoleAndReset(s, "Long_Term_Data");
 
 	} else {
 		Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Server", "Invalid id given.");

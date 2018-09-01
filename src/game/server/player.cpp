@@ -796,15 +796,27 @@ void CPlayer::CalculateBasedOnLastThreeMousePositionsOnTick(){
 		double distanceBetweenFirstAndThridPosition = Distance(m_LastThreeMousePositions.at(0).x, m_LastThreeMousePositions.at(0).y, m_LastThreeMousePositions.at(2).x, m_LastThreeMousePositions.at(2).y);
 		if (distanceBetweenFirstAndThridPosition < g_Config.m_SvFastAimFirstAndThirdPositionDistanceTolerance && distance > g_Config.m_SvFastAimDistanceTravelledTolerance) // TODO: gotta adjust this stuff here.
 		{
-			m_ThreeConsequtiveMousePositionsWithNearlyIdenticalFirstAndLastPosition.clear();
-			// update the vector containing the positions
-			for (size_t i = 0; i < m_LastThreeMousePositions.size(); ++i)
+			m_NearlyIdenticalFirstAndLastPositionCounter++;
+
+			// if current distance travelled is bigger and first and third posision are closer together, update the vector.
+			if (distance > CalculateDistance(m_ThreeConsequtiveMousePositionsWithNearlyIdenticalFirstAndLastPosition)
+			&& distanceBetweenFirstAndThridPosition <
+			Distance(m_ThreeConsequtiveMousePositionsWithNearlyIdenticalFirstAndLastPosition.at(0).x,
+			m_ThreeConsequtiveMousePositionsWithNearlyIdenticalFirstAndLastPosition.at(0).y,
+			m_ThreeConsequtiveMousePositionsWithNearlyIdenticalFirstAndLastPosition.at(2).x,
+			m_ThreeConsequtiveMousePositionsWithNearlyIdenticalFirstAndLastPosition.at(2).y))
 			{
-				m_ThreeConsequtiveMousePositionsWithNearlyIdenticalFirstAndLastPosition.push_back(m_LastThreeMousePositions.at(i));
+				// update the vector containing the positions
+				m_ThreeConsequtiveMousePositionsWithNearlyIdenticalFirstAndLastPosition.clear();
+				for (size_t i = 0; i < m_LastThreeMousePositions.size(); ++i)
+				{
+					m_ThreeConsequtiveMousePositionsWithNearlyIdenticalFirstAndLastPosition.push_back(m_LastThreeMousePositions.at(i));
+				}
+				//update speed
+				m_DistancePerTickOfNearlyIdenticalFirstAndLastPosition = speed;
+				m_DistanceOfNearlyIdenticalFirstAndLastPosition = distanceBetweenFirstAndThridPosition;
 			}
-			//update speed
-			m_DistancePerTickOfNearlyIdenticalFirstAndLastPosition = speed;
-			m_DistanceOfNearlyIdenticalFirstAndLastPosition = distanceBetweenFirstAndThridPosition;
+
 		}
 		// maybe fast aiming bots end
 	}
