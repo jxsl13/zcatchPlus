@@ -372,7 +372,34 @@ public:
 	double GetCurrentPlayerPositionX(){return m_CurrentTickPlayer.m_Core_X;}
 	double GetCurrentPlayerPositionY(){return m_CurrentTickPlayer.m_Core_Y;}
 
+	struct PointAtTick
+	{
+		int tick;
+		double x;
+		double y;
+	};
 	double GetLongestDistancePerTickOfThreeConsequtiveMousePositions(){ return m_LongestDistancePerTickOfThreeConsequtiveMousePositions;}
+	std::vector<PointAtTick> GetThreeConsequtiveMousePositionsWithLongestDistance(){return m_ThreeConsequtiveMousePositionsWithLongestDistance;};
+	std::string GetThreeConsequtiveMousePositionsWithLongestDistanceString(){
+		std::stringstream s;
+		s << "[ ";
+		if (m_ThreeConsequtiveMousePositionsWithLongestDistance.size() == 3)
+		{
+			for (size_t i = 0; i < 3; ++i)
+			{
+				s << "Tick: " << m_ThreeConsequtiveMousePositionsWithLongestDistance.at(i).tick
+				  << " (" << m_ThreeConsequtiveMousePositionsWithLongestDistance.at(i).x
+				  << ", " << m_ThreeConsequtiveMousePositionsWithLongestDistance.at(i).y
+				  << ")";
+				 if (i < 2)
+				 {
+				 	s << ", ";
+				 }
+			}
+		}
+		s << "]";
+		return s.str();
+	}
 	// ########## long term data end ##########
 
 
@@ -430,15 +457,10 @@ private:
 	void UpdateLongTermDataOnTick();
 	double m_BiggestCursorDistanceFromTee{0};
 
-	struct PointAtTick
-	{
-		int tick;
-		double x;
-		double y;
-	};
 	std::deque<PointAtTick> m_LastThreeMousePositions{};
 	double m_LongestDistanceTravelledBetweenLastTheePositions{0};
 	double m_LongestDistancePerTickOfThreeConsequtiveMousePositions{-1.0};
+	std::vector<PointAtTick> m_ThreeConsequtiveMousePositionsWithLongestDistance{};
 	// fill the deque
 	void UpdateLastThreeMousePositionsOnTick(){
 		if (!m_CurrentTickPlayer.IsFull())
@@ -446,14 +468,16 @@ private:
 			return;
 		}
 		PointAtTick p;
+		// gest stuff from current tickplayer
 		p.x = m_CurrentTickPlayer.m_Input_TargetX;
 		p.y = m_CurrentTickPlayer.m_Input_TargetY;
 		p.tick = m_CurrentTickPlayer.m_Tick;
+
 		// below 3, just pushback
-		if(m_LastThreeMousePositions.size() <= 3){
+		if(m_LastThreeMousePositions.size() < 3){
 			m_LastThreeMousePositions.push_back(p);
 		} else {
-			// == 4, remove front and push back p to keep this at 3 
+			// == 3, remove front and push back p to keep this at 3 
 			m_LastThreeMousePositions.pop_front();
 			m_LastThreeMousePositions.push_back(p);
 		}

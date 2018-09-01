@@ -782,6 +782,13 @@ void CPlayer::CalculateMouseSpeedBasedOnLastThreeMousePositionsOnTick(){
 		double speed = distance / ticks;
 		if(speed > m_LongestDistancePerTickOfThreeConsequtiveMousePositions){
 			m_LongestDistancePerTickOfThreeConsequtiveMousePositions = speed;
+			// empty vector
+			m_ThreeConsequtiveMousePositionsWithLongestDistance.clear();
+			// fill vector with new values
+			for (size_t i = 0; i < m_LastThreeMousePositions.size(); ++i)
+			{
+				m_ThreeConsequtiveMousePositionsWithLongestDistance.push_back(m_LastThreeMousePositions.at(i));
+			}
 		}
 	}
 
