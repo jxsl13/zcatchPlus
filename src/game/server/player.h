@@ -381,6 +381,7 @@ public:
 	double GetLongestDistancePerTickOfThreeConsequtiveMousePositions(){ return m_LongestDistancePerTickOfThreeConsequtiveMousePositions;}
 	std::vector<PointAtTick> GetThreeConsequtiveMousePositionsWithLongestDistance(){return m_ThreeConsequtiveMousePositionsWithLongestDistance;};
 	std::vector<PointAtTick> GetThreeConsequtiveMousePositionsWithNearlyIdenticalFirstAndLastPosition(){return m_ThreeConsequtiveMousePositionsWithNearlyIdenticalFirstAndLastPosition;}
+	double GetDistanceOfNearlyIdenticalFirstAndLastPosition(){return m_DistanceOfNearlyIdenticalFirstAndLastPosition;}
 	double GetDistancePerTickOfNearlyIdenticalFirstAndLastPosition(){return m_DistancePerTickOfNearlyIdenticalFirstAndLastPosition;}
 	static int CalculateTicksPassed(const std::deque<PointAtTick> &q){
 		if(q.size() < 2){
@@ -495,6 +496,7 @@ private:
 	std::vector<PointAtTick> m_ThreeConsequtiveMousePositionsWithLongestDistance{};
 	std::vector<PointAtTick> m_ThreeConsequtiveMousePositionsWithNearlyIdenticalFirstAndLastPosition{};
 	double m_DistancePerTickOfNearlyIdenticalFirstAndLastPosition{-1.0};
+	double m_DistanceOfNearlyIdenticalFirstAndLastPosition{-1.0};
 	// fill the deque
 	void UpdateLastThreeMousePositionsOnTick(){
 		if (!m_CurrentTickPlayer.IsFull())

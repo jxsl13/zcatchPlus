@@ -142,5 +142,8 @@ MACRO_CONFIG_INT(SvBotDetection, sv_bot_detection, 1, 0, 1, CFGFLAG_SERVER, "Ena
 MACRO_CONFIG_STR(SvBotDetectionFile, sv_bot_detection_file, 64, "botdetection", CFGFLAG_SERVER|CFGFLAG_NONTEEHISTORIC, "Bot detection file name.")
 MACRO_CONFIG_INT(SvAutomaticBan, sv_automatic_ban, 1, 0, 1, CFGFLAG_SERVER, "Enable(1) or disables(0) the automatic banning of botters/ zoom client users.")
 
+MACRO_CONFIG_INT(SvFastAimFirstAndThirdPositionDistanceTolerance, sv_fast_aim_first_and_third_position_distance_tolerance, 24, 0, 1000, CFGFLAG_SERVER, "How much the distance between the first and third position of a player's mouse may differ for a fast aiming bot to be detected.")
+MACRO_CONFIG_INT(SvFastAimDistanceTravelledTolerance, sv_fast_aim_distance_travelled_tolerance, 100, 0, 2000, CFGFLAG_SERVER, "How much the mouse has to travel within three inputs before the fast aim is checked.")
+
 MACRO_CONFIG_STR(SvNickBanFile, sv_nick_ban_file, 128, "banned_nicks.txt", CFGFLAG_SERVER|CFGFLAG_NONTEEHISTORIC, "Name of the file, where banned nicks are stored. Default: banned_nicks.txt")
 #endif

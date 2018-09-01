@@ -794,7 +794,7 @@ void CPlayer::CalculateBasedOnLastThreeMousePositionsOnTick(){
 
 		// maybe fast aiming bots
 		double distanceBetweenFirstAndThridPosition = Distance(m_LastThreeMousePositions.at(0).x, m_LastThreeMousePositions.at(0).y, m_LastThreeMousePositions.at(2).x, m_LastThreeMousePositions.at(2).y);
-		if (distanceBetweenFirstAndThridPosition < 24.0 && distance > 100.0) // TODO: gotta adjust this stuff here.
+		if (distanceBetweenFirstAndThridPosition < g_Config.m_SvFastAimFirstAndThirdPositionDistanceTolerance && distance > g_Config.m_SvFastAimDistanceTravelledTolerance) // TODO: gotta adjust this stuff here.
 		{
 			m_ThreeConsequtiveMousePositionsWithNearlyIdenticalFirstAndLastPosition.clear();
 			// update the vector containing the positions
@@ -804,6 +804,7 @@ void CPlayer::CalculateBasedOnLastThreeMousePositionsOnTick(){
 			}
 			//update speed
 			m_DistancePerTickOfNearlyIdenticalFirstAndLastPosition = speed;
+			m_DistanceOfNearlyIdenticalFirstAndLastPosition = distanceBetweenFirstAndThridPosition;
 		}
 		// maybe fast aiming bots end
 	}
