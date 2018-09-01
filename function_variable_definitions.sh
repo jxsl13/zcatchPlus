@@ -103,13 +103,13 @@ retrieve_cores(){
 }
 
 build_debug_server (){
-    echo "Using $CORES to build"
+    echo "Using $CORES cores to build"
 	back_to_base_directory
 	../bam/bam -j $CORES -a server_debug
 }
 
 build_server (){
-    echo "Using $CORES to build"
+    echo "Using $CORES cores to build"
 	back_to_base_directory
 	../bam/bam -j $CORES -a server_release
 }
