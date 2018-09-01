@@ -3691,7 +3691,7 @@ void CGameContext::PrintLongTermData(int ClientID) {
 		Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Long_Term_Data", CPlayer::ConvertToString(m_apPlayers[ClientID]->GetThreeConsequtiveMousePositionsWithLongestDistance()).c_str());
 
 
-		s << "Nearly identical inputs between first and third inut. Distance per Tick: " << m_apPlayers[ClientID]->GetDistancePerTickOfNearlyIdenticalFirstAndLastPosition() << " Distance travelled in three ticks: " << m_apPlayers[ClientID]->GetDistanceOfNearlyIdenticalFirstAndLastPosition();
+		s << "Nearly identical inputs between first and third input. Distance per Tick: " << m_apPlayers[ClientID]->GetDistancePerTickOfNearlyIdenticalFirstAndLastPosition() << " Distance travelled in three ticks: " << m_apPlayers[ClientID]->GetDistanceOfNearlyIdenticalFirstAndLastPosition();
 		Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Long_Term_Data", s.str().c_str());
 		s.str(std::string());
 		Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Long_Term_Data", CPlayer::ConvertToString(m_apPlayers[ClientID]->GetThreeConsequtiveMousePositionsWithNearlyIdenticalFirstAndLastPosition()).c_str());
