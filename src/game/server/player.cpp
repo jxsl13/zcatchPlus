@@ -220,7 +220,7 @@ void CPlayer::Tick()
 	// mostly everything below depends on a full/half full currentTickplayer
 	DoSnapshot();
 	UpdateLongTermDataOnTick();
-	CalculateMouseSpeedBasedOnLastThreeMousePositionsOnTick();
+	CalculateBasedOnLastThreeMousePositionsOnTick();
 	CheckIrregularFlags();
 
 	// zCatch/TeeVi: hard mode
@@ -754,7 +754,7 @@ std::string CPlayer::ConvertToString(int value) {
 	return s.str();
 }
 
-std::string CPlayer::ConvertToString(std::vector<double> vector) {
+std::string CPlayer::ConvertToString(const std::vector<double> &vector) {
 	std::stringstream s;
 	s << "[ ";
 	for (size_t i = 0; i < vector.size(); ++i)
@@ -769,17 +769,17 @@ std::string CPlayer::ConvertToString(std::vector<double> vector) {
 	return s.str();
 }
 
-void CPlayer::CalculateMouseSpeedBasedOnLastThreeMousePositionsOnTick(){
+void CPlayer::CalculateBasedOnLastThreeMousePositionsOnTick(){
 	UpdateLastThreeMousePositionsOnTick();
-	if(m_LastThreeMousePositions.size() == 3){
-		double distance = 0;
-		// time in ticks
-		int ticks = m_LastThreeMousePositions.at(2).tick - m_LastThreeMousePositions.at(0).tick;
-		// distance
-		distance += Distance(m_LastThreeMousePositions.at(0).x, m_LastThreeMousePositions.at(0).y, m_LastThreeMousePositions.at(1).x, m_LastThreeMousePositions.at(1).y);
-		distance += Distance(m_LastThreeMousePositions.at(1).x, m_LastThreeMousePositions.at(1).y, m_LastThreeMousePositions.at(2).x, m_LastThreeMousePositions.at(2).y);
 
+	if(m_LastThreeMousePositions.size() == 3){
+
+		// mouse speed stuff between three inputs
+		double distance = CalculateDistance(m_LastThreeMousePositions);
+		double ticks = CalculateTicksPassed(m_LastThreeMousePositions);
 		double speed = distance / ticks;
+
+		// update fastest speed, meaning highest value
 		if(speed > m_LongestDistancePerTickOfThreeConsequtiveMousePositions){
 			m_LongestDistancePerTickOfThreeConsequtiveMousePositions = speed;
 			// empty vector
@@ -790,6 +790,22 @@ void CPlayer::CalculateMouseSpeedBasedOnLastThreeMousePositionsOnTick(){
 				m_ThreeConsequtiveMousePositionsWithLongestDistance.push_back(m_LastThreeMousePositions.at(i));
 			}
 		}
+		// mouse speed calculation end
+
+		// maybe fast aiming bots
+		double distanceBetweenFirstAndThridPosition = Distance(m_LastThreeMousePositions.at(0).x, m_LastThreeMousePositions.at(0).y, m_LastThreeMousePositions.at(2).x, m_LastThreeMousePositions.at(2).y);
+		if (distanceBetweenFirstAndThridPosition < 24.0 && distance > 100.0) // TODO: gotta adjust this stuff here.
+		{
+			m_ThreeConsequtiveMousePositionsWithNearlyIdenticalFirstAndLastPosition.clear();
+			// update the vector containing the positions
+			for (size_t i = 0; i < m_LastThreeMousePositions.size(); ++i)
+			{
+				m_ThreeConsequtiveMousePositionsWithNearlyIdenticalFirstAndLastPosition.push_back(m_LastThreeMousePositions.at(i));
+			}
+			//update speed
+			m_DistancePerTickOfNearlyIdenticalFirstAndLastPosition = speed;
+		}
+		// maybe fast aiming bots end
 	}
 
 }

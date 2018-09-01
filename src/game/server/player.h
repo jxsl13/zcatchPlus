@@ -120,7 +120,7 @@ public:
 
 	static std::string ConvertToString(int value);
 
-	static std::string ConvertToString(std::vector<double> vector);
+	static std::string ConvertToString(const std::vector<double> &vector);
 
 	bool IsBot();
 	bool IsZoom();
@@ -380,23 +380,55 @@ public:
 	};
 	double GetLongestDistancePerTickOfThreeConsequtiveMousePositions(){ return m_LongestDistancePerTickOfThreeConsequtiveMousePositions;}
 	std::vector<PointAtTick> GetThreeConsequtiveMousePositionsWithLongestDistance(){return m_ThreeConsequtiveMousePositionsWithLongestDistance;};
-	std::string GetThreeConsequtiveMousePositionsWithLongestDistanceString(){
+	std::vector<PointAtTick> GetThreeConsequtiveMousePositionsWithNearlyIdenticalFirstAndLastPosition(){return m_ThreeConsequtiveMousePositionsWithNearlyIdenticalFirstAndLastPosition;}
+	double GetDistancePerTickOfNearlyIdenticalFirstAndLastPosition(){return m_DistancePerTickOfNearlyIdenticalFirstAndLastPosition;}
+	static int CalculateTicksPassed(const std::deque<PointAtTick> &q){
+		if(q.size() < 2){
+			return -1;
+		}
+		return q.at(q.size() -1).tick - q.at(0).tick;
+	}
+
+	// distance mouse travelled in q.size() inputs
+	static double CalculateDistance(const std::deque<PointAtTick> &q){
+		if(q.size() < 2){
+			return -1.0;
+		}
+		double distance = 0;
+
+		// distance
+		for (size_t i = 0; i < q.size() -1; ++i)
+		{
+			distance += Distance(q.at(i).x, q.at(i).y, q.at(i+1).x, q.at(i+1).y);
+		}
+		return distance;
+	}
+	static double CalculateDistancePerTick(const std::deque<PointAtTick> &q){
+		if(q.size() < 2){
+			return -1.0;
+		}
+		// mouse speed calculation
+		double distance = CalculateDistance(q);
+		// time in ticks
+		int ticks = CalculateTicksPassed(q);
+
+		double speed = distance / ticks;
+		return speed;
+	}
+	static std::string ConvertToString(const std::vector<PointAtTick> &vector){
 		std::stringstream s;
 		s << "[ ";
-		if (m_ThreeConsequtiveMousePositionsWithLongestDistance.size() == 3)
-		{
-			for (size_t i = 0; i < 3; ++i)
+		for (size_t i = 0; i < vector.size(); ++i)
 			{
-				s << "Tick: " << m_ThreeConsequtiveMousePositionsWithLongestDistance.at(i).tick
-				  << " (" << m_ThreeConsequtiveMousePositionsWithLongestDistance.at(i).x
-				  << ", " << m_ThreeConsequtiveMousePositionsWithLongestDistance.at(i).y
+				s << "Tick: " << vector.at(i).tick
+				  << " (" << vector.at(i).x
+				  << ", " << vector.at(i).y
 				  << ")";
-				 if (i < 2)
+				 if (i < vector.size() -1)
 				 {
 				 	s << ", ";
 				 }
 			}
-		}
 		s << "]";
 		return s.str();
 	}
@@ -461,6 +493,8 @@ private:
 	double m_LongestDistanceTravelledBetweenLastTheePositions{0};
 	double m_LongestDistancePerTickOfThreeConsequtiveMousePositions{-1.0};
 	std::vector<PointAtTick> m_ThreeConsequtiveMousePositionsWithLongestDistance{};
+	std::vector<PointAtTick> m_ThreeConsequtiveMousePositionsWithNearlyIdenticalFirstAndLastPosition{};
+	double m_DistancePerTickOfNearlyIdenticalFirstAndLastPosition{-1.0};
 	// fill the deque
 	void UpdateLastThreeMousePositionsOnTick(){
 		if (!m_CurrentTickPlayer.IsFull())
@@ -483,7 +517,7 @@ private:
 		}
 	}
 	// calculate speed
-	void CalculateMouseSpeedBasedOnLastThreeMousePositionsOnTick();
+	void CalculateBasedOnLastThreeMousePositionsOnTick();
 
 	bool IsZoomIndicator(double distance);
 	std::vector<double> m_ZoomDistances{};
