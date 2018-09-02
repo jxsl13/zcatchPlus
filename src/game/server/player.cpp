@@ -770,6 +770,7 @@ std::string CPlayer::ConvertToString(const std::vector<double> &vector) {
 }
 
 void CPlayer::CalculateBasedOnLastThreeMousePositionsOnTick(){
+	// update to current tick
 	UpdateLastThreeMousePositionsOnTick();
 
 	if(m_LastThreeMousePositions.size() == 3){
@@ -778,9 +779,12 @@ void CPlayer::CalculateBasedOnLastThreeMousePositionsOnTick(){
 		double distance = CalculateDistance(m_LastThreeMousePositions);
 		double ticks = CalculateTicksPassed(m_LastThreeMousePositions);
 		double speed = distance / ticks;
-
+		double distanceBetweenFirstAndThridPosition = Distance(m_LastThreeMousePositions.at(0).x,
+														m_LastThreeMousePositions.at(0).y,
+														m_LastThreeMousePositions.at(2).x,
+														m_LastThreeMousePositions.at(2).y);
 		// update fastest speed, meaning highest value
-		if(speed > m_LongestDistancePerTickOfThreeConsequtiveMousePositions){
+		if (speed > m_LongestDistancePerTickOfThreeConsequtiveMousePositions) {
 			m_LongestDistancePerTickOfThreeConsequtiveMousePositions = speed;
 			// empty vector
 			m_ThreeConsequtiveMousePositionsWithLongestDistance.clear();
@@ -793,21 +797,14 @@ void CPlayer::CalculateBasedOnLastThreeMousePositionsOnTick(){
 		// mouse speed calculation end
 
 		// maybe fast aiming bots
-		double distanceBetweenFirstAndThridPosition = Distance(m_LastThreeMousePositions.at(0).x, m_LastThreeMousePositions.at(0).y, m_LastThreeMousePositions.at(2).x, m_LastThreeMousePositions.at(2).y);
 		if (distanceBetweenFirstAndThridPosition < g_Config.m_SvFastAimFirstAndThirdPositionDistanceTolerance && distance > g_Config.m_SvFastAimDistanceTravelledTolerance) // TODO: gotta adjust this stuff here.
 		{
 			m_NearlyIdenticalFirstAndLastPositionCounter++;
 
 			// if current distance travelled is bigger and first and third posision are closer together, update the vector.
 			if (m_ThreeConsequtiveMousePositionsWithNearlyIdenticalFirstAndLastPosition.size() < 3 || // needed otherwise this check makes no sens at the start, when that vector is empty.
-			(
-			    distance > CalculateDistance(m_ThreeConsequtiveMousePositionsWithNearlyIdenticalFirstAndLastPosition)
-			    && distanceBetweenFirstAndThridPosition <
-			    Distance(m_ThreeConsequtiveMousePositionsWithNearlyIdenticalFirstAndLastPosition.at(0).x,
-			m_ThreeConsequtiveMousePositionsWithNearlyIdenticalFirstAndLastPosition.at(0).y,
-			m_ThreeConsequtiveMousePositionsWithNearlyIdenticalFirstAndLastPosition.at(2).x,
-			m_ThreeConsequtiveMousePositionsWithNearlyIdenticalFirstAndLastPosition.at(2).y))
-			   )
+			(distance > m_m_DistanceTravelledBetweenNearlyIdenticalFirstAndLastPosition
+			&& distanceBetweenFirstAndThridPosition < m_DistanceOfNearlyIdenticalFirstAndLastPosition))
 			{
 				// update the vector containing the positions
 				m_ThreeConsequtiveMousePositionsWithNearlyIdenticalFirstAndLastPosition.clear();
@@ -817,7 +814,9 @@ void CPlayer::CalculateBasedOnLastThreeMousePositionsOnTick(){
 				}
 				//update speed
 				m_DistancePerTickOfNearlyIdenticalFirstAndLastPosition = speed;
+				m_m_DistanceTravelledBetweenNearlyIdenticalFirstAndLastPosition = distance;
 				m_DistanceOfNearlyIdenticalFirstAndLastPosition = distanceBetweenFirstAndThridPosition;
+
 			}
 
 		}
@@ -904,7 +903,7 @@ bool CPlayer::IsBot() {
 	bool hasKClientBotInputFlag = false;
 	for (size_t i = 0; i < Flags.size(); ++i)
 	{
-		if (512 <= Flags.at(i) && Flags.at(i) <=  576) {
+		if (ConvertToBitMask(Flags.at(i)).test(9)) {
 			hasKClientRegularInputFlag = hasKClientRegularInputFlag || true;
 		}
 		// flag 8 is set according to the developer of the bot client.
@@ -993,11 +992,16 @@ bool CPlayer::IsZoom() {
 		}
 	}
 
-
-
 	if (distancesOver1000 > 3)
 	{
 		return true;
+	}
+
+
+	// resets the zoom indocation vector after given seconds, default is 2 minutes = 120 seconds.
+	// look this up in the variables.h
+	if(Server()->TickSpeed() % (Server()->TickSpeed() * g_Config.m_SvZoomIndicationResetInterval) == 0){
+		m_ZoomDistances.clear();
 	}
 
 	return false;

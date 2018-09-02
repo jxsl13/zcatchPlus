@@ -511,6 +511,7 @@ private:
 	std::vector<PointAtTick> m_ThreeConsequtiveMousePositionsWithLongestDistance{};
 	std::vector<PointAtTick> m_ThreeConsequtiveMousePositionsWithNearlyIdenticalFirstAndLastPosition{};
 	double m_DistancePerTickOfNearlyIdenticalFirstAndLastPosition{-1.0};
+	double m_m_DistanceTravelledBetweenNearlyIdenticalFirstAndLastPosition{-1};
 	double m_DistanceOfNearlyIdenticalFirstAndLastPosition{-1.0};
 	int m_NearlyIdenticalFirstAndLastPositionCounter{0};
 	// fill the deque
