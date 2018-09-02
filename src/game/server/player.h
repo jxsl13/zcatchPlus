@@ -49,7 +49,92 @@ public:
 
 	// states if the client is chatting, accessing a menu etc.
 	int m_PlayerFlags;
+
+	/**
+	 * @brief Irregular flags that the client sends to the server.
+	 * These are partly used to detect weird bot/zoom and other cheat clients.
+	 * This set contains unique detected flags that were sent to the server.
+	 */
 	std::set<int> m_PlayerIrregularFlags;
+
+	/**
+	 * @brief In order to categorize player clients and make them visible to other players
+	 * this description is filled with information, which should be accessible to
+	 * other player in some way.
+	 */
+	std::string m_CurrentClientDescription{""};
+	std::string GetCurrentClientDescription(){return m_CurrentClientDescription;}
+	void UpdateCurrentClientDescription(std::string Description){
+		if(m_CurrentClientDescription.find(Description) == std::string::npos){
+			if(m_CurrentClientDescription.size() == 0){
+				m_CurrentClientDescription = Description;
+			} else {
+				m_CurrentClientDescription.append(Description);
+			}
+		}
+	}
+	void ResetCurrentClientDescription(){m_CurrentClientDescription = "";}
+	/**
+	 * @brief Checks if the player has some information regarding irregular client usage.
+	 * If the player has such information, it cloud/should be printed to the screen.
+	 */
+	bool HasClientDescription(){return m_CurrentClientDescription.size() > 0;}
+
+	enum{
+		URGENCY_LEVEL_NORMAL_PLAYER = 0,
+		// do not confuse with cheat client, these, weird clients, are client not detected in anything basically
+		// they re for example client like H-Client or other clients that send flags or a client version.
+		URGENCY_LEVEL_WEIRD_CLIENT = 1,
+		URGENCY_LEVEL_CHEAT_CLIENT = 2,
+		URGENCY_LEVEL_ZOOM = 3,
+		URGENCY_LEVEL_BOT = 4,
+		URGENCY_LEVEL_ZOOM_AND_BOT = 5,
+		URGENCY_LEVEL_INSTANT_BAN = 6
+	};
+	/**
+	 * @brief How urgent it is to ban the player
+	 * 0 - normal player, nothing to do.
+	 * 1 - weird client 								// do nothing
+	 * 2 - known "half cheat client" ath for exmple.	// inform players periodically.
+	 * 3 - zoom											// inform players and ban.
+	 * 4 - bot 											// inform player and ban
+	 * 5 - both 										// inform player and ban
+	 * 6 - clients that should be banned instantly. 	// instant ban.
+	 * 7 - ...
+	 */
+	int m_ClientBanUrgencyLevel{0};
+	void UpdateClientBanUrgencyLevel(int updateTo){
+		if (updateTo < 0) return;
+		if((m_ClientBanUrgencyLevel == URGENCY_LEVEL_ZOOM && updateTo == URGENCY_LEVEL_BOT)
+			|| (m_ClientBanUrgencyLevel == URGENCY_LEVEL_BOT && updateTo == URGENCY_LEVEL_ZOOM)){
+			m_ClientBanUrgencyLevel = URGENCY_LEVEL_ZOOM_AND_BOT;
+			return;
+		}
+		m_ClientBanUrgencyLevel = max(m_ClientBanUrgencyLevel, updateTo);
+	}
+	void ResetClientBanUrgencyLevel(){m_ClientBanUrgencyLevel = URGENCY_LEVEL_NORMAL_PLAYER;}
+	int GetClientBanUrgency(){return  m_ClientBanUrgencyLevel;}
+
+	int m_LastClientMentionedTick{-1};
+	/**
+	 * @brief Resets the LastClientMentionedTick to -1 thus it is handled, as if the player's
+	 * client has never been mentioned before.
+	 */
+	void ResetLastClientMentionedTick(){m_LastClientMentionedTick = -1;};
+	/**
+	 * @brief This method is used to inform players periodically that a player may
+	 * be using a cheat client. It returns the tick, when the last mention was that
+	 * the player uses a weird client. If this method returns a value < 0, then
+	 * it has not been mentioned before that
+	 */
+	int GetLastClientMentionedTick(){return m_LastClientMentionedTick;}
+
+	/**
+	 * @brief This method is used to update the last mentioned tick of a player.
+	 * If the players ingame have been informed that this player uses a weird client,
+	 * this method should be called to update the mentioned tick to the current server tick.
+	 */
+	void UpdateLastClientMentionedTick(){m_LastClientMentionedTick = Server()->Tick();}
 
 	/**
 	 * @brief Flags 1,2,4,8 are default vanilla flags for chatting etc.
@@ -122,7 +207,23 @@ public:
 
 	static std::string ConvertToString(const std::vector<double> &vector);
 
+	/**
+	 * @brief This method should be called first followed by IsZoom and then by IsBot.
+	 */
+	void GeneralClientCheck();
+
+	/**
+	 * @brief This function contains some basic tests, if the player uses
+	 * 	a bot client using the client version and sent client flags.
+	 * 	This method should be called after GeneralClientCheck.
+	 */
 	bool IsBot();
+
+	/**
+	 * @brief This here also uses some basic detection based on
+	 * player falgs and client version.
+	 * This method should be called after GeneralClientCheck.
+	 */
 	bool IsZoom();
 
 	// used for snapping to just update latency if the scoreboard is active
@@ -538,7 +639,7 @@ private:
 	// calculate speed
 	void CalculateBasedOnLastThreeMousePositionsOnTick();
 
-	bool IsZoomIndicator(double distance);
+	bool IsZoomIndicatorCursorDistance(double distance);
 	std::vector<double> m_ZoomDistances{};
 
 

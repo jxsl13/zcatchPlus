@@ -884,13 +884,22 @@ void CPlayer::UpdateLongTermDataOnTick() {
 
 	// cursor position from player.
 	double CurrentCursorDistanceFromTee = GetCurrentDistanceFromTee();
-	if (IsZoomIndicator(CurrentCursorDistanceFromTee)) {
+	if (IsZoomIndicatorCursorDistance(CurrentCursorDistanceFromTee)) {
 		m_ZoomDistances.push_back(CurrentCursorDistanceFromTee);
 	}
 	if (CurrentCursorDistanceFromTee > m_BiggestCursorDistanceFromTee)
 	{
 		// update member.
 		m_BiggestCursorDistanceFromTee = CurrentCursorDistanceFromTee;
+	}
+}
+
+void CPlayer::GeneralClientCheck(){
+
+	if (HasIrregularFlags() || HasIrregularClientVersion())
+	{
+		UpdateClientBanUrgencyLevel(URGENCY_LEVEL_CHEAT_CLIENT);
+		UpdateCurrentClientDescription("Cheat Client.");
 	}
 }
 
@@ -910,6 +919,8 @@ bool CPlayer::IsBot() {
 		hasKClientBotInputFlag = hasKClientBotInputFlag || ConvertToBitMask(Flags.at(i)).test(8);
 	}
 	if (hasKClientRegularInputFlag && hasKClientBotInputFlag && version == 0) {
+		UpdateClientBanUrgencyLevel(URGENCY_LEVEL_BOT);
+		UpdateCurrentClientDescription("Currently botting.");
 		return true;
 	}
 	// K-Client end
@@ -924,6 +935,8 @@ bool CPlayer::IsBot() {
 			hasSnowflakeFlags = hasSnowflakeFlags || (currentBitmask.test(5) && currentBitmask.test(6));
 		}
 		if (hasSnowflakeFlags) {
+			UpdateClientBanUrgencyLevel(URGENCY_LEVEL_INSTANT_BAN);
+			UpdateCurrentClientDescription("A bot client that should be banned immediately.");
 			return true;
 		}
 	}
@@ -933,7 +946,10 @@ bool CPlayer::IsBot() {
 	case 1331:; // Prem's Grenade Bot Client
 	case 708:; 	// Baumalein Client
 	case 502:; // FClient
-	case 602: return true;	// zClient
+	case 602:
+	UpdateClientBanUrgencyLevel(URGENCY_LEVEL_INSTANT_BAN);
+	UpdateCurrentClientDescription("A client that should be banned immediately.");
+	return true;	// zClient
 	default:;
 	}
 
@@ -944,28 +960,30 @@ bool CPlayer::IsBot() {
 
 
 
-bool CPlayer::IsZoomIndicator(double distance) {
+bool CPlayer::IsZoomIndicatorCursorDistance(double distance) {
 	std::vector<int> Flags = GetIrregularFlags();
 	int version = GetClientVersion();
 	// K-Client
 	bool IsKClient = false;
 	for (size_t i = 0; i < Flags.size(); ++i)
 	{
-		// K-Client flags
-		if (512 <= Flags.at(i) && Flags.at(i) <=  576) {
+		if (ConvertToBitMask(Flags.at(i)).test(9)) {
 			IsKClient = IsKClient || true;
 		}
-
 	}
 	// Then truely K-Client
 	IsKClient = IsKClient && version == 0;
 
 	if (IsKClient && distance >= 1000.1) { // 1000 is the default dyn cam distance of K-Client
 		// K-Client with zoom stuff.
+		UpdateClientBanUrgencyLevel(URGENCY_LEVEL_ZOOM);
+		UpdateCurrentClientDescription("Using Zoom.");
 		return true;
 	} else if (distance >= 800.1 && version == 0) {
 		// Either normal vanilla or also botless K-Client
 		// Vanilla client with most likely zoom stuff
+		UpdateClientBanUrgencyLevel(URGENCY_LEVEL_ZOOM);
+		UpdateCurrentClientDescription("Using Zoom.");
 		return true;
 	}
 

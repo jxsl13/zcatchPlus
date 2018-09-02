@@ -140,7 +140,10 @@ MACRO_CONFIG_INT(SvSqliteHistorian, sv_sqlite_historian, 0, 0, 1, CFGFLAG_SERVER
 MACRO_CONFIG_STR(SvSqliteHistorianFileName, sv_sqlite_historian_file, 64, "", CFGFLAG_SERVER|CFGFLAG_NONTEEHISTORIC, "Sqlite Historian file name. Change to have an own file format or leave as is to have the default format.")
 MACRO_CONFIG_INT(SvBotDetection, sv_bot_detection, 1, 0, 1, CFGFLAG_SERVER, "Enable(1) or disables(0) bot detection.")
 MACRO_CONFIG_STR(SvBotDetectionFile, sv_bot_detection_file, 64, "botdetection", CFGFLAG_SERVER|CFGFLAG_NONTEEHISTORIC, "Bot detection file name.")
-MACRO_CONFIG_INT(SvAutomaticBan, sv_automatic_ban, 1, 0, 1, CFGFLAG_SERVER, "Enable(1) or disables(0) the automatic banning of botters/ zoom client users.")
+
+MACRO_CONFIG_INT(SvAutomaticBanMinUrgencyLevel, sv_auto_ban_min_level, 3, 0, 6, CFGFLAG_SERVER, "Bans every player of >= sv_auto_ban_min_level, 0 - off, 1 - weird client, 2 - known cheat client, 3 - zoom, 4 - bot, 5 - zoom & bot, 6 - instant ban candidates.")
+MACRO_CONFIG_INT(SvCheatClientMentionInterval, sv_cheat_mention_interval, 120, 0, 3600, CFGFLAG_SERVER, "After how many seconds to repeat that a player is using a weird client that is categorized >= (sv_auto_ban_min_level: 2),  0 - off")
+MACRO_CONFIG_INT(SvAutomaticBanTime, sv_auto_ban_time, 30, 1, 1440, CFGFLAG_SERVER, "For how many minutes to ban the player that was automatically detected?")
 
 MACRO_CONFIG_INT(SvFastAimFirstAndThirdPositionDistanceTolerance, sv_faim_tollerance_1_and_3_dist, 24, 0, 1000, CFGFLAG_SERVER, "How much the distance between the first and third position of a player's mouse may differ for a fast aiming bot to be detected.")
 MACRO_CONFIG_INT(SvFastAimDistanceTravelledTolerance, sv_faim_tollerance_dist_travel, 100, 0, 2000, CFGFLAG_SERVER, "How much the mouse has to travel within three inputs before the fast aim is checked.")

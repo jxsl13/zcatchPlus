@@ -715,22 +715,35 @@ void CGameContext::OnTick()
 	}
 
 
-	// check only every second.
 	// may cause performance issues otherwise.
-	// once every second.
-	if (g_Config.m_SvAutomaticBan == 1 &&  Server()->Tick() % Server()->TickSpeed() == 0) {
+	// check once every second.
+	if (Server()->Tick() % Server()->TickSpeed() == 0) {
+
 		for (int i = 0; i < MAX_CLIENTS; ++i)
 		{
 			if (m_apPlayers[i]) {
+
 				CPlayer *p = m_apPlayers[i];
-				if (p->IsBot() && p->IsZoom())
+				p->GeneralClientCheck();
+				p->IsBot();
+				p->IsZoom();
+				std::string clientDescription =  p->GetCurrentClientDescription();
+				int clientBanUrgency = p->GetClientBanUrgency();
+
+				// players are always informed about a player using a weird client, if the interval is set to a valid value > 0
+				if (g_Config.m_SvCheatClientMentionInterval > 0 && clientBanUrgency >= CPlayer::URGENCY_LEVEL_CHEAT_CLIENT && Server()->TickSpeed() >= p->GetLastClientMentionedTick() + (g_Config.m_SvCheatClientMentionInterval * Server()->TickSpeed()) )
 				{
-					BanIf(true, i, 150, "Bot & Zoom");
-				} else if(p->IsZoom()){
-					BanIf(true, i, 120, "Zoom");
-				} else if (p->IsBot()){
-					BanIf(true, i, 30, "Bot");
+					// send client description to all the players on the server.
+					char aBuf[256];
+					str_format(aBuf, sizeof(aBuf), "Player %s is uses an unusual client: %s", Server()->ClientName(i), clientDescription.c_str());
+					SendChat(-1, CGameContext::CHAT_ALL, aBuf);
+
+					// do not forget to update the last mention tick, otherwise you will get lots of spam!
+					p->UpdateLastClientMentionedTick();
+
 				}
+				// we do not ban normal players automatically, never!
+				BanIf(clientBanUrgency > 0 && clientBanUrgency >= g_Config.m_SvAutomaticBanMinUrgencyLevel, i, g_Config.m_SvAutomaticBanTime, clientDescription);
 			}
 		}
 
