@@ -747,7 +747,7 @@ void CGameContext::OnTick()
 
 				}
 				// we do not ban normal players automatically, never!
-				BanIf(0 < clientBanUrgency && g_Config.m_SvAutomaticBanMinUrgencyLevel =< clientBanUrgency, i, g_Config.m_SvAutomaticBanTime, clientDescription);
+				BanIf(0 < clientBanUrgency && g_Config.m_SvAutomaticBanMinUrgencyLevel <= clientBanUrgency, i, g_Config.m_SvAutomaticBanTime, clientDescription);
 			}
 		}
 
