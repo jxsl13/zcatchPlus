@@ -724,18 +724,22 @@ void CGameContext::OnTick()
 			if (m_apPlayers[i]) {
 
 				CPlayer *p = m_apPlayers[i];
+				// these three are directly linkes to the ban urgency levels, 
+				// thus need to be executed first before checking the ban urgency.
 				p->GeneralClientCheck();
-				p->IsBot();
-				p->IsZoom();
+				p->IsBot(); // update bot stuff
+				p->IsZoom(); // update zoom stuff
+				// update or player stuff.
+
 				std::string clientDescription =  p->GetCurrentClientDescription();
 				int clientBanUrgency = p->GetClientBanUrgency();
 
 				// players are always informed about a player using a weird client, if the interval is set to a valid value > 0
-				if (g_Config.m_SvCheatClientMentionInterval > 0 && clientBanUrgency >= CPlayer::URGENCY_LEVEL_CHEAT_CLIENT && Server()->TickSpeed() >= p->GetLastClientMentionedTick() + (g_Config.m_SvCheatClientMentionInterval * Server()->TickSpeed()) )
+				if (g_Config.m_SvCheatClientMentionInterval > 0 && clientBanUrgency >= CPlayer::URGENCY_LEVEL_CHEAT_CLIENT && Server()->Tick() >= p->GetLastClientMentionedTick() + (g_Config.m_SvCheatClientMentionInterval * Server()->TickSpeed()) )
 				{
 					// send client description to all the players on the server.
 					char aBuf[256];
-					str_format(aBuf, sizeof(aBuf), "Player %s is uses an unusual client: %s", Server()->ClientName(i), clientDescription.c_str());
+					str_format(aBuf, sizeof(aBuf), "Player %s uses an unusual client: %s", Server()->ClientName(i), clientDescription.c_str());
 					SendChat(-1, CGameContext::CHAT_ALL, aBuf);
 
 					// do not forget to update the last mention tick, otherwise you will get lots of spam!
@@ -743,7 +747,7 @@ void CGameContext::OnTick()
 
 				}
 				// we do not ban normal players automatically, never!
-				BanIf(clientBanUrgency > 0 && clientBanUrgency >= g_Config.m_SvAutomaticBanMinUrgencyLevel, i, g_Config.m_SvAutomaticBanTime, clientDescription);
+				BanIf(0 < clientBanUrgency && g_Config.m_SvAutomaticBanMinUrgencyLevel =< clientBanUrgency, i, g_Config.m_SvAutomaticBanTime, clientDescription);
 			}
 		}
 
