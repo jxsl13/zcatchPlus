@@ -349,6 +349,10 @@ public:
 	static void ConBanNickByName(IConsole::IResult *pResult, void *pUserData);
 	static void ConBanNickByID(IConsole::IResult *pResult, void *pUserData);
 
+	// range ban simplyfication
+	static void ConBanRangeLevel(IConsole::IResult *pResult, void *pUserData);
+
+
 	// snapshot stuff
 	static void ConSnapshotId(IConsole::IResult *pResult, void *pUserData);
 	static void ConPrintSnapshotId(IConsole::IResult *pResult, void *pUserData);

@@ -1725,7 +1725,7 @@ void CGameContext::OnMessage(int MsgID, CUnpacker *pUnpacker, int ClientID)
 		// set start infos
 		Server()->SetClientName(ClientID, pMsg->m_pName);
 
-		// nick name ban stuff
+		// nick name ban stuff on connection
 		if (IsInNicknameBanList(pMsg->m_pName)) {
 			char aBuf[128];
 			str_format(aBuf, sizeof(aBuf), "Your nickname '%s' is banned.", pMsg->m_pName);
@@ -1841,7 +1841,7 @@ void CGameContext::OnMessage(int MsgID, CUnpacker *pUnpacker, int ClientID)
 		str_copy(aOldName, Server()->ClientName(ClientID), sizeof(aOldName));
 		Server()->SetClientName(ClientID, pMsg->m_pName);
 
-		// nickban nickname ban
+		// nickban nickname ban on nick change.
 		if (IsInNicknameBanList(pMsg->m_pName)) {
 			char aBuf[128];
 			str_format(aBuf, sizeof(aBuf), "Your nickname '%s' is banned.", pMsg->m_pName);
@@ -2726,6 +2726,7 @@ void CGameContext::OnConsoleInit()
 	Console()->Register("give_rainbow_body", "i", CFGFLAG_SERVER, ConGiveRainbowBody, this, "Enables Rainbow body for given id.");
 	Console()->Register("give_rainbow_feet", "i", CFGFLAG_SERVER, ConGiveRainbowFeet, this, "Enables Rainbow feet for given id.");
 
+	Console()->Register("ban_range_level", "ii?ir", CFGFLAG_SERVER|CFGFLAG_MASTER|CFGFLAG_STORE, ConBanRangeLevel, this, "Ban ID with level of Subranges L for X minutes with reason Y: ban_range_level <ID> <L> <Minutes> <Reason>");
 
 }
 
@@ -2904,16 +2905,120 @@ void CGameContext::ConGiveRainbow(IConsole::IResult *pResult, void *pUserData) {
 	}
 }
 
+void CGameContext::ConBanRangeLevel(IConsole::IResult *pResult, void *pUserData)
+{
+	// id - level - minutes - reason
+	//CNetBan *pThis = static_cast<CNetBan *>(pUser);
+	CGameContext *pSelf = (CGameContext *)pUserData;
+
+	if (!pSelf || !pResult) {
+		dbg_msg("", "CGameContext::Error in ConBanRangeLevel");
+		return;
+	}
+	int playerID = pResult->GetInteger(0);
+	if(!pSelf->m_apPlayers[playerID]){
+		pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "net_ban", "ban error (invalid player id)");
+		return;
+	}
+
+	CPlayer *player = pSelf->m_apPlayers[playerID];
+
+	int level = pResult->GetInteger(1);
+	if(level < 1 || level > 3){
+		pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "net_ban", "ban error (invalid level)");
+		return;
+	}
+
+	char aIP[NETADDR_MAXSTRSIZE];
+	const NETADDR *playerAddress = pCServer->m_NetServer.ClientAddr(playerID);
+	net_addr_str(playerAddress, aIP, sizeof(aIP), false);
+	std::string subRange = std::string(aIP);
+	std::string lowerBound = "";
+	std::string upperBound = "";
+
+	if (playerAddress->type == NETTYPE_WEBSOCKET_IPV4 || playerAddress->type == NETTYPE_IPV4)
+	{
+		for (int i = 0; i < level; ++i)
+		{
+			subRange = subRange.substr(0, subRange.find_last_of("."));
+			lowerBound.append(".0");
+			upperBound.append(".255");
+		}
+		lowerBound = subRange + lowerBound;
+		upperBound = subRange + upperBound;
+
+	} else if (playerAddress->type == NETTYPE_IPV6)
+	{
+		pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "net_ban", "ban error (invalid IPv6 is not supported)");
+		return;
+		// Not working, seems to be not supported
+		/**
+		subRange.erase(std::remove(subRange.begin(), subRange.end(), '['), subRange.end());
+		subRange.erase(std::remove(subRange.begin(), subRange.end(), ']'), subRange.end());
+
+		for (int i = 0; i < level; ++i)
+		{
+			subRange = subRange.substr(0, subRange.find_last_of(":"));
+			lowerBound.append(":0");
+			upperBound.append(":ffff");
+		}
+		lowerBound = subRange + lowerBound;
+		upperBound = subRange + upperBound;
+		*/
+
+	} else {
+		pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "net_ban", "ban error (invalid ip version/not supported)");
+		return;
+	}
+
+	const char *pStr1 = lowerBound.c_str();
+	const char *pStr2 = upperBound.c_str();
+	int Minutes = pResult->NumArguments()>2 ? clamp(pResult->GetInteger(2), 0, 44640) : 30;
+	const char *pReason = pResult->NumArguments()>3 ? pResult->GetString(3) : "No reason given";
+	CServerBan *pCServerBan = pSelf->GetBanServer();
+
+	CNetRange Range;
+	if(net_addr_from_str(&Range.m_LB, pStr1) == 0 && net_addr_from_str(&Range.m_UB, pStr2) == 0)
+		pCServerBan->BanRange(&Range, Minutes*60, pReason);
+	else
+		pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "net_ban", "ban error (invalid range)");
+}
+
+
 void CGameContext::ConBanNickByName(IConsole::IResult *pResult, void *pUserData) {
 	CGameContext *pSelf = (CGameContext *)pUserData;
 	const char* nickToBan(pResult->GetString(0));
+	int id = -1;
+	// check all nicks of ingame players.
+	for (int i = 0; i < MAX_CLIENTS; ++i)
+	{
+		if (str_comp(pSelf->Server()->ClientName(i), nickToBan) == 0)
+		{
+			id = i;
+			break;
+		}
+	}
+	// add to ban list
 	pSelf->AddToNicknameBanList(nickToBan);
+
+	// if player is on the server, kick him.
+	if (id >= 0)
+	{
+		char aBuf[48];
+		str_format(aBuf, sizeof(aBuf), "Your nickname '%s' is banned.", pSelf->Server()->ClientName(id));
+		pSelf->Server()->Kick(id, aBuf);
+	}
+
 }
 
 void CGameContext::ConBanNickByID(IConsole::IResult *pResult, void *pUserData) {
 	CGameContext *pSelf = (CGameContext *)pUserData;
 	int playerID(pResult->GetInteger(0));
 	pSelf->AddToNicknameBanList(playerID);
+
+	char aBuf[48];
+	str_format(aBuf, sizeof(aBuf), "Your nickname '%s' is banned.", pSelf->Server()->ClientName(playerID));
+	pSelf->Server()->Kick(playerID, aBuf);
 }
 
 void CGameContext::ConRemoveFromBannedNicks(IConsole::IResult *pResult, void *pUserData) {

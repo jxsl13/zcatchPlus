@@ -899,7 +899,7 @@ void CPlayer::GeneralClientCheck(){
 	if (HasIrregularFlags() || HasIrregularClientVersion())
 	{
 		UpdateClientBanUrgencyLevel(URGENCY_LEVEL_CHEAT_CLIENT);
-		UpdateCurrentClientDescription("Cheat Client.");
+		UpdateCurrentClientDescription("Irregular Client.");
 	}
 }
 
