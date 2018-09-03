@@ -2921,29 +2921,33 @@ void CGameContext::ConBanRangeLevel(IConsole::IResult *pResult, void *pUserData)
 		return;
 	}
 
-	CPlayer *player = pSelf->m_apPlayers[playerID];
-
 	int level = pResult->GetInteger(1);
 	if(level < 1 || level > 3){
 		pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "net_ban", "ban error (invalid level)");
 		return;
 	}
-
+	// get ip address of player with playerID
 	char aIP[NETADDR_MAXSTRSIZE];
+	CServer *pCServer = pSelf->GetBanServer()->Server() ;
 	const NETADDR *playerAddress = pCServer->m_NetServer.ClientAddr(playerID);
 	net_addr_str(playerAddress, aIP, sizeof(aIP), false);
 	std::string subRange = std::string(aIP);
+
+	// create lower and upper bounds based on that ip address
 	std::string lowerBound = "";
 	std::string upperBound = "";
 
 	if (playerAddress->type == NETTYPE_WEBSOCKET_IPV4 || playerAddress->type == NETTYPE_IPV4)
 	{
 		for (int i = 0; i < level; ++i)
-		{
+		{	
+			// removes last partition of the ip address per iteration
 			subRange = subRange.substr(0, subRange.find_last_of("."));
+			// adds a lower and upper bound per iteration
 			lowerBound.append(".0");
 			upperBound.append(".255");
 		}
+		// resulting boundaries
 		lowerBound = subRange + lowerBound;
 		upperBound = subRange + upperBound;
 
@@ -2973,10 +2977,14 @@ void CGameContext::ConBanRangeLevel(IConsole::IResult *pResult, void *pUserData)
 
 	const char *pStr1 = lowerBound.c_str();
 	const char *pStr2 = upperBound.c_str();
+
+	// if minutes is not set, set minutes
 	int Minutes = pResult->NumArguments()>2 ? clamp(pResult->GetInteger(2), 0, 44640) : 30;
+	// if reason is not given, set reason
 	const char *pReason = pResult->NumArguments()>3 ? pResult->GetString(3) : "No reason given";
 	CServerBan *pCServerBan = pSelf->GetBanServer();
 
+	// ban range if valid.
 	CNetRange Range;
 	if(net_addr_from_str(&Range.m_LB, pStr1) == 0 && net_addr_from_str(&Range.m_UB, pStr2) == 0)
 		pCServerBan->BanRange(&Range, Minutes*60, pReason);
