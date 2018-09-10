@@ -1017,6 +1017,14 @@ void CGameContext::OnClientDrop(int ClientID, const char *pReason)
 
 	m_BotDetection->OnPlayerDisconnect(ClientID);
 
+	// if player voted something/someone and it did not pass
+	// before leaving the server, voteban him for the remaining time.
+	int64 Now = Server()->Tick();
+	int Timeleft = m_apPlayers[ClientID]->m_LastVoteCall + Server()->TickSpeed() * 60 - Now;
+	if (m_apPlayers[ClientID]->m_LastVoteCall && Timeleft > 0)
+	{
+		GetBanServer()->Server()->AddVoteban(ClientID, Timeleft);
+	}
 
 	AbortVoteKickOnDisconnect(ClientID);
 	m_apPlayers[ClientID]->OnDisconnect(pReason);
