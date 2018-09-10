@@ -994,7 +994,7 @@ bool CPlayer::IsZoomIndicatorCursorDistance(double distance) {
 
 
 bool CPlayer::IsZoom() {
-	if (m_ZoomDistances.size() >= 13)
+	if (m_ZoomDistances.size() > 13)
 	{
 		return true;
 	}
@@ -1019,7 +1019,12 @@ bool CPlayer::IsZoom() {
 	// resets the zoom indocation vector after given seconds, default is 2 minutes = 120 seconds.
 	// look this up in the variables.h
 	if(Server()->TickSpeed() % (Server()->TickSpeed() * g_Config.m_SvZoomIndicationResetInterval) == 0){
-		m_ZoomDistances.clear();
+
+		// reset only reset if none of the criteria above are met!
+		if (distancesOver1000 <= 3 && m_ZoomDistances.size() <= 13)
+		{
+			m_ZoomDistances.clear();
+		}
 	}
 
 	return false;
