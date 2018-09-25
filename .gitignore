@@ -33,8 +33,9 @@ banmaster*
 /ranking.db-journal
 *.db
 .DS_Store
-
 teehistorian/*
 DEBUG_LOG.txt
 banned_nicks.txt
 
+dumps*
+supervise*

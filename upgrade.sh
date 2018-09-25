@@ -1,6 +1,7 @@
 #!/bin/bash
 # updates source and restarts the server with the updated build
-. ./function_variable_definitions.sh --source-only
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"
+. $DIR/function_variable_definitions.sh --source-only
 
 
 backup_server_config

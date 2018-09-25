@@ -1,6 +1,6 @@
 #!/bin/bash
 
-BASE_DIR=$(pwd)
+BASE_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"
 CORES="1"
 
 back_to_base_directory (){
@@ -173,6 +173,8 @@ start_server_debugging (){
 }
 
 restart_server (){
+    back_to_base_directory
+
     exec 3<> fifofile
     if [[ -p fifofile ]]; then
     echo "say Server Restart due to Update" > fifofile
