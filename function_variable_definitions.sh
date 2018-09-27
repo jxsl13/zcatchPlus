@@ -154,10 +154,10 @@ start_server_debugging (){
         	echo "Press enter a few times to skip this step"
         	sudo sysctl -w kern.corefile=core.%P
         	echo "Your core dump files can be found at: $(sysctl -n kern.corefile)"
-        fi
 
-        ulimit -c unlimited
-        ./zcatch_srv_x86_d
+            ulimit -c unlimited
+            ./zcatch_srv_x86_d
+        fi
 
         #elif [[ "$OSTYPE" == "cygwin" ]]; then
         # POSIX compatibility layer and Linux environment emulation for Windows
