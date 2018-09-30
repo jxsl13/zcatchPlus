@@ -12,7 +12,8 @@ back_to_base_directory
 
 if [[ "$OSTYPE" == "linux-gnu" ]]; then
        # default is linux
-
+    COREDUMP_PATH="core"
+    BINARY_NAME="zcatch_srv_d"
 elif [[ "$OSTYPE" == "darwin"* ]]; then
     # Mac OSX
 
