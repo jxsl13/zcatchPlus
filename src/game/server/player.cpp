@@ -906,13 +906,6 @@ void CPlayer::GeneralClientCheck(){
     {
 
         switch(GetClientVersion()){
-            // ATH
-            case 10072:
-            {
-                UpdateCurrentClientDescription("ATH.");
-                UpdateClientBanUrgencyLevel(URGENCY_LEVEL_CHEAT_CLIENT);
-                break;
-            }
 
             // Grenade Bot by Prem
             case 1331:
@@ -989,6 +982,12 @@ void CPlayer::GeneralClientCheck(){
                     version == 605 ||
                     version == 1){
                     UpdateCurrentClientDescription("Cheat Client.");
+                    UpdateClientBanUrgencyLevel(URGENCY_LEVEL_CHEAT_CLIENT);
+
+                // ATH
+                } else if( 10071 <= version && version <= 10072)
+                {
+                    UpdateCurrentClientDescription("ATH.");
                     UpdateClientBanUrgencyLevel(URGENCY_LEVEL_CHEAT_CLIENT);
                 }
 
