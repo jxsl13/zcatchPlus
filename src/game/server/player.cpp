@@ -975,6 +975,7 @@ void CPlayer::GeneralClientCheck(){
 
             if (GetClientBanUrgency() == 0)
             {
+                dbg_msg("TEST#1", "ENTERING HERE");
                 int version = GetClientVersion();
 
                 if((version >= 15 && version < 100) ||
@@ -992,7 +993,7 @@ void CPlayer::GeneralClientCheck(){
                 }
 
             }
-
+            dbg_msg("TEST#2", "LEAVING HERE");
         }
     }
 }
