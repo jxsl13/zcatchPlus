@@ -2,12 +2,13 @@
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"
 . $DIR/function_variable_definitions.sh --source-only
 
+back_to_base_directory
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"
+
 
 
 COREDUMP_PATH="core"
 BINARY_NAME="zcatch_srv_d"
-
-back_to_base_directory
 
 
 if [[ "$OSTYPE" == "linux-gnu" ]]; then

@@ -3811,7 +3811,7 @@ bool CGameContext::PrintIrregularFlags(int ClientID, bool currentFlags) {
 }
 
 void CGameContext::PrintStringStreamToConsoleAndReset(std::stringstream &s, const char* ConsoleLabel){
-	Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, ConsoleLabel, s.str().c_str());
+	Console()->Print(IConsole::OUTPUT_LEVEL_ADDINFO, ConsoleLabel, s.str().c_str());
 	s.str(std::string());
 }
 
@@ -3824,7 +3824,7 @@ void CGameContext::PrintLongTermData(int ClientID) {
 
 		// header
 		str_format(aBuf, sizeof(aBuf), "Showing long term data of player '%s'.", Server()->ClientName(ClientID));
-		Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Long_Term_Data", aBuf);
+		Console()->Print(IConsole::OUTPUT_LEVEL_ADDINFO, "Long_Term_Data", aBuf);
 
 		s << std::setw(headerColumnWidth) << std::left << "Biggest Cursor Distance: " << std::setw(singleNumberColumnWidth) << std::right << m_apPlayers[ClientID]->GetBiggestCursorDistanceFromTee();
 		PrintStringStreamToConsoleAndReset(s, "Long_Term_Data");
@@ -3866,7 +3866,7 @@ void CGameContext::PrintLongTermData(int ClientID) {
 		PrintStringStreamToConsoleAndReset(s, "Long_Term_Data");
 
 	} else {
-		Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Server", "Invalid id given.");
+		Console()->Print(IConsole::OUTPUT_LEVEL_ADDINFO, "Server", "Invalid id given.");
 	}
 }
 
