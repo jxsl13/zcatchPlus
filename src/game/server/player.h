@@ -215,6 +215,9 @@ public:
     int GetClientVersion() {
         return m_ClientVersion;
     }
+
+
+
     // ########### end of flags/ client version stuff ##########
     /**
      * @brief Returns a vector with at least 32 elements representing zeroes and ones.
@@ -620,6 +623,31 @@ public:
         }
     }
 
+    // ########## weird messages sent by the client ##########
+    void AddWeirdMessage(std::string msg){
+        if (msg.length() > 0)
+        {
+            m_WeirdClientMessages.insert(msg);
+        }
+    }
+
+    std::vector<std::string> GetWeirdClientMessages(){
+        // return vector
+        std::vector<std::string> v;
+        size_t size = m_WeirdClientMessages.size();
+
+        // iterate through set
+        std::set<std::string>::iterator setIt = m_WeirdClientMessages.begin();
+        for (size_t i = 0; i < size; ++i)
+        {
+            v.push_back(*setIt);
+            setIt++;
+        }
+        return v;
+    }
+
+    // ########## weird messages sent by the client END ##########
+
 
 private:
     CCharacter *m_pCharacter;
@@ -631,6 +659,12 @@ private:
     // rainbow stuff
     int m_LastRainbowTick{0};
     // rainbow end
+
+    // ########## weird messages sent by the client ##########
+
+    std::set<std::string> m_WeirdClientMessages{};
+
+    // ########## weird messages sent by the client END ##########
 
     // ########## snapshot stuff ##########
     /**

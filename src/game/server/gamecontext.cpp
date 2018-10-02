@@ -1098,11 +1098,27 @@ void CGameContext::OnMessage(int MsgID, CUnpacker *pUnpacker, int ClientID)
 	CPlayer *pPlayer = m_apPlayers[ClientID];
 
 	// sets player's client version.
-	if (pPlayer && MsgID == (NETMSGTYPE_CL_CALLVOTE + 1))
-	{
-		int Version = pUnpacker->GetInt();
-		pPlayer->SetClientVersion(Version);
-		return;
+	if(pPlayer){
+		if (MsgID == (NETMSGTYPE_CL_CALLVOTE + 1))
+		{
+			int Version = pUnpacker->GetInt();
+			pPlayer->SetClientVersion(Version);
+			return;
+
+		} else if (MsgID != NETMSGTYPE_CL_SAY &&
+					MsgID != NETMSGTYPE_CL_CALLVOTE &&
+					MsgID != NETMSGTYPE_CL_VOTE &&
+					MsgID != NETMSGTYPE_CL_SETTEAM &&
+					MsgID != NETMSGTYPE_CL_SETSPECTATORMODE &&
+					MsgID != NETMSGTYPE_CL_STARTINFO &&
+					MsgID != NETMSGTYPE_CL_CHANGEINFO &&
+					MsgID != NETMSGTYPE_CL_EMOTICON &&
+					MsgID != NETMSGTYPE_CL_KILL)
+		{
+			// todo: testing
+			pPlayer->AddWeirdMessage(std::string(pUnpacker->GetString()));
+			return;
+		}
 	}
 
 	/*teehistorian*/
@@ -1117,6 +1133,11 @@ void CGameContext::OnMessage(int MsgID, CUnpacker *pUnpacker, int ClientID)
 
 	if (!pRawMsg)
 	{
+		// todo: testing
+		char aBuf[256];
+		str_format(aBuf, sizeof(aBuf), "Msg '%s'(%d):failed'%s'", m_NetObjHandler.GetMsgName(MsgID), MsgID, m_NetObjHandler.FailedMsgOn());
+		pPlayer->AddWeirdMessage(std::string(aBuf));
+
 		if (g_Config.m_Debug)
 		{
 			char aBuf[256];
@@ -2737,7 +2758,53 @@ void CGameContext::OnConsoleInit()
 	Console()->Register("give_rainbow_feet", "i", CFGFLAG_SERVER, ConGiveRainbowFeet, this, "Enables Rainbow feet for given id.");
 
 	Console()->Register("ban_range_level", "ii?ir", CFGFLAG_SERVER|CFGFLAG_MASTER|CFGFLAG_STORE, ConBanRangeLevel, this, "Ban ID with level of Subranges L for X minutes with reason Y: ban_range_level <ID> <L> <Minutes> <Reason>");
+	Console()->Register("show_weird_client_messages", "i", CFGFLAG_SERVER|CFGFLAG_MASTER|CFGFLAG_STORE, ConShowWeirdClientMessages, this, "Lists all unique weird client messages of a player's client given the <ID>");
 
+}
+
+void CGameContext::ConShowWeirdClientMessages(IConsole::IResult *pResult, void *pUserData){
+	CGameContext *pSelf = (CGameContext *)pUserData;
+	int playerID(pResult->GetInteger(0));
+	if (playerID >= 0 && playerID < MAX_CLIENTS)
+	{
+
+		if (pSelf->m_apPlayers[playerID])
+		{
+			std::vector<std::string> v = pSelf->m_apPlayers[playerID]->GetWeirdClientMessages();
+
+			char aBuf[256];
+
+			if (v.size() <= 0)
+			{
+				str_format(aBuf, sizeof(aBuf), "Player '%s' has got no weird client messages.", pSelf->Server()->ClientName(playerID));
+
+				pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "weird_msg", aBuf);
+				return;
+			}
+
+
+			str_format(aBuf, sizeof(aBuf), "Showing weird client messages of player '%s'. Client version %d",
+		           pSelf->Server()->ClientName(playerID),
+		           pSelf->m_apPlayers[playerID]->GetClientVersion());
+
+			pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "weird_msg", aBuf);
+
+			for (size_t i = 0; i < v.size(); ++i)
+			{
+				pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "weird_msg", v.at(i).c_str());
+			}
+
+		} else {
+			char aBuf[32];
+			str_format(aBuf, sizeof(aBuf), "no such player with id '%d'", playerID);
+			pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Server", aBuf);
+		}
+
+	} else {
+		char aBuf[24];
+		str_format(aBuf, sizeof(aBuf), "invalid id '%d'", playerID);
+		pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Server", aBuf);
+	}
 }
 
 void CGameContext::ConShowCurrentData(IConsole::IResult *pResult, void *pUserData) {
@@ -3176,9 +3243,9 @@ void CGameContext::ConList(IConsole::IResult *pResult, void *pUserData) {
 
 			str_format(aFlags, sizeof(aFlags), "[%s]", pSelf->m_apPlayers[i]->HasIrregularFlags() ? "I" : "N");
 
-			str_format(aClientVersion, sizeof(aClientVersion), "%s[%6s]",
+			str_format(aClientVersion, sizeof(aClientVersion), "%s[%6d]",
 			           pSelf->m_apPlayers[i]->HasIrregularClientVersion() ? "[I]" : "[N]",
-			           CPlayer::ConvertToString(pSelf->m_apPlayers[i]->GetClientVersion()).c_str());
+			           pSelf->m_apPlayers[i]->GetClientVersion());
 
 			str_format(aTracked, sizeof(aTracked), "%s",
 			           pSelf->m_apPlayers[i]->GetTeeHistorianTracked() ? "[T]" : "[N]");
@@ -3775,10 +3842,10 @@ bool CGameContext::PrintIrregularFlags(int ClientID, bool currentFlags) {
 			//Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Server", aBuf);
 			return false;
 		}
-		str_format(aBuf, sizeof(aBuf), "Showing %s flags of player '%s'. Client version %s",
+		str_format(aBuf, sizeof(aBuf), "Showing %s flags of player '%s'. Client version %d",
 		           currentFlags ? "current" : "irregular ",
 		           Server()->ClientName(ClientID),
-		           CPlayer::ConvertToString(m_apPlayers[ClientID]->GetClientVersion()).c_str());
+		           m_apPlayers[ClientID]->GetClientVersion());
 
 		Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "Server", aBuf);
 
