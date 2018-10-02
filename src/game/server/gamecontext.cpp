@@ -977,6 +977,10 @@ void CGameContext::OnClientConnected(int ClientID)
 	// Check which team the player should be on
 	const int StartTeam = g_Config.m_SvTournamentMode ? TEAM_SPECTATORS : m_pController->GetAutoTeam(ClientID);
 
+	// Potential cleanup, taken from DDNet, if slot is still not taken (might as well be a double free vulnerability)
+	if(m_apPlayers[ClientID])
+		delete m_apPlayers[ClientID];
+
 	m_apPlayers[ClientID] = new(ClientID) CPlayer(this, ClientID, StartTeam);
 	//players[client_id].init(client_id);
 	//players[client_id].client_id = client_id;
