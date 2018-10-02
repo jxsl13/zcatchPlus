@@ -755,8 +755,16 @@ void CGameContext::OnTick()
 					p->UpdateLastClientMentionedTick();
 
 				}
-				// we do not ban normal players automatically, never!
-				BanIf(0 < clientBanUrgency && g_Config.m_SvAutomaticBanMinUrgencyLevel <= clientBanUrgency, i, g_Config.m_SvAutomaticBanTime, clientDescription);
+				
+				if (g_Config.m_SvAutomaticBanMinUrgencyLevel > 0)
+				{
+					BanIf(0 < clientBanUrgency && // we do not ban normal players automatically, never!
+						g_Config.m_SvAutomaticBanMinUrgencyLevel <= clientBanUrgency, // if ban urgency at least what the level stated in the server config
+						i,
+						g_Config.m_SvAutomaticBanTime,
+						clientDescription);
+				}
+				
 			}
 		}
 
