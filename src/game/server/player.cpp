@@ -75,6 +75,9 @@ CPlayer::CPlayer(CGameContext *pGameServer, int ClientID, int Team)
     m_CurrentTickPlayer.Init(ClientID, Server()->ClientJoinHash(ClientID), Server()->Tick());
     // This will not change
 
+    // ban stuff
+    ResetClientBanUrgencyLevel();
+
 }
 
 CPlayer::~CPlayer()
@@ -971,11 +974,12 @@ void CPlayer::GeneralClientCheck(){
                 }
                 break;
             }
+            default: break;
+        }
 
-
-            if (GetClientBanUrgency() == 0)
+        // bigger ranges of version numbers.
+        if (GetClientBanUrgency() == URGENCY_LEVEL_NORMAL_PLAYER)
             {
-                dbg_msg("TEST#1", "ENTERING HERE");
                 int version = GetClientVersion();
 
                 if((version >= 15 && version < 100) ||
@@ -993,8 +997,6 @@ void CPlayer::GeneralClientCheck(){
                 }
 
             }
-            dbg_msg("TEST#2", "LEAVING HERE");
-        }
     }
 }
 

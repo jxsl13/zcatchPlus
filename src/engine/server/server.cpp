@@ -2454,13 +2454,14 @@ int main(int argc, const char **argv) // ignore_convention
 	pEngine->InitLogfile();
 
 
-	// unexpected shutdown with ctrl-c handling
-	// struct sigaction sigIntHandler;
-	// sigIntHandler.sa_handler = ErrorSignalHandler;
-	// sigemptyset(&sigIntHandler.sa_mask);
-	// sigIntHandler.sa_flags = 0;
-	// sigaction(SIGINT, &sigIntHandler, NULL);
+	// server kill handling!
+
+	// sent when terminal window is closed
+	std::signal(SIGHUP, ErrorSignalHandler);
+	// sent on ctrl-c
 	std::signal(SIGINT, ErrorSignalHandler);
+	// user defined kill signal
+	std::signal(SIGUSR1, ErrorSignalHandler);
 
 
 	// run the server

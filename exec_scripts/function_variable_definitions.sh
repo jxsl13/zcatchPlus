@@ -158,16 +158,16 @@ start_server_debugging (){
 
         elif [[ "$OSTYPE" == "darwin"* ]]; then
         # Mac OSX
-        if [[ $(sysctl -n kern.corefile) = "/cores/core.%P" ]]; then
-        	echo "To change the dump location to the current folder, please enter your sudo password."
-        	echo "If you do not want to change the path, please take note that the core dump tiles will be saved in /cores"
-        	echo "Press enter a few times to skip this step"
-        	sudo sysctl -w kern.corefile=core.%P
-        	echo "Your core dump files can be found at: $(sysctl -n kern.corefile)"
+            if [[ $(sysctl -n kern.corefile) = "/cores/core.%P" ]]; then
+        	   echo "To change the dump location to the current folder, please enter your sudo password."
+        	   echo "If you do not want to change the path, please take note that the core dump tiles will be saved in /cores"
+        	   echo "Press enter a few times to skip this step"
+        	   sudo sysctl -w kern.corefile=core.%P
+        	   echo "Your core dump files can be found at: $(sysctl -n kern.corefile)"
+            fi
 
             ulimit -c unlimited
-            ./zcatch_srv_x86_d
-        fi
+            ./zcatch_srv_x86_64_d
 
         #elif [[ "$OSTYPE" == "cygwin" ]]; then
         # POSIX compatibility layer and Linux environment emulation for Windows
