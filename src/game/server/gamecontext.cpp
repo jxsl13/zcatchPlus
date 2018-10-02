@@ -738,7 +738,8 @@ void CGameContext::OnTick()
 				std::string clientDescription =  p->GetCurrentClientDescription();
 				int clientBanUrgency = p->GetClientBanUrgency();
 
-				// players are always informed about a player using a weird client, if the interval is set to a valid value > 0
+				// players are always informed about a player using a weird client,
+				// if the interval is set to a valid value > 0
 				if (g_Config.m_SvCheatClientMentionInterval > 0 && // interval has got to be positive otherwise mentioning is turned off
 				clientBanUrgency >= CPlayer::URGENCY_LEVEL_CHEAT_CLIENT &&
 				(p->GetLastClientMentionedTick() < 0 	// if the server does not run as long as the mention interval needed to pass before
@@ -751,20 +752,20 @@ void CGameContext::OnTick()
 					str_format(aBuf, sizeof(aBuf), "Player '%s' uses an unusual client: %s", Server()->ClientName(i), clientDescription.c_str());
 					SendChat(-1, CGameContext::CHAT_ALL, aBuf);
 
-					// do not forget to update the last mention tick, otherwise you will get lots of spam!
+					// do not forget to update the last mention tick,
+					// otherwise you will get lots of spam!
 					p->UpdateLastClientMentionedTick();
 
 				}
-				
-				if (g_Config.m_SvAutomaticBanMinUrgencyLevel > 0)
+				// if urgency level is set to 0 = CPlayer::URGENCY_LEVEL_NORMAL_PLAYER,
+				// banning is being disabled
+				if (g_Config.m_SvAutomaticBanMinUrgencyLevel > CPlayer::URGENCY_LEVEL_NORMAL_PLAYER)
 				{
-					BanIf(0 < clientBanUrgency && // we do not ban normal players automatically, never!
-						g_Config.m_SvAutomaticBanMinUrgencyLevel <= clientBanUrgency, // if ban urgency at least what the level stated in the server config
+					BanIf(g_Config.m_SvAutomaticBanMinUrgencyLevel <= clientBanUrgency, // if ban urgency at least what the level stated in the server config
 						i,
 						g_Config.m_SvAutomaticBanTime,
 						clientDescription);
 				}
-				
 			}
 		}
 
