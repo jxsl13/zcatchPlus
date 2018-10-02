@@ -648,6 +648,24 @@ public:
 
     // ########## weird messages sent by the client END ##########
 
+    // ########## afk kicking stuff ##########
+
+    int GetAfkTime(){
+        return m_AfkTime;
+    }
+
+    /**
+     * @brief This method is being called from GGameContect in order to fetch the necessary data
+     * from m_aClients there and calculate the afk time and set it here.
+     * @details [long description]
+     *
+     * @param afkTime [description]
+     */
+    void SetAfkTime(int afkTime){
+        m_AfkTime = (afkTime > 0) ? afkTime : 0;
+    }
+
+    // ######### afk kicking stuff end ##########
 
 private:
     CCharacter *m_pCharacter;
@@ -734,7 +752,7 @@ private:
         if(m_LastThreeMousePositions.size() < 3){
             m_LastThreeMousePositions.push_back(p);
         } else {
-            // == 3, remove front and push back p to keep this at 3 
+            // == 3, remove front and push back p to keep this at 3
             m_LastThreeMousePositions.pop_front();
             m_LastThreeMousePositions.push_back(p);
         }
@@ -753,6 +771,9 @@ private:
 
     // ########## log term data end ##########
 
+    // ########## afk kicking stuff ##########
+    int m_AfkTime{0};
+    // ########## afk kicking stuff END ##########
 
     //
     bool m_Spawning;

@@ -613,6 +613,10 @@ void CGameContext::OnTick()
 				m_BotDetection->AddPlayerCore(i, Server()->ClientJoinHash(i), &Char);
 			}
 			/*bot detection*/
+
+			// ########## CPlayer & CClient sync
+			m_apPlayers[i]->SetAfkTime(Server()->Tick() - GetBanServer()->Server()->m_aClients[i].m_LastInputTick);
+			// ##########
 		}
 	}
 
@@ -1036,6 +1040,7 @@ void CGameContext::OnClientDrop(int ClientID, const char *pReason)
 	m_apPlayers[ClientID]->OnDisconnect(pReason);
 
 	// player leaves or gets banned, print all of his data
+	// only visible in log
 	PrintIrregularFlags(ClientID);
 	PrintLongTermData(ClientID);
 

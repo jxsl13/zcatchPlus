@@ -1086,7 +1086,6 @@ bool CPlayer::IsZoom() {
         return true;
     }
 
-
     // resets the zoom indocation vector after given seconds, default is 2 minutes = 120 seconds.
     // look this up in the variables.h
     if(Server()->TickSpeed() % (Server()->TickSpeed() * g_Config.m_SvZoomIndicationResetInterval) == 0){
