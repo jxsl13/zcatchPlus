@@ -925,6 +925,21 @@ void CGameContext::OnClientEnter(int ClientID)
 	CPlayer *p = m_apPlayers[ClientID];
 	//world.insert_entity(&players[client_id]);
 
+
+	char aClientAddr[NETADDR_MAXSTRSIZE];
+	Server()->GetClientAddr(ClientID, aClientAddr, NETADDR_MAXSTRSIZE, true);
+
+	int ClientVersion = p->GetClientVersion(ClientID);
+	int Country = Server()->ClientCountry(ClientID);
+	const char* pName = Server()->ClientName(ClientID);
+	const char* pClan = Server()->ClientClan(ClientID);
+
+	char aBuf[256];
+	str_format(aBuf, sizeof(aBuf),"id=%d addr=%s version=%d name='%s' clan='%s' country=%d", ClientID, aClientAddr, ClientVersion, pName, pClan, Country);
+	Console()->Print(IConsole::OUTPUT_LEVEL_ADDINFO, "client_enter", aBuf);
+
+
+
 	p->Respawn();
 
 	/* begin zCatch */
@@ -981,7 +996,7 @@ void CGameContext::OnClientEnter(int ClientID)
 		char buf[128];
 		str_format(buf, sizeof(buf), "You will join the game when '%s' dies", Server()->ClientName(leader->GetCID()));
 		SendChatTarget(ClientID, buf);
-	}
+	}	
 	/* zCatch end */
 }
 
@@ -1024,6 +1039,8 @@ void CGameContext::OnClientConnected(int ClientID)
 		SendChatTarget(ClientID, "Please update your client to one that is protected against IP spoofing.");
 		SendChatTarget(ClientID, "One possible client could be the DDNet Client.");
 	}
+
+
 }
 
 void CGameContext::OnClientDrop(int ClientID, const char *pReason)
