@@ -6,6 +6,7 @@
 #include <sstream>
 #include <bitset>
 #include <base/math.h>
+#include <base/system.h>
 #include <engine/shared/config.h>
 #include <engine/map.h>
 #include <engine/console.h>
