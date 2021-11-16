@@ -1046,6 +1046,13 @@ void CGameContext::OnClientConnected(int ClientID)
 void CGameContext::OnClientDrop(int ClientID, const char *pReason)
 {
 
+	char aBuf[128];
+	char aClientAddr[NETADDR_MAXSTRSIZE];
+	Server()->GetClientAddr(ClientID, aClientAddr, NETADDR_MAXSTRSIZE, true);
+
+	str_format(aBuf, sizeof(aBuf), "id=%d addr=%s reason='%s'", ClientID, aClientAddr, pReason);
+	Console()->Print(IConsole::OUTPUT_LEVEL_ADDINFO, "client_drop", aBuf);
+
 	if (m_apPlayers[ClientID]->m_CaughtBy > CPlayer::ZCATCH_NOT_CAUGHT)
 		m_apPlayers[m_apPlayers[ClientID]->m_CaughtBy]->ReleaseZCatchVictim(ClientID);
 
