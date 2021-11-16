@@ -225,7 +225,7 @@ public:
 	const char* GetAuthName(int ClientID) {return m_aClients[ClientID].m_SubAdminAuthName.c_str();};
 	int GetAuthLevel(int ClientID) {return m_aClients[ClientID].m_Authed;};
 	int GetClientInfo(int ClientID, CClientInfo *pInfo);
-	void GetClientAddr(int ClientID, char *pAddrStr, int Size, bool Port = false);
+	void GetClientAddr(int ClientID, char *pAddrStr, int Size, bool Port);
 	const char *ClientName(int ClientID);
 	const char *ClientClan(int ClientID);
 	/*sqlitehistorian*/
