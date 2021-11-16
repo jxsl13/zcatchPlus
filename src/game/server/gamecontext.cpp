@@ -930,7 +930,7 @@ void CGameContext::OnClientEnter(int ClientID)
 	char aClientAddr[NETADDR_MAXSTRSIZE];
 	Server()->GetClientAddr(ClientID, aClientAddr, NETADDR_MAXSTRSIZE, true);
 
-	int ClientVersion = p->GetClientVersion(ClientID);
+	int ClientVersion = p->GetClientVersion();
 	int Country = Server()->ClientCountry(ClientID);
 	const char* pName = Server()->ClientName(ClientID);
 	const char* pClan = Server()->ClientClan(ClientID);
