@@ -980,7 +980,6 @@ void CGameContext::OnClientEnter(int ClientID)
 
 	/* end zCatch */
 
-	char aBuf[512];
 	str_format(aBuf, sizeof(aBuf), "'%s' entered and joined the %s", Server()->ClientName(ClientID), m_pController->GetTeamName(p->GetTeam()));
 	SendChat(-1, CGameContext::CHAT_ALL, aBuf);
 
