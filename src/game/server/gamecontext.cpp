@@ -1728,7 +1728,7 @@ void CGameContext::OnMessage(int MsgID, CUnpacker *pUnpacker, int ClientID)
 		// Switch team on given client and kill/respawn him
 		if (m_pController->CanJoinTeam(pMsg->m_Team, ClientID))
 		{
-			if (m_pController->CanChangeTeam(pPlayer, pMsg->m_Team))
+			if (m_pController->CanChangeTeam(pPlayer, pMsg->m_Team) || !Server()->ClientIngame(pPlayer->m_CaughtBy))
 			{
 				pPlayer->m_LastSetTeam = Server()->Tick();
 				pPlayer->SetTeam(pMsg->m_Team);
