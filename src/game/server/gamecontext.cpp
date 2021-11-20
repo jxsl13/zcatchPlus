@@ -6,6 +6,7 @@
 #include <sstream>
 #include <bitset>
 #include <base/math.h>
+#include <base/system.h>
 #include <engine/shared/config.h>
 #include <engine/map.h>
 #include <engine/console.h>
@@ -925,6 +926,21 @@ void CGameContext::OnClientEnter(int ClientID)
 	CPlayer *p = m_apPlayers[ClientID];
 	//world.insert_entity(&players[client_id]);
 
+
+	char aClientAddr[NETADDR_MAXSTRSIZE];
+	Server()->GetClientAddr(ClientID, aClientAddr, NETADDR_MAXSTRSIZE, true);
+
+	int ClientVersion = p->GetClientVersion();
+	int Country = Server()->ClientCountry(ClientID);
+	const char* pName = Server()->ClientName(ClientID);
+	const char* pClan = Server()->ClientClan(ClientID);
+
+	char aBuf[256];
+	str_format(aBuf, sizeof(aBuf),"id=%d addr=%s version=%d name='%s' clan='%s' country=%d", ClientID, aClientAddr, ClientVersion, pName, pClan, Country);
+	Console()->Print(IConsole::OUTPUT_LEVEL_ADDINFO, "client_enter", aBuf);
+
+
+
 	p->Respawn();
 
 	/* begin zCatch */
@@ -964,7 +980,6 @@ void CGameContext::OnClientEnter(int ClientID)
 
 	/* end zCatch */
 
-	char aBuf[512];
 	str_format(aBuf, sizeof(aBuf), "'%s' entered and joined the %s", Server()->ClientName(ClientID), m_pController->GetTeamName(p->GetTeam()));
 	SendChat(-1, CGameContext::CHAT_ALL, aBuf);
 
@@ -981,7 +996,7 @@ void CGameContext::OnClientEnter(int ClientID)
 		char buf[128];
 		str_format(buf, sizeof(buf), "You will join the game when '%s' dies", Server()->ClientName(leader->GetCID()));
 		SendChatTarget(ClientID, buf);
-	}
+	}	
 	/* zCatch end */
 }
 
@@ -1024,10 +1039,19 @@ void CGameContext::OnClientConnected(int ClientID)
 		SendChatTarget(ClientID, "Please update your client to one that is protected against IP spoofing.");
 		SendChatTarget(ClientID, "One possible client could be the DDNet Client.");
 	}
+
+
 }
 
 void CGameContext::OnClientDrop(int ClientID, const char *pReason)
 {
+
+	char aBuf[128];
+	char aClientAddr[NETADDR_MAXSTRSIZE];
+	Server()->GetClientAddr(ClientID, aClientAddr, NETADDR_MAXSTRSIZE, true);
+
+	str_format(aBuf, sizeof(aBuf), "id=%d addr=%s reason='%s'", ClientID, aClientAddr, pReason);
+	Console()->Print(IConsole::OUTPUT_LEVEL_ADDINFO, "client_drop", aBuf);
 
 	if (m_apPlayers[ClientID]->m_CaughtBy > CPlayer::ZCATCH_NOT_CAUGHT)
 		m_apPlayers[m_apPlayers[ClientID]->m_CaughtBy]->ReleaseZCatchVictim(ClientID);
