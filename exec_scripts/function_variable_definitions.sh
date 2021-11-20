@@ -52,6 +52,7 @@ check_build_bam (){
     # Download and compile bam:
     cd ..
     git clone https://github.com/matricks/bam.git bam
+    git checkout -b 0.5 origin/0.5
     cd bam
 
     if [[ "$OSTYPE" == "linux-gnu" ]]; then
